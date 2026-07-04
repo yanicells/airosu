@@ -6,6 +6,7 @@ import type { AppState, LastResult, Screen, Settings } from './appState';
 import { MapLoadScreen } from './home';
 import { CalibrationScreen } from './calibrate';
 import { PlayScreen } from './play';
+import { ResultsScreen } from './results';
 
 function StubScreen({ name }: { name: string }) {
   return <div style={{ padding: 32 }}>{name} (coming soon)</div>;
@@ -42,7 +43,7 @@ export function App() {
       {screen === 'home' && <MapLoadScreen />}
       {screen === 'calibrate' && <CalibrationScreen />}
       {screen === 'play' && <PlayScreen />}
-      {screen === 'results' && <StubScreen name="Results" />}
+      {screen === 'results' && <ResultsScreen />}
       {screen === 'settings' && <StubScreen name="Settings" />}
     </AppStateContext.Provider>
   );
