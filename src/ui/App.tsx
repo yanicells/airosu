@@ -7,10 +7,7 @@ import { MapLoadScreen } from './home';
 import { CalibrationScreen } from './calibrate';
 import { PlayScreen } from './play';
 import { ResultsScreen } from './results';
-
-function StubScreen({ name }: { name: string }) {
-  return <div style={{ padding: 32 }}>{name} (coming soon)</div>;
-}
+import { SettingsScreen } from './settings';
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('home');
@@ -44,7 +41,7 @@ export function App() {
       {screen === 'calibrate' && <CalibrationScreen />}
       {screen === 'play' && <PlayScreen />}
       {screen === 'results' && <ResultsScreen />}
-      {screen === 'settings' && <StubScreen name="Settings" />}
+      {screen === 'settings' && <SettingsScreen />}
     </AppStateContext.Provider>
   );
 }
