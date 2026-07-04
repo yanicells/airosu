@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { LoadedBeatmap } from '../beatmap/model';
 import { defaultSettings } from '../ui/appState';
 import type { Settings } from '../ui/appState';
-import { GameSession } from './session';
+import { GameSession, sliderBallPos } from './session';
 
 function makeMap(objects: LoadedBeatmap['objects']): LoadedBeatmap {
   return {
@@ -89,5 +89,69 @@ describe('GameSession lifecycle', () => {
   it('preempt follows AR formula', () => {
     const s = new GameSession(twoCircles(), relax);
     expect(s.preemptMs()).toBe(1200);
+  });
+});
+
+describe('sliderBallPos', () => {
+  const slider = (repeats: number): import('../beatmap/model').SliderObj => ({
+    kind: 'slider',
+    time: 1000,
+    endTime: 2000,
+    repeats,
+    pos: { x: 0, y: 0 },
+    path: [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+    ],
+  });
+
+  it('interpolates single span', () => {
+    const p = sliderBallPos(slider(1), 1500);
+    expect(p.x).toBeCloseTo(50);
+    expect(p.y).toBeCloseTo(0);
+  });
+
+  it('two spans: turning point at midpoint time', () => {
+    expect(sliderBallPos(slider(2), 1500).x).toBeCloseTo(100);
+    expect(sliderBallPos(slider(2), 1750).x).toBeCloseTo(50);
+  });
+});
+
+describe('slider judgment', () => {
+  const sliderMap = () =>
+    makeMap([
+      {
+        kind: 'slider',
+        time: 1000,
+        endTime: 2000,
+        repeats: 1,
+        pos: { x: 0, y: 0 },
+        path: [
+          { x: 0, y: 0 },
+          { x: 100, y: 0 },
+        ],
+      },
+    ]);
+
+  it('cursor glued to ball → final 300', () => {
+    const s = new GameSession(sliderMap(), relax);
+    const all: number[] = [];
+    for (let t = 1000; t <= 2000; t += 20) {
+      const ball = sliderBallPos(sliderMap().objects[0] as import('../beatmap/model').SliderObj, t);
+      for (const e of s.tick(t, ball)) all.push(e.judgment);
+    }
+    expect(all[0]).toBe(300); // head
+    expect(all[1]).toBe(300); // slider end
+    expect(s.state.finished).toBe(true);
+  });
+
+  it('cursor absent whole slider → 0', () => {
+    const s = new GameSession(sliderMap(), relax);
+    const all: number[] = [];
+    for (let t = 1000; t <= 2000; t += 20) for (const e of s.tick(t, null)) all.push(e.judgment);
+    // head miss + follow 0
+    expect(all).toContain(0);
+    expect(all[all.length - 1]).toBe(0);
+    expect(s.state.finished).toBe(true);
   });
 });
