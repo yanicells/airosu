@@ -4,6 +4,7 @@ import type { CalibrationBox } from '../cv/calibration';
 import { AppStateContext, loadSettings, saveSettings } from './appState';
 import type { AppState, LastResult, Screen, Settings } from './appState';
 import { MapLoadScreen } from './home';
+import { CalibrationScreen } from './calibrate';
 
 function StubScreen({ name }: { name: string }) {
   return <div style={{ padding: 32 }}>{name} (coming soon)</div>;
@@ -38,7 +39,7 @@ export function App() {
   return (
     <AppStateContext.Provider value={state}>
       {screen === 'home' && <MapLoadScreen />}
-      {screen === 'calibrate' && <StubScreen name="Calibration" />}
+      {screen === 'calibrate' && <CalibrationScreen />}
       {screen === 'play' && <StubScreen name="Play" />}
       {screen === 'results' && <StubScreen name="Results" />}
       {screen === 'settings' && <StubScreen name="Settings" />}
