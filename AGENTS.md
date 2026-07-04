@@ -15,3 +15,5 @@ Webcam hand-tracking rhythm game that plays osu! beatmaps. Web app: Vite + TS + 
 - TDD for all pure logic (`src/game/`, pure parts of `src/cv/`, `src/beatmap/` adapters). Manual verification via `npm run dev` for render/UI tasks.
 - Verify npm package versions and APIs at install time; if reality differs from the plan, trust the installed library and note the deviation in the PR.
 - Never ship the `.osz` fixture or any copyrighted audio in the deployed bundle.
+- Use the `vercel-react-best-practices` skill when writing or refactoring React/TSX code. Use other installed skills when they apply (e.g. `frontend-design` for UI polish, superpowers process skills for TDD/debugging/reviews).
+- TypeScript everywhere. Feature-based component folders: each screen lives in its own folder under `src/ui/<screen>/` (e.g. `src/ui/play/`, `src/ui/settings/`) with small focused components and an `index.ts` barrel. No long .tsx files — if a component passes ~150 lines, split it.
