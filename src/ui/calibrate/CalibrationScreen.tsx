@@ -72,6 +72,11 @@ export function CalibrationScreen() {
         )}
       </div>
       {step === 'corner2' && countdown > 0 && <p style={{ opacity: 0.6 }}>Collecting…</p>}
+      {session.cursor.usingCpuFallback() && (
+        <p style={{ color: '#ffaa55', fontSize: 13 }}>
+          GPU acceleration unavailable — tracking runs on CPU and may feel laggier.
+        </p>
+      )}
       <p style={{ opacity: 0.5, fontSize: 13 }}>Tip: press R in game to recenter on your hand.</p>
     </div>
   );

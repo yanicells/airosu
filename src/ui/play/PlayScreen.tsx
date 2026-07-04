@@ -62,11 +62,29 @@ function GameLoopRunner({
   onRestart: () => void;
   children: React.ReactNode;
 }) {
-  const { phase, count, resume, quit } = useGameLoop(canvasRef);
+  const { phase, count, fatal, resume, quit } = useGameLoop(canvasRef);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       {children}
+      {fatal && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16,
+            background: '#111',
+            zIndex: 20,
+          }}
+        >
+          <p style={{ maxWidth: 420, textAlign: 'center' }}>{fatal}</p>
+          <button onClick={quit}>Back to home</button>
+        </div>
+      )}
       {phase === 'countdown' && (
         <div
           style={{

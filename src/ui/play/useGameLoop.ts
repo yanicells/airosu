@@ -14,6 +14,7 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
   const { map, settings, calibration, setScreen, setLastResult } = useAppState();
   const [phase, setPhase] = useState<PlayPhase>('countdown');
   const [count, setCount] = useState(3);
+  const [fatal, setFatal] = useState<string | null>(null);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
   const clockRef = useRef<AudioClock | null>(null);
@@ -60,8 +61,19 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
     });
 
     (async () => {
-      const stage = await createStage(canvas, settings.visualMode === 'focus');
-      const clock = await AudioClock.create(map.audio, settings.volume);
+      let stage;
+      let clock;
+      try {
+        stage = await createStage(canvas, settings.visualMode === 'focus');
+        clock = await AudioClock.create(map.audio, settings.volume);
+      } catch (e) {
+        setFatal(
+          e instanceof Error
+            ? `Could not start renderer/audio: ${e.message}. WebGL is required.`
+            : 'Could not start renderer. WebGL is required.',
+        );
+        return;
+      }
       if (disposed) {
         stage.destroy();
         clock.stop();
@@ -174,5 +186,5 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
     setScreen('home');
   }, [setScreen]);
 
-  return { phase, count, resume, quit };
+  return { phase, count, fatal, resume, quit };
 }
