@@ -1,4 +1,4 @@
-import type { HitObject, LoadedBeatmap, Vec2 } from '../beatmap/model';
+import type { HitObject, LoadedBeatmap, SliderObj, Vec2 } from '../beatmap/model';
 import type { Settings } from '../ui/appState';
 import { hitWindows, inRadius, judgeTiming } from './judge';
 import type { Judgment } from './judge';
@@ -17,6 +17,37 @@ export interface SessionState {
   finished: boolean;
 }
 
+/** slider ball position at timeMs: linear interp along path incl. repeats */
+export function sliderBallPos(s: SliderObj, timeMs: number): Vec2 {
+  if (s.path.length < 2) return s.pos;
+  const duration = s.endTime - s.time;
+  const spans = Math.max(s.repeats, 1);
+  let progress = Math.min(Math.max((timeMs - s.time) / duration, 0), 1) * spans;
+  const span = Math.min(Math.floor(progress), spans - 1);
+  progress -= span;
+  if (span % 2 === 1) progress = 1 - progress; // odd spans travel backwards
+
+  // walk the path by cumulative length
+  let total = 0;
+  const segLens: number[] = [];
+  for (let i = 1; i < s.path.length; i++) {
+    const d = Math.hypot(s.path[i].x - s.path[i - 1].x, s.path[i].y - s.path[i - 1].y);
+    segLens.push(d);
+    total += d;
+  }
+  let target = progress * total;
+  for (let i = 0; i < segLens.length; i++) {
+    if (target <= segLens[i] || i === segLens.length - 1) {
+      const t = segLens[i] === 0 ? 0 : target / segLens[i];
+      const a = s.path[i];
+      const b = s.path[i + 1];
+      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+    }
+    target -= segLens[i];
+  }
+  return s.path[s.path.length - 1];
+}
+
 function objPos(obj: HitObject): Vec2 {
   return obj.kind === 'spinner' ? { x: 256, y: 192 } : obj.pos;
 }
@@ -31,7 +62,7 @@ export class GameSession {
   constructor(map: LoadedBeatmap, settings: Settings) {
     this.map = map;
     this.settings = settings;
-    this.judged = new Array(map.objects.length).fill(false);
+    this.judged = Array.from({ length: map.objects.length }, () => false);
     this.w50 = hitWindows(map.meta.od, settings.forgiveness).w50;
   }
 
