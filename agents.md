@@ -1,6 +1,6 @@
 # airosu — Agent Instructions
 
-Webcam hand-tracking rhythm game that plays osu! beatmaps. Web app: Vite + TS + React + PixiJS + MediaPipe. Deployed to GitHub Pages.
+Webcam hand-tracking rhythm game that plays osu! beatmaps. Web app: Vite + TS + React + PixiJS + MediaPipe. Deployed on Vercel (repo owner connects it manually — never add deploy automation or use Vercel CLI).
 
 **Read these before doing anything:**
 

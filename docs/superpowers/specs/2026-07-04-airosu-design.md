@@ -20,7 +20,7 @@ Everything runs client-side in the browser. Camera frames never leave the device
   game auto-taps when the cursor is on the object at hit time).
 - Circles and basic sliders. Score, combo, accuracy, misses. Pause/restart. Results screen.
 - Two visual modes: **Arcade** (camera feed background) and **Focus** (dark background).
-- Deployed free on GitHub Pages.
+- Deployed free on Vercel (user connects the repo in the Vercel dashboard manually).
 
 ## Non-goals (V1)
 
@@ -38,7 +38,7 @@ Everything runs client-side in the browser. Camera frames never leave the device
 | .osz extraction | `fflate` | Small, fast unzip in the browser |
 | Hand tracking | `@mediapipe/tasks-vision` HandLandmarker | Maintained, client-side WASM, GPU delegate, `VIDEO` running mode, 21 landmarks |
 | Audio | Web Audio API | `AudioContext.currentTime` is the master game clock |
-| Hosting | GitHub Pages via GitHub Actions | Free, zero new accounts, fully static |
+| Hosting | Vercel (manual repo connect by user) | Free tier, user's preferred platform, fully static build |
 | Tests | Vitest | Pure-logic modules (parsing adapters, timing, judging, scoring, filters) are TDD'd |
 
 Builder must verify current package versions/APIs at implementation time; pin exact
@@ -130,8 +130,9 @@ visual mode, input mode, key bindings, master/music volume.
 
 ## Milestones (each = one stacked PR)
 
-1. **Scaffold:** Vite + React + TS + Vitest + ESLint/Prettier + GitHub Pages deploy
-   workflow. Empty app deploys green.
+1. **Scaffold:** Vite + React + TS + Vitest + ESLint/Prettier + GitHub Actions CI
+   (test/lint/build on PRs). Hosting is Vercel, connected manually by the user —
+   no deploy automation in the repo.
 2. **Beatmap:** .osz/.osu load, parse, internal model, audio decode. TDD against the
    Kira Kira Days fixture.
 3. **Hand cursor:** webcam, HandLandmarker, palm center, One Euro filter, calibration
