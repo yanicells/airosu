@@ -82,18 +82,24 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
       clockRef.current = clock;
       stageDestroy = () => stage.destroy();
 
-      // 3-2-1 countdown, then start audio
-      for (let c = 3; c > 0; c--) {
-        setCount(c);
-        await new Promise((r) => setTimeout(r, 700));
-        if (disposed) return;
-      }
-      clock.start();
-      setPhase('playing');
-
       const loop = () => {
         if (disposed) return;
         rafId = requestAnimationFrame(loop);
+        if (phaseRef.current === 'countdown') {
+          // cursor-only frames so the player can find their hand pre-start
+          stage.render({
+            timeMs: 0,
+            objects: [],
+            cursor: cursorRef.current,
+            score: 0,
+            combo: 0,
+            accuracy: 1,
+            preemptMs: preempt,
+            cs: map.meta.cs,
+            recentHits: [],
+          });
+          return;
+        }
         if (phaseRef.current !== 'playing') return;
         const t = clock.nowMs(settings.audioOffsetMs);
         const cursor = cursorRef.current;
@@ -121,6 +127,15 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         }
       };
       rafId = requestAnimationFrame(loop);
+
+      // 3-2-1 countdown, then start audio
+      for (let c = 3; c > 0; c--) {
+        setCount(c);
+        await new Promise((r) => setTimeout(r, 700));
+        if (disposed) return;
+      }
+      clock.start();
+      setPhase('playing');
     })();
 
     return () => {
