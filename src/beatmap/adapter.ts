@@ -21,9 +21,14 @@ export function toInternal(decoded: Beatmap, audio: ArrayBuffer, background?: Bl
   const objects: HitObject[] = [];
 
   let comboIndex = -1;
+  let comboNumber = 0;
   for (const obj of decoded.hitObjects) {
     const isNewCombo = (obj as unknown as { isNewCombo?: boolean }).isNewCombo ?? false;
-    if (isNewCombo || comboIndex === -1) comboIndex++;
+    if (isNewCombo || comboIndex === -1) {
+      comboIndex++;
+      comboNumber = 0;
+    }
+    comboNumber++;
 
     if (obj instanceof SlidableObject) {
       objects.push({
@@ -34,9 +39,16 @@ export function toInternal(decoded: Beatmap, audio: ArrayBuffer, background?: Bl
         repeats: obj.repeats,
         path: sliderPath(obj),
         comboIndex,
+        comboNumber,
       });
     } else if (obj instanceof SpinnableObject) {
-      objects.push({ kind: 'spinner', time: obj.startTime, endTime: obj.endTime, comboIndex });
+      objects.push({
+        kind: 'spinner',
+        time: obj.startTime,
+        endTime: obj.endTime,
+        comboIndex,
+        comboNumber,
+      });
     } else {
       const pos = (obj as unknown as { startPosition?: { x: number; y: number } }).startPosition;
       objects.push({
@@ -44,6 +56,7 @@ export function toInternal(decoded: Beatmap, audio: ArrayBuffer, background?: Bl
         time: obj.startTime,
         pos: pos ? { x: pos.x, y: pos.y } : { x: 256, y: 192 },
         comboIndex,
+        comboNumber,
       });
     }
   }

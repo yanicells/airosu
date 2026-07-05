@@ -88,9 +88,33 @@ export class PlayfieldLayer {
     timeMs: number,
   ): void {
     if (obj.path.length < 2) return;
-    g.moveTo(obj.path[0].x, obj.path[0].y);
-    for (let i = 1; i < obj.path.length; i++) g.lineTo(obj.path[i].x, obj.path[i].y);
-    g.stroke({ width: 2 * r, color, alpha: alpha * 0.35, cap: 'round', join: 'round' });
+    const tracePath = () => {
+      g.moveTo(obj.path[0].x, obj.path[0].y);
+      for (let i = 1; i < obj.path.length; i++) g.lineTo(obj.path[i].x, obj.path[i].y);
+    };
+
+    if (this.skin) {
+      // osu! style: SliderBorder ring around a dark SliderTrackOverride fill
+      tracePath();
+      g.stroke({
+        width: 2 * r,
+        color: this.skin.sliderBorder,
+        alpha: alpha * 0.9,
+        cap: 'round',
+        join: 'round',
+      });
+      tracePath();
+      g.stroke({
+        width: 2 * r * 0.82,
+        color: this.skin.sliderTrack ?? color,
+        alpha: alpha * 0.9,
+        cap: 'round',
+        join: 'round',
+      });
+    } else {
+      tracePath();
+      g.stroke({ width: 2 * r, color, alpha: alpha * 0.35, cap: 'round', join: 'round' });
+    }
 
     // procedural slider ball only when the skin does not provide one
     if (!this.skin?.sliderBall && timeMs >= obj.time && timeMs <= obj.endTime) {

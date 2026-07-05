@@ -46,10 +46,14 @@ export async function loadSkinFromOsk(oskBytes: Uint8Array): Promise<Skin> {
   const iniName = names.find((n) => n.toLowerCase() === 'skin.ini');
   const ini = parseSkinIni(iniName ? new TextDecoder().decode(files[iniName]) : '');
 
-  const digitTextures = await Promise.all(
-    Array.from({ length: 10 }, (_, i) => loadTexture(files, names, `${ini.scorePrefix}-${i}`)),
-  );
-  const digits = digitTextures.every(Boolean) ? (digitTextures as SkinTexture[]) : undefined;
+  const loadFont = async (prefix: string): Promise<SkinTexture[] | undefined> => {
+    const textures = await Promise.all(
+      Array.from({ length: 10 }, (_, i) => loadTexture(files, names, `${prefix}-${i}`)),
+    );
+    return textures.every(Boolean) ? (textures as SkinTexture[]) : undefined;
+  };
+  const digits = await loadFont(ini.scorePrefix);
+  const defaultDigits = await loadFont(ini.hitCirclePrefix);
 
   const hitResults: Skin['hitResults'] = {};
   for (const key of [0, 50, 100, 300] as HitResultKey[]) {
@@ -60,6 +64,10 @@ export async function loadSkinFromOsk(oskBytes: Uint8Array): Promise<Skin> {
   return {
     comboColors: ini.comboColors,
     scoreOverlap: ini.scoreOverlap,
+    sliderBorder: ini.sliderBorder,
+    sliderTrack: ini.sliderTrack,
+    defaultDigits,
+    hitCircleOverlap: ini.hitCircleOverlap,
     hitcircle: await loadTexture(files, names, 'hitcircle'),
     hitcircleOverlay: await loadTexture(files, names, 'hitcircleoverlay'),
     approachCircle: await loadTexture(files, names, 'approachcircle'),

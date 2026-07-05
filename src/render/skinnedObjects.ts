@@ -3,6 +3,7 @@ import { circleRadius } from '../beatmap/model';
 import type { HitObject, SliderObj } from '../beatmap/model';
 import { sliderBallPos } from '../game/session';
 import type { Skin } from '../skin/types';
+import { DigitRow } from './digitFont';
 import { circleSpriteScale, makeSprite } from './skinUtils';
 import type { RenderView } from './types';
 
@@ -11,6 +12,7 @@ interface Group {
   circle?: Sprite;
   overlay?: Sprite;
   approach?: Sprite;
+  number?: Container;
   ball?: Sprite;
   follow?: Sprite;
   reverse?: Sprite;
@@ -40,6 +42,16 @@ export class SkinnedObjectLayer {
       group.circle.scale.set(circleSpriteScale(hitcircle, r));
       group.circle.position.set(obj.pos.x, obj.pos.y);
       root.addChild(group.circle);
+    }
+    // combo number under the overlay (HitCircleOverlayAboveNumber default)
+    if (this.skin.defaultDigits) {
+      const d0 = this.skin.defaultDigits[0];
+      const height = (d0.texture.height / d0.resolution) * ((2 * r) / 128);
+      const row = new DigitRow(this.skin.defaultDigits, this.skin.hitCircleOverlap, height, false);
+      row.set(String(obj.comboNumber));
+      row.container.position.set(obj.pos.x - row.width / 2, obj.pos.y - height / 2);
+      group.number = row.container;
+      root.addChild(row.container);
     }
     if (hitcircleOverlay) {
       group.overlay = makeSprite(hitcircleOverlay);
@@ -120,8 +132,10 @@ export class SkinnedObjectLayer {
       group.root.alpha = alpha;
 
       const preHit = view.timeMs < obj.time;
-      if (group.circle) group.circle.visible = obj.kind === 'circle' || preHit;
-      if (group.overlay) group.overlay.visible = obj.kind === 'circle' || preHit;
+      const headVisible = obj.kind === 'circle' || preHit;
+      if (group.circle) group.circle.visible = headVisible;
+      if (group.overlay) group.overlay.visible = headVisible;
+      if (group.number) group.number.visible = headVisible;
       if (group.approach) {
         group.approach.visible = preHit;
         if (preHit && this.skin.approachCircle) {

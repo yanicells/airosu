@@ -1,47 +1,36 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent, ChangeEvent } from 'react';
 import { listDifficulties, loadFromOsz, loadFromOsu, previewOsz } from '../../beatmap/load';
-import type { MapsetPreview } from '../../beatmap/load';
 import type { BundledMap } from '../../beatmap/bundled';
 import { useAppState } from '../appState';
 import { DifficultyPicker } from './DifficultyPicker';
 import { MapCard } from './MapCard';
 import { SongList } from './SongList';
 
-interface Mapset {
-  label: string;
-  bytes: Uint8Array;
-  preview: MapsetPreview;
-  bgUrl?: string;
-  pickedName?: string;
-}
-
 export function MapLoadScreen() {
-  const { map, settings, setSettings, setMap, setScreen } = useAppState();
+  const { map, mapset, settings, setSettings, setMap, setMapset, setScreen } = useAppState();
   const [error, setError] = useState<string | null>(null);
-  const [mapset, setMapset] = useState<Mapset | null>(null);
   const [busyUrl, setBusyUrl] = useState<string | null>(null);
 
+  const bgUrl = useMemo(
+    () =>
+      mapset?.preview.background ? URL.createObjectURL(mapset.preview.background) : undefined,
+    [mapset?.preview.background],
+  );
   useEffect(
     () => () => {
-      if (mapset?.bgUrl) URL.revokeObjectURL(mapset.bgUrl);
+      if (bgUrl) URL.revokeObjectURL(bgUrl);
     },
-    [mapset?.bgUrl],
+    [bgUrl],
   );
 
   const openMapset = useCallback(
     (bytes: Uint8Array, label: string) => {
       if (listDifficulties(bytes).length === 0) throw new Error('No difficulties found in .osz');
-      const preview = previewOsz(bytes);
       setMap(undefined);
-      setMapset({
-        label,
-        bytes,
-        preview,
-        bgUrl: preview.background ? URL.createObjectURL(preview.background) : undefined,
-      });
+      setMapset({ label, bytes, preview: previewOsz(bytes) });
     },
-    [setMap],
+    [setMap, setMapset],
   );
 
   const handleFile = useCallback(
@@ -50,7 +39,7 @@ export function MapLoadScreen() {
       try {
         const bytes = new Uint8Array(await file.arrayBuffer());
         if (file.name.toLowerCase().endsWith('.osu')) {
-          setMapset(null);
+          setMapset(undefined);
           setMap(loadFromOsu(new TextDecoder().decode(bytes), new ArrayBuffer(0)));
           return;
         }
@@ -93,10 +82,10 @@ export function MapLoadScreen() {
   );
 
   const backToList = useCallback(() => {
-    setMapset(null);
+    setMapset(undefined);
     setMap(undefined);
     setError(null);
-  }, [setMap]);
+  }, [setMap, setMapset]);
 
   const onDrop = useCallback(
     (e: DragEvent) => {
@@ -122,7 +111,7 @@ export function MapLoadScreen() {
       onDrop={onDrop}
       style={{ gap: 18 }}
     >
-      {mapset?.bgUrl && <div className="bg-blur" style={{ backgroundImage: `url(${mapset.bgUrl})` }} />}
+      {bgUrl && <div className="bg-blur" style={{ backgroundImage: `url(${bgUrl})` }} />}
 
       {!mapset && (
         <>
@@ -159,7 +148,7 @@ export function MapLoadScreen() {
       {map && (
         <MapCard
           map={map}
-          bgUrl={mapset?.bgUrl}
+          bgUrl={bgUrl}
           settings={settings}
           setSettings={setSettings}
           onPlay={() => setScreen('calibrate')}

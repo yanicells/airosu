@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { LoadedBeatmap } from '../beatmap/model';
 import type { CalibrationBox } from '../cv/calibration';
 import { AppStateContext, loadSettings, saveSettings } from './appState';
-import type { AppState, LastResult, Screen, Settings } from './appState';
+import type { AppState, LastResult, Mapset, Screen, Settings } from './appState';
 import { MapLoadScreen } from './home';
 import { CalibrationScreen } from './calibrate';
 import { PlayScreen } from './play';
@@ -12,6 +12,7 @@ import { SettingsScreen } from './settings';
 export function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const [map, setMap] = useState<LoadedBeatmap | undefined>();
+  const [mapset, setMapset] = useState<Mapset | undefined>();
   const [settings, setSettingsState] = useState<Settings>(loadSettings);
   const [calibration, setCalibration] = useState<CalibrationBox | undefined>();
   const [lastResult, setLastResult] = useState<LastResult | undefined>();
@@ -20,11 +21,13 @@ export function App() {
     () => ({
       screen,
       map,
+      mapset,
       settings,
       calibration,
       lastResult,
       setScreen,
       setMap,
+      setMapset,
       setSettings(s: Settings) {
         setSettingsState(s);
         saveSettings(s);
@@ -32,7 +35,7 @@ export function App() {
       setCalibration,
       setLastResult,
     }),
-    [screen, map, settings, calibration, lastResult],
+    [screen, map, mapset, settings, calibration, lastResult],
   );
 
   return (

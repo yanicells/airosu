@@ -11,6 +11,12 @@ export type HitResultKey = 0 | 50 | 100 | 300;
 export interface Skin {
   comboColors: number[];
   scoreOverlap: number;
+  sliderBorder: number;
+  /** null = combo colour tints the track */
+  sliderTrack: number | null;
+  /** circle combo-number font, exactly 10 entries when present */
+  defaultDigits?: SkinTexture[];
+  hitCircleOverlap: number;
   hitcircle?: SkinTexture;
   hitcircleOverlay?: SkinTexture;
   approachCircle?: SkinTexture;

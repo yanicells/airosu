@@ -40,6 +40,18 @@ describe('osz loading', () => {
     expect(last).toBeGreaterThan(0);
   });
 
+  it('numbers objects within each combo starting at 1', () => {
+    const name = listDifficulties(osz)[0].difficultyName;
+    const map = loadFromOsz(osz, name);
+    let prev: { comboIndex: number; comboNumber: number } | null = null;
+    for (const o of map.objects) {
+      if (prev && o.comboIndex === prev.comboIndex)
+        expect(o.comboNumber).toBe(prev.comboNumber + 1);
+      else expect(o.comboNumber).toBe(1);
+      prev = o;
+    }
+  });
+
   it('exposes display stats: hp, bpm, length, creator', () => {
     const name = listDifficulties(osz)[0].difficultyName;
     const map = loadFromOsz(osz, name);

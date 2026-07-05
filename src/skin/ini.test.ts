@@ -7,6 +7,8 @@ Name: Aristia(Edit)+trail
 Combo1: 26,116,242
 Combo2: 164,32,240
 Combo3: 37,185,239
+SliderBorder: 120,120,120
+SliderTrackOverride: 3,3,12
 [Fonts]
 HitCirclePrefix: default
 HitCircleOverlap: 6
@@ -34,6 +36,21 @@ describe('parseSkinIni', () => {
     expect(ini.scorePrefix).toBe('score');
     expect(ini.comboPrefix).toBe('score');
     expect(ini.scoreOverlap).toBe(0);
+  });
+
+  it('parses slider colours and circle font metrics', () => {
+    const ini = parseSkinIni(SAMPLE);
+    expect(ini.sliderBorder).toBe(0x787878);
+    expect(ini.sliderTrack).toBe(0x03030c);
+    expect(ini.hitCirclePrefix).toBe('default');
+    expect(ini.hitCircleOverlap).toBe(6);
+  });
+
+  it('slider colours default to white border, no track override', () => {
+    const ini = parseSkinIni('');
+    expect(ini.sliderBorder).toBe(0xffffff);
+    expect(ini.sliderTrack).toBeNull();
+    expect(ini.hitCircleOverlap).toBe(-2);
   });
 
   it('ignores malformed colour lines', () => {

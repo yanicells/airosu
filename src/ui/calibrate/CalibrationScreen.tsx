@@ -5,6 +5,7 @@ import { CursorDot } from './CursorDot';
 import { useCalibrationFlow } from './useCalibrationFlow';
 
 const panel: React.CSSProperties = {
+  position: 'relative',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -46,6 +47,13 @@ export function CalibrationScreen() {
 
   return (
     <div style={panel}>
+      <button
+        className="btn"
+        style={{ position: 'absolute', top: 16, left: 16 }}
+        onClick={() => setScreen('home')}
+      >
+        ‹ Songs
+      </button>
       <h2 style={{ margin: 0 }}>Calibration</h2>
       <p style={{ margin: 0 }}>{instruction}</p>
       <CameraPreview video={session.video} mirror={settings.mirror}>

@@ -48,8 +48,9 @@ export async function createStage(
   let cursorLost = false;
 
   const layout = () => {
-    const w = app.renderer.width;
-    const h = app.renderer.height;
+    // logical (CSS) size — renderer.width is physical pixels on HiDPI screens
+    const w = app.screen.width;
+    const h = app.screen.height;
     // letterbox 4:3 playfield with a margin
     const scale = Math.min(w / PLAYFIELD.w, h / PLAYFIELD.h) * 0.85;
     playfieldRoot.scale.set(scale);
