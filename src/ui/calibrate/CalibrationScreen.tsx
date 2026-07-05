@@ -1,9 +1,11 @@
 import { useAppState } from '../appState';
 import { CameraPreview } from './CameraPreview';
+import { CornerGuide } from './CornerGuide';
 import { CursorDot } from './CursorDot';
 import { useCalibrationFlow } from './useCalibrationFlow';
 
 const panel: React.CSSProperties = {
+  position: 'relative',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -25,8 +27,12 @@ export function CalibrationScreen() {
       <div style={panel}>
         <h2>Camera unavailable</h2>
         <p style={{ opacity: 0.7 }}>{error ?? 'Camera permission is required to play.'}</p>
-        <button onClick={connect}>Retry</button>
-        <button onClick={() => setScreen('home')}>Back</button>
+        <button className="btn" onClick={connect}>
+          Retry
+        </button>
+        <button className="btn" onClick={() => setScreen('home')}>
+          Back
+        </button>
       </div>
     );
 
@@ -34,32 +40,48 @@ export function CalibrationScreen() {
     step === 'intro'
       ? 'We will map a small hand-movement box to the whole playfield.'
       : step === 'corner1'
-        ? `Hold your hand UP and LEFT… ${countdown}`
+        ? `Hold your hand on the target… ${countdown}`
         : step === 'corner2'
-          ? `Now hold your hand DOWN and RIGHT… ${countdown}`
+          ? `Now the opposite corner… ${countdown}`
           : 'Move your hand — the dot should reach every edge comfortably.';
 
   return (
     <div style={panel}>
+      <button
+        className="btn"
+        style={{ position: 'absolute', top: 16, left: 16 }}
+        onClick={() => setScreen('home')}
+      >
+        ‹ Songs
+      </button>
       <h2 style={{ margin: 0 }}>Calibration</h2>
       <p style={{ margin: 0 }}>{instruction}</p>
       <CameraPreview video={session.video} mirror={settings.mirror}>
+        {step === 'corner1' && <CornerGuide corner="top-left" />}
+        {step === 'corner2' && <CornerGuide corner="bottom-right" />}
         {step === 'test' && <CursorDot session={session} box={box} settings={settings} />}
       </CameraPreview>
       <div style={{ display: 'flex', gap: 12 }}>
         {step === 'intro' && (
           <>
-            <button onClick={startCorner1}>Start calibration</button>
-            <button onClick={skip}>Skip (default box)</button>
+            <button className="btn btn--primary" style={{ fontSize: 16 }} onClick={startCorner1}>
+              Start calibration
+            </button>
+            <button className="btn" onClick={skip}>
+              Skip (default box)
+            </button>
           </>
         )}
         {step === 'corner2' && countdown === 0 && (
-          <button onClick={startCorner2}>Ready — start</button>
+          <button className="btn btn--primary" style={{ fontSize: 16 }} onClick={startCorner2}>
+            Ready — start
+          </button>
         )}
         {step === 'test' && (
           <>
             <button
-              style={{ fontSize: 18, padding: '10px 32px' }}
+              className="btn btn--primary"
+              style={{ fontSize: 16 }}
               onClick={() => {
                 setCalibration(box);
                 setScreen('play');
@@ -67,7 +89,9 @@ export function CalibrationScreen() {
             >
               Looks good — Continue
             </button>
-            <button onClick={startCorner1}>Redo</button>
+            <button className="btn" onClick={startCorner1}>
+              Redo
+            </button>
           </>
         )}
       </div>

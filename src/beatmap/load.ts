@@ -2,6 +2,7 @@ import { unzipSync } from 'fflate';
 import { BeatmapDecoder } from 'osu-parsers';
 import type { LoadedBeatmap } from './model';
 import { toInternal } from './adapter';
+import { starRating } from './stars';
 
 export interface OszEntry {
   difficultyName: string;
@@ -56,6 +57,34 @@ export function loadFromOsz(oszBytes: Uint8Array, difficultyName: string): Loade
   }
 
   return toInternal(decoded, toArrayBuffer(audioBytes), background);
+}
+
+export interface MapsetPreview {
+  background?: Blob;
+  /** sorted by stars ascending */
+  difficulties: { name: string; stars: number }[];
+}
+
+/** Difficulty names + star ratings + a background, without decoding audio. */
+export function previewOsz(oszBytes: Uint8Array): MapsetPreview {
+  const entries = listDifficulties(oszBytes);
+  const difficulties = entries
+    .map((e) => ({ name: e.difficultyName, stars: starRating(e.osuText) }))
+    .sort((a, b) => a.stars - b.stars);
+
+  let background: Blob | undefined;
+  const files = unzipSync(oszBytes);
+  const decoder = new BeatmapDecoder();
+  for (const e of entries) {
+    const bgPath = decoder.decodeFromString(e.osuText, { parseStoryboard: false }).events
+      .backgroundPath;
+    const bgBytes = bgPath ? findEntry(files, bgPath) : undefined;
+    if (bgBytes) {
+      background = new Blob([bgBytes.slice().buffer as ArrayBuffer]);
+      break;
+    }
+  }
+  return { background, difficulties };
 }
 
 export function loadFromOsu(osuText: string, audio: ArrayBuffer): LoadedBeatmap {

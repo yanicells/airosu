@@ -9,15 +9,25 @@ export interface BeatmapMeta {
   /** difficulty name */
   version: string;
   audioFilename: string;
+  creator: string;
   cs: number;
   od: number;
   ar: number;
+  hp: number;
+  /** most common BPM */
+  bpm: number;
+  /** playable length in ms */
+  lengthMs: number;
 }
 
 export interface CircleObj {
   kind: 'circle';
   time: number;
   pos: Vec2;
+  /** 0-based combo group, steps up on each new combo */
+  comboIndex: number;
+  /** 1-based position inside the combo (the number shown in the circle) */
+  comboNumber: number;
 }
 
 export interface SliderObj {
@@ -28,12 +38,16 @@ export interface SliderObj {
   repeats: number;
   /** flattened path in playfield coords incl. start point, ~5px spacing */
   path: Vec2[];
+  comboIndex: number;
+  comboNumber: number;
 }
 
 export interface SpinnerObj {
   kind: 'spinner';
   time: number;
   endTime: number;
+  comboIndex: number;
+  comboNumber: number;
 }
 
 export type HitObject = CircleObj | SliderObj | SpinnerObj;

@@ -1,6 +1,15 @@
 import { createContext, useContext } from 'react';
+import type { MapsetPreview } from '../beatmap/load';
 import type { LoadedBeatmap } from '../beatmap/model';
 import type { CalibrationBox } from '../cv/calibration';
+
+/** A parsed .osz the player is browsing; survives screen changes. */
+export interface Mapset {
+  label: string;
+  bytes: Uint8Array;
+  preview: MapsetPreview;
+  pickedName?: string;
+}
 
 export type Screen = 'home' | 'calibrate' | 'play' | 'results' | 'settings';
 
@@ -43,11 +52,13 @@ export interface LastResult {
 export interface AppState {
   screen: Screen;
   map?: LoadedBeatmap;
+  mapset?: Mapset;
   settings: Settings;
   calibration?: CalibrationBox;
   lastResult?: LastResult;
   setScreen(screen: Screen): void;
   setMap(map: LoadedBeatmap | undefined): void;
+  setMapset(mapset: Mapset | undefined): void;
   setSettings(settings: Settings): void;
   setCalibration(box: CalibrationBox): void;
   setLastResult(result: LastResult): void;

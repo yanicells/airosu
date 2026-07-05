@@ -6,11 +6,15 @@ import { AudioClock } from '../../game/audioClock';
 import { GameSession } from '../../game/session';
 import { createStage } from '../../render/stage';
 import type { RenderView } from '../../render/types';
+import { getSkin } from '../../skin/loadSkin';
+import { playSound } from '../../skin/soundBank';
+import type { Skin } from '../../skin/types';
+import type { HitEvent } from '../../game/session';
 import { useAppState } from '../appState';
 
 export type PlayPhase = 'countdown' | 'playing' | 'paused' | 'done';
 
-export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
+export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
   const { map, settings, calibration, setScreen, setLastResult } = useAppState();
   const [phase, setPhase] = useState<PlayPhase>('countdown');
   const [count, setCount] = useState(3);
@@ -20,6 +24,7 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
   const clockRef = useRef<AudioClock | null>(null);
   const sessionRef = useRef<GameSession | null>(null);
   const cursorRef = useRef<Vec2 | null>(null);
+  const skinRef = useRef<Skin | null>(null);
 
   const finish = useCallback(() => {
     const session = sessionRef.current;
@@ -37,9 +42,9 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
   }, [setLastResult, setScreen]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const host = stageHostRef.current;
     const cv = peekCvSession();
-    if (!map || !canvas) {
+    if (!map || !host) {
       setScreen('home');
       return;
     }
@@ -63,8 +68,10 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
     (async () => {
       let stage;
       let clock;
+      let skin: Skin | null = null;
       try {
-        stage = await createStage(canvas, settings.visualMode === 'focus');
+        skin = await getSkin();
+        stage = await createStage(host, settings.visualMode === 'focus', skin);
         clock = await AudioClock.create(map.audio, settings.volume);
       } catch (e) {
         setFatal(
@@ -80,25 +87,44 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
         return;
       }
       clockRef.current = clock;
+      skinRef.current = skin;
       stageDestroy = () => stage.destroy();
 
-      // 3-2-1 countdown, then start audio
-      for (let c = 3; c > 0; c--) {
-        setCount(c);
-        await new Promise((r) => setTimeout(r, 700));
-        if (disposed) return;
-      }
-      clock.start();
-      setPhase('playing');
+      let prevCombo = 0;
+      const playHitSounds = (events: HitEvent[], comboBefore: number) => {
+        if (!skin) return;
+        if (events.some((e) => e.judgment > 0) && skin.sounds.hitnormal)
+          playSound(skin.sounds.hitnormal, settings.volume);
+        // combobreak only stings when a real combo was lost
+        if (events.some((e) => e.judgment === 0) && comboBefore >= 8 && skin.sounds.combobreak)
+          playSound(skin.sounds.combobreak, settings.volume);
+      };
 
       const loop = () => {
         if (disposed) return;
         rafId = requestAnimationFrame(loop);
+        if (phaseRef.current === 'countdown') {
+          // cursor-only frames so the player can find their hand pre-start
+          stage.render({
+            timeMs: 0,
+            objects: [],
+            cursor: cursorRef.current,
+            score: 0,
+            combo: 0,
+            accuracy: 1,
+            preemptMs: preempt,
+            cs: map.meta.cs,
+            recentHits: [],
+          });
+          return;
+        }
         if (phaseRef.current !== 'playing') return;
         const t = clock.nowMs(settings.audioOffsetMs);
         const cursor = cursorRef.current;
         const events = session.tick(t, cursor);
+        playHitSounds(events, prevCombo);
         const state = session.state;
+        prevCombo = state.score.combo;
         const view: RenderView = {
           timeMs: t,
           objects: state.activeObjects.map((i) => ({
@@ -121,6 +147,15 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
         }
       };
       rafId = requestAnimationFrame(loop);
+
+      // 3-2-1 countdown, then start audio
+      for (let c = 3; c > 0; c--) {
+        setCount(c);
+        await new Promise((r) => setTimeout(r, 700));
+        if (disposed) return;
+      }
+      clock.start();
+      setPhase('playing');
     })();
 
     return () => {
@@ -152,7 +187,10 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
       if (settings.inputMode === 'manual' && settings.tapKeys.includes(key)) {
         e.preventDefault();
         const t = clockRef.current?.nowMs(settings.audioOffsetMs) ?? 0;
-        sessionRef.current?.press(t, cursorRef.current);
+        const hit = sessionRef.current?.press(t, cursorRef.current);
+        const sounds = skinRef.current?.sounds;
+        if (hit && hit.judgment > 0 && sounds?.hitnormal)
+          playSound(sounds.hitnormal, settings.volume);
       }
       if (key === 'r') {
         const cv = peekCvSession();

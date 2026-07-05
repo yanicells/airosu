@@ -2,15 +2,273 @@
   box-sizing: border-box;
 }
 
+:root {
+  --bg: #17111f;
+  --panel: rgba(38, 28, 52, 0.82);
+  --panel-solid: #241b30;
+  --line: rgba(255, 255, 255, 0.09);
+  --ink: #f2ecf7;
+  --ink-dim: rgba(242, 236, 247, 0.62);
+  --pink: #ff66aa;
+  --pink-hot: #ff2d87;
+  --blue: #66ccff;
+  --gold: #ffcc55;
+}
+
 html,
 body,
 #root {
   margin: 0;
   height: 100%;
-  background: #111;
-  color: #eee;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Exo 2', system-ui, -apple-system, sans-serif;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+}
+
+input,
+select {
+  font-family: inherit;
+  accent-color: var(--pink);
+}
+
+select {
+  background: var(--panel-solid);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+h1,
+h2,
+h3 {
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* pill buttons, osu! lazer style */
+.btn {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 999px;
+  padding: 10px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  background: rgba(60, 45, 80, 0.9);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.btn--primary {
+  background: linear-gradient(135deg, var(--pink), var(--pink-hot));
+  border: none;
+  color: #fff;
+  font-style: italic;
+  font-weight: 800;
+  font-size: 20px;
+  padding: 14px 56px;
+  box-shadow: 0 4px 24px rgba(255, 45, 135, 0.45);
+}
+
+.btn--primary:hover {
+  background: linear-gradient(135deg, #ff7ab6, var(--pink-hot));
+  box-shadow: 0 6px 32px rgba(255, 45, 135, 0.6);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+}
+
+/* full-screen centered column, used by menu screens */
+.screen-center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 32px;
+  overflow: hidden auto;
+}
+
+/* blurred beatmap background behind a whole screen */
+.bg-blur {
+  position: absolute;
+  inset: -32px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(24px) brightness(0.35);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* song select row */
+.song-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 18px;
+  border-left: 4px solid var(--pink);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 15px;
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease;
+}
+
+.song-row:hover:enabled {
+  transform: translateX(4px);
+  background: rgba(60, 45, 80, 0.9);
+}
+
+.song-row:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.song-row__title {
+  font-weight: 700;
+  font-style: italic;
+  font-size: 17px;
+}
+
+.song-row__artist {
+  color: var(--ink-dim);
+  font-size: 13px;
+}
+
+/* small uppercase data label */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* AR/CS/OD/HP bar, 0–10 scale like song select */
+.statbar {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.statbar > div {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--blue);
+}
+
+.fade-up {
+  animation: fade-up 0.35s ease both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* calibration corner target */
+.corner-target {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  margin: -36px 0 0 -36px;
+  border-radius: 50%;
+  border: 3px solid var(--pink);
+  box-shadow: 0 0 24px rgba(255, 102, 170, 0.7);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.corner-target::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 3px solid var(--pink);
+  animation: pulse-ring 1.2s ease-out infinite;
+}
+
+.corner-target__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+
+@keyframes pulse-ring {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.count-pop {
+  animation: count-pop 0.7s ease both;
+}
+
+@keyframes count-pop {
+  0% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.92);
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up,
+  .count-pop,
+  .corner-target::after {
+    animation: none;
+  }
+  .btn,
+  .btn:hover {
+    transition: none;
+    transform: none;
+  }
 }

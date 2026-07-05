@@ -48,6 +48,9 @@ Five modules with hard boundaries: `src/cv/` (camera → smoothed cursor),
   [osu-classes](https://github.com/kionell/osu-classes) (MIT, by kionell). Gameplay
   rules (hit windows, approach timing, relax behavior) adapted from
   [osu!lazer](https://github.com/ppy/osu) (MIT, ppy).
-- No beatmap content is distributed with this app — bring your own `.osz`.
-  The test fixture in this repo is used for local tests only and is never bundled.
+- `game-assets/` bundles a few beatmaps (`.osz`) and a skin (`.osk`) so the app is
+  playable out of the box. All songs, artwork, and skin graphics belong to their
+  original artists, mappers, and skin creators — they are redistributed here for a
+  fan project, not owned by this repo. If you own any of this content and want it
+  removed, open an issue. You can also drop your own `.osz` at any time.
 - This project is not affiliated with osu! or ppy.

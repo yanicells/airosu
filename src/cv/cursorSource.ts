@@ -59,6 +59,13 @@ export function createHandCursorSource(): CursorSource {
       const loop = () => {
         if (!running) return;
         rafId = requestAnimationFrame(loop);
+        // the browser pauses a <video> when it is removed from the document
+        // (screen transitions re-parent it), which freezes currentTime and
+        // stalls tracking — resume it and wait for the next frame
+        if (video.paused) {
+          video.play().catch(() => {});
+          return;
+        }
         if (video.readyState < 2 || video.currentTime === lastVideoTime) return;
         lastVideoTime = video.currentTime;
         const now = performance.now();

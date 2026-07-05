@@ -1,5 +1,6 @@
 import { Application, Container } from 'pixi.js';
 import { PLAYFIELD } from '../beatmap/model';
+import type { Skin } from '../skin/types';
 import { CursorLayer } from './cursor';
 import { HudLayer } from './hud';
 import { PlayfieldLayer } from './playfield';
@@ -14,29 +15,42 @@ export interface Stage {
 /**
  * Pixi stage over a transparent canvas. The camera <video> (arcade mode) sits
  * behind the canvas in the DOM; focus mode uses a solid dark background.
+ *
+ * The stage creates and owns its canvas inside `host`. Sharing one external
+ * canvas between stages breaks under React StrictMode: the unmounted twin's
+ * destroy() loses the WebGL context the surviving stage is rendering to.
  */
-export async function createStage(canvas: HTMLCanvasElement, focusMode: boolean): Promise<Stage> {
+export async function createStage(
+  host: HTMLElement,
+  focusMode: boolean,
+  skin: Skin | null = null,
+): Promise<Stage> {
   const app = new Application();
   await app.init({
-    canvas,
     backgroundAlpha: focusMode ? 1 : 0,
     background: '#111111',
-    resizeTo: canvas.parentElement ?? undefined,
+    resizeTo: host,
     antialias: true,
   });
+  app.canvas.style.position = 'absolute';
+  app.canvas.style.inset = '0';
+  app.canvas.style.width = '100%';
+  app.canvas.style.height = '100%';
+  host.append(app.canvas);
 
   const playfieldRoot = new Container();
-  const playfield = new PlayfieldLayer();
-  const cursor = new CursorLayer();
-  const hud = new HudLayer();
+  const playfield = new PlayfieldLayer(skin);
+  const cursor = new CursorLayer(skin);
+  const hud = new HudLayer(skin);
   playfieldRoot.addChild(playfield.container, cursor.container);
   app.stage.addChild(playfieldRoot, hud.container);
 
   let cursorLost = false;
 
   const layout = () => {
-    const w = app.renderer.width;
-    const h = app.renderer.height;
+    // logical (CSS) size — renderer.width is physical pixels on HiDPI screens
+    const w = app.screen.width;
+    const h = app.screen.height;
     // letterbox 4:3 playfield with a margin
     const scale = Math.min(w / PLAYFIELD.w, h / PLAYFIELD.h) * 0.85;
     playfieldRoot.scale.set(scale);
@@ -58,7 +72,7 @@ export async function createStage(canvas: HTMLCanvasElement, focusMode: boolean)
     },
     resize: layout,
     destroy() {
-      app.destroy(false, { children: true });
+      app.destroy({ removeView: true }, { children: true });
     },
   };
 }

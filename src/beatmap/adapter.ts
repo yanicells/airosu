@@ -20,7 +20,16 @@ function sliderPath(slider: SlidableObject): Vec2[] {
 export function toInternal(decoded: Beatmap, audio: ArrayBuffer, background?: Blob): LoadedBeatmap {
   const objects: HitObject[] = [];
 
+  let comboIndex = -1;
+  let comboNumber = 0;
   for (const obj of decoded.hitObjects) {
+    const isNewCombo = (obj as unknown as { isNewCombo?: boolean }).isNewCombo ?? false;
+    if (isNewCombo || comboIndex === -1) {
+      comboIndex++;
+      comboNumber = 0;
+    }
+    comboNumber++;
+
     if (obj instanceof SlidableObject) {
       objects.push({
         kind: 'slider',
@@ -29,15 +38,25 @@ export function toInternal(decoded: Beatmap, audio: ArrayBuffer, background?: Bl
         endTime: obj.endTime,
         repeats: obj.repeats,
         path: sliderPath(obj),
+        comboIndex,
+        comboNumber,
       });
     } else if (obj instanceof SpinnableObject) {
-      objects.push({ kind: 'spinner', time: obj.startTime, endTime: obj.endTime });
+      objects.push({
+        kind: 'spinner',
+        time: obj.startTime,
+        endTime: obj.endTime,
+        comboIndex,
+        comboNumber,
+      });
     } else {
       const pos = (obj as unknown as { startPosition?: { x: number; y: number } }).startPosition;
       objects.push({
         kind: 'circle',
         time: obj.startTime,
         pos: pos ? { x: pos.x, y: pos.y } : { x: 256, y: 192 },
+        comboIndex,
+        comboNumber,
       });
     }
   }
@@ -50,9 +69,13 @@ export function toInternal(decoded: Beatmap, audio: ArrayBuffer, background?: Bl
       artist: decoded.metadata.artist,
       version: decoded.metadata.version,
       audioFilename: decoded.general.audioFilename,
+      creator: decoded.metadata.creator,
       cs: decoded.difficulty.circleSize,
       od: decoded.difficulty.overallDifficulty,
       ar: decoded.difficulty.approachRate,
+      hp: decoded.difficulty.drainRate,
+      bpm: decoded.bpm,
+      lengthMs: decoded.length,
     },
     objects,
     audio,
