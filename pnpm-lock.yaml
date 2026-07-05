@@ -20,6 +20,9 @@ importers:
       osu-parsers:
         specifier: ^4.1.7
         version: 4.1.7(osu-classes@3.1.0)
+      osu-standard-stable:
+        specifier: ^5.0.1
+        version: 5.0.1(osu-classes@3.1.0)
       pixi.js:
         specifier: ^8.19.0
         version: 8.19.0
@@ -542,6 +545,11 @@ packages:
     peerDependencies:
       osu-classes: ^3.1.0
 
+  osu-standard-stable@5.0.1:
+    resolution: {integrity: sha512-KpjZt/7xQe5qVbjGHb8sPgYkUCat5O02ShmfEFX2n8b2TouguwIg41CcT6YrwVpZzLQIe6UbWnb91gNbBlJrCQ==}
+    peerDependencies:
+      osu-classes: ^3.1.0
+
   oxlint@1.72.0:
     resolution: {integrity: sha512-1rhdZIP/EvoI91ABIwNU5Q8+bWf8mjrS5UzIOZld4d4bXxJvtlUhlQvaoTogIGin/qdErMOrwaIJvCSIAKTLhA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -1057,6 +1065,10 @@ snapshots:
   osu-parsers@4.1.7(osu-classes@3.1.0):
     dependencies:
       lzma-js-simple-v2: 1.2.3
+      osu-classes: 3.1.0
+
+  osu-standard-stable@5.0.1(osu-classes@3.1.0):
+    dependencies:
       osu-classes: 3.1.0
 
   oxlint@1.72.0:
