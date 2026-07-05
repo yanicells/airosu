@@ -8,15 +8,13 @@ export function DifficultyPicker({
   onPick: (name: string) => void;
 }) {
   return (
-    <div style={{ textAlign: 'center' }}>
-      <h3>Pick a difficulty</h3>
+    <div className="panel fade-up" style={{ padding: 20, textAlign: 'center', maxWidth: '92vw' }}>
+      <p className="eyebrow" style={{ margin: '0 0 12px' }}>
+        Pick a difficulty
+      </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {difficulties.map((d) => (
-          <button
-            key={d.difficultyName}
-            style={{ padding: '8px 24px', cursor: 'pointer' }}
-            onClick={() => onPick(d.difficultyName)}
-          >
+          <button key={d.difficultyName} className="btn" onClick={() => onPick(d.difficultyName)}>
             {d.difficultyName}
           </button>
         ))}

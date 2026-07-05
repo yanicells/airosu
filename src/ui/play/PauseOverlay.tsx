@@ -22,11 +22,15 @@ export function PauseOverlay({
       }}
     >
       <h2>Paused</h2>
-      <button style={{ fontSize: 18, padding: '10px 40px' }} onClick={onResume}>
+      <button className="btn btn--primary" style={{ fontSize: 16 }} onClick={onResume}>
         Resume
       </button>
-      <button onClick={onRestart}>Restart</button>
-      <button onClick={onQuit}>Quit to home</button>
+      <button className="btn" onClick={onRestart}>
+        Restart
+      </button>
+      <button className="btn" onClick={onQuit}>
+        Quit to home
+      </button>
     </div>
   );
 }

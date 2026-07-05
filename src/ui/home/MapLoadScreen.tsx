@@ -1,15 +1,27 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent, ChangeEvent } from 'react';
 import { listDifficulties, loadFromOsz, loadFromOsu } from '../../beatmap/load';
 import type { OszEntry } from '../../beatmap/load';
 import { useAppState } from '../appState';
 import { DifficultyPicker } from './DifficultyPicker';
+import { MapCard } from './MapCard';
 
 export function MapLoadScreen() {
   const { map, settings, setSettings, setMap, setScreen } = useAppState();
   const [error, setError] = useState<string | null>(null);
   const [oszBytes, setOszBytes] = useState<Uint8Array | null>(null);
   const [difficulties, setDifficulties] = useState<OszEntry[]>([]);
+
+  const bgUrl = useMemo(
+    () => (map?.background ? URL.createObjectURL(map.background) : undefined),
+    [map?.background],
+  );
+  useEffect(
+    () => () => {
+      if (bgUrl) URL.revokeObjectURL(bgUrl);
+    },
+    [bgUrl],
+  );
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -66,76 +78,61 @@ export function MapLoadScreen() {
   return (
     <div
       style={{
+        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 16,
+        gap: 18,
         padding: 32,
         height: '100%',
         justifyContent: 'center',
+        overflow: 'hidden auto',
       }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
     >
-      <h1 style={{ margin: 0 }}>airosu</h1>
-      <p style={{ margin: 0, opacity: 0.7 }}>Play osu! beatmaps with your hand.</p>
+      {bgUrl && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: -32,
+            backgroundImage: `url(${bgUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            filter: 'blur(24px) brightness(0.35)',
+            zIndex: -1,
+          }}
+        />
+      )}
+      <h1 style={{ margin: 0, fontSize: 48 }}>
+        airosu<span style={{ color: 'var(--pink)' }}>!</span>
+      </h1>
+      <p className="eyebrow" style={{ margin: 0 }}>
+        Play osu! beatmaps with your hand
+      </p>
       <label
-        style={{
-          border: '2px dashed #666',
-          borderRadius: 12,
-          padding: '32px 48px',
-          cursor: 'pointer',
-        }}
+        className="panel"
+        style={{ padding: '22px 44px', cursor: 'pointer', borderStyle: 'dashed' }}
       >
         Drop a .osz / .osu file here or click to browse
         <input type="file" accept=".osz,.osu" style={{ display: 'none' }} onChange={onChange} />
       </label>
-      {error && <p style={{ color: '#f66' }}>{error}</p>}
+      {error && <p style={{ color: '#ff6b81', margin: 0 }}>{error}</p>}
       {difficulties.length > 0 && !map && (
         <DifficultyPicker difficulties={difficulties} onPick={pickDifficulty} />
       )}
       {map && (
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ marginBottom: 4 }}>
-            {map.meta.artist} — {map.meta.title}
-          </h2>
-          <p style={{ marginTop: 0, opacity: 0.7 }}>[{map.meta.version}]</p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 12 }}>
-            <label>
-              Mode:{' '}
-              <select
-                value={settings.inputMode}
-                onChange={(e) =>
-                  setSettings({ ...settings, inputMode: e.target.value as 'relax' | 'manual' })
-                }
-              >
-                <option value="relax">Relax (auto-tap)</option>
-                <option value="manual">Manual (Z/X to tap)</option>
-              </select>
-            </label>
-            <label>
-              Visuals:{' '}
-              <select
-                value={settings.visualMode}
-                onChange={(e) =>
-                  setSettings({ ...settings, visualMode: e.target.value as 'arcade' | 'focus' })
-                }
-              >
-                <option value="arcade">Arcade (camera bg)</option>
-                <option value="focus">Focus (dark bg)</option>
-              </select>
-            </label>
-          </div>
-          <button
-            style={{ fontSize: 20, padding: '12px 48px', cursor: 'pointer' }}
-            onClick={() => setScreen('calibrate')}
-          >
-            Play
-          </button>
-        </div>
+        <MapCard
+          map={map}
+          bgUrl={bgUrl}
+          settings={settings}
+          setSettings={setSettings}
+          onPlay={() => setScreen('calibrate')}
+        />
       )}
       <button
-        style={{ position: 'absolute', top: 16, right: 16, cursor: 'pointer' }}
+        className="btn"
+        style={{ position: 'absolute', top: 16, right: 16 }}
         onClick={() => setScreen('settings')}
       >
         Settings

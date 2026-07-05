@@ -27,9 +27,20 @@ export function ResultsScreen() {
       }}
     >
       <p style={{ margin: 0, opacity: 0.7 }}>
-        {map.meta.artist} — {map.meta.title} [{map.meta.version}]
+        {map.meta.artist} — {map.meta.title}{' '}
+        <span style={{ color: 'var(--pink)', fontWeight: 700 }}>[{map.meta.version}]</span>
       </p>
-      <div style={{ fontSize: 120, fontWeight: 'bold', lineHeight: 1, color: gradeColor(g) }}>
+      <div
+        className="fade-up"
+        style={{
+          fontSize: 130,
+          fontWeight: 800,
+          fontStyle: 'italic',
+          lineHeight: 1,
+          color: gradeColor(g),
+          textShadow: `0 0 48px ${gradeColor(g)}55`,
+        }}
+      >
         {g}
       </div>
       <div style={{ fontSize: 40, fontWeight: 'bold' }}>{lastResult.score.toLocaleString()}</div>
@@ -43,14 +54,11 @@ export function ResultsScreen() {
         <span style={{ color: '#ff5555' }}>miss × {lastResult.counts[0]}</span>
       </div>
       <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-        <button
-          style={{ fontSize: 18, padding: '10px 32px' }}
-          onClick={() => setScreen('play')}
-        >
+        <button className="btn btn--primary" style={{ fontSize: 16 }} onClick={() => setScreen('play')}>
           Retry
         </button>
         <button
-          style={{ fontSize: 18, padding: '10px 32px' }}
+          className="btn"
           onClick={() => {
             setMap(undefined);
             setScreen('home');

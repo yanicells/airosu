@@ -9,16 +9,17 @@ export function SettingsScreen() {
 
   return (
     <div
+      className="panel fade-up"
       style={{
         maxWidth: 560,
-        margin: '0 auto',
+        margin: '32px auto',
         padding: 32,
         display: 'flex',
         flexDirection: 'column',
         gap: 12,
       }}
     >
-      <h2>Settings</h2>
+      <h2 style={{ margin: '0 0 8px' }}>Settings</h2>
       <SliderRow
         label="Sensitivity"
         min={0.5}
@@ -103,10 +104,12 @@ export function SettingsScreen() {
         />
       </label>
       <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-        <button style={{ fontSize: 16, padding: '8px 32px' }} onClick={() => setScreen('home')}>
+        <button className="btn btn--primary" style={{ fontSize: 16 }} onClick={() => setScreen('home')}>
           Done
         </button>
-        <button onClick={() => setSettings({ ...defaultSettings })}>Reset to defaults</button>
+        <button className="btn" onClick={() => setSettings({ ...defaultSettings })}>
+          Reset to defaults
+        </button>
       </div>
     </div>
   );

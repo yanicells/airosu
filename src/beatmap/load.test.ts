@@ -26,6 +26,17 @@ describe('osz loading', () => {
       }
   });
 
+  it('exposes display stats: hp, bpm, length, creator', () => {
+    const name = listDifficulties(osz)[0].difficultyName;
+    const map = loadFromOsz(osz, name);
+    expect(map.meta.hp).toBeGreaterThan(0);
+    expect(map.meta.hp).toBeLessThanOrEqual(10);
+    expect(map.meta.bpm).toBeGreaterThan(50);
+    expect(map.meta.bpm).toBeLessThan(400);
+    expect(map.meta.lengthMs).toBeGreaterThan(30_000);
+    expect(map.meta.creator.length).toBeGreaterThan(0);
+  });
+
   it('sliders have endTime > time and a path', () => {
     const name = listDifficulties(osz)[0].difficultyName;
     const s = loadFromOsz(osz, name).objects.find((o) => o.kind === 'slider');

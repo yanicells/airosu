@@ -30,7 +30,7 @@ export function PlayScreen() {
       stageHostRef={stageHostRef}
       onRestart={() => setRestartKey((k) => k + 1)}
     >
-      <div style={{ position: 'relative', width: '100%', height: '100%', background: '#111' }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--bg)' }}>
         <div
           ref={videoHolderRef}
           style={{
@@ -91,13 +91,18 @@ function GameLoopRunner({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 96,
-            fontWeight: 'bold',
+            fontSize: 110,
+            fontWeight: 800,
+            fontStyle: 'italic',
+            color: 'var(--pink)',
+            textShadow: '0 0 40px rgba(255, 102, 170, 0.5)',
             zIndex: 10,
             pointerEvents: 'none',
           }}
         >
-          {count}
+          <span key={count} className="count-pop" style={{ display: 'inline-block' }}>
+            {count}
+          </span>
         </div>
       )}
       {phase === 'paused' && (

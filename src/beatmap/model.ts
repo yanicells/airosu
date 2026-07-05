@@ -9,9 +9,15 @@ export interface BeatmapMeta {
   /** difficulty name */
   version: string;
   audioFilename: string;
+  creator: string;
   cs: number;
   od: number;
   ar: number;
+  hp: number;
+  /** most common BPM */
+  bpm: number;
+  /** playable length in ms */
+  lengthMs: number;
 }
 
 export interface CircleObj {
