@@ -20,7 +20,11 @@ function sliderPath(slider: SlidableObject): Vec2[] {
 export function toInternal(decoded: Beatmap, audio: ArrayBuffer, background?: Blob): LoadedBeatmap {
   const objects: HitObject[] = [];
 
+  let comboIndex = -1;
   for (const obj of decoded.hitObjects) {
+    const isNewCombo = (obj as unknown as { isNewCombo?: boolean }).isNewCombo ?? false;
+    if (isNewCombo || comboIndex === -1) comboIndex++;
+
     if (obj instanceof SlidableObject) {
       objects.push({
         kind: 'slider',
@@ -29,15 +33,17 @@ export function toInternal(decoded: Beatmap, audio: ArrayBuffer, background?: Bl
         endTime: obj.endTime,
         repeats: obj.repeats,
         path: sliderPath(obj),
+        comboIndex,
       });
     } else if (obj instanceof SpinnableObject) {
-      objects.push({ kind: 'spinner', time: obj.startTime, endTime: obj.endTime });
+      objects.push({ kind: 'spinner', time: obj.startTime, endTime: obj.endTime, comboIndex });
     } else {
       const pos = (obj as unknown as { startPosition?: { x: number; y: number } }).startPosition;
       objects.push({
         kind: 'circle',
         time: obj.startTime,
         pos: pos ? { x: pos.x, y: pos.y } : { x: 256, y: 192 },
+        comboIndex,
       });
     }
   }

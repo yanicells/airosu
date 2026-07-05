@@ -28,6 +28,18 @@ describe('osz loading', () => {
       }
   });
 
+  it('assigns combo indices that only step up on new combos', () => {
+    const name = listDifficulties(osz)[0].difficultyName;
+    const map = loadFromOsz(osz, name);
+    let last = -1;
+    for (const o of map.objects) {
+      expect(o.comboIndex).toBeGreaterThanOrEqual(0);
+      expect(o.comboIndex - last).toBeLessThanOrEqual(1);
+      last = Math.max(last, o.comboIndex);
+    }
+    expect(last).toBeGreaterThan(0);
+  });
+
   it('exposes display stats: hp, bpm, length, creator', () => {
     const name = listDifficulties(osz)[0].difficultyName;
     const map = loadFromOsz(osz, name);

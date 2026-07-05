@@ -24,6 +24,8 @@ export interface CircleObj {
   kind: 'circle';
   time: number;
   pos: Vec2;
+  /** 0-based combo group, steps up on each new combo */
+  comboIndex: number;
 }
 
 export interface SliderObj {
@@ -34,12 +36,14 @@ export interface SliderObj {
   repeats: number;
   /** flattened path in playfield coords incl. start point, ~5px spacing */
   path: Vec2[];
+  comboIndex: number;
 }
 
 export interface SpinnerObj {
   kind: 'spinner';
   time: number;
   endTime: number;
+  comboIndex: number;
 }
 
 export type HitObject = CircleObj | SliderObj | SpinnerObj;

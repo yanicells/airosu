@@ -1,5 +1,6 @@
 import { Application, Container } from 'pixi.js';
 import { PLAYFIELD } from '../beatmap/model';
+import type { Skin } from '../skin/types';
 import { CursorLayer } from './cursor';
 import { HudLayer } from './hud';
 import { PlayfieldLayer } from './playfield';
@@ -19,7 +20,11 @@ export interface Stage {
  * canvas between stages breaks under React StrictMode: the unmounted twin's
  * destroy() loses the WebGL context the surviving stage is rendering to.
  */
-export async function createStage(host: HTMLElement, focusMode: boolean): Promise<Stage> {
+export async function createStage(
+  host: HTMLElement,
+  focusMode: boolean,
+  skin: Skin | null = null,
+): Promise<Stage> {
   const app = new Application();
   await app.init({
     backgroundAlpha: focusMode ? 1 : 0,
@@ -34,9 +39,9 @@ export async function createStage(host: HTMLElement, focusMode: boolean): Promis
   host.append(app.canvas);
 
   const playfieldRoot = new Container();
-  const playfield = new PlayfieldLayer();
-  const cursor = new CursorLayer();
-  const hud = new HudLayer();
+  const playfield = new PlayfieldLayer(skin);
+  const cursor = new CursorLayer(skin);
+  const hud = new HudLayer(skin);
   playfieldRoot.addChild(playfield.container, cursor.container);
   app.stage.addChild(playfieldRoot, hud.container);
 
