@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { listDifficulties, loadFromOsz } from './load';
 
-const osz = new Uint8Array(readFileSync('444335 HO-KAGO TEA TIME - Kira Kira Days.osz'));
+const osz = new Uint8Array(
+  readFileSync('game-assets/maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
+);
 
 describe('osz loading', () => {
   it('lists difficulties', () => {
