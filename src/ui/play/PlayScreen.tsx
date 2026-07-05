@@ -6,7 +6,7 @@ import { useGameLoop } from './useGameLoop';
 
 export function PlayScreen() {
   const { settings, setScreen } = useAppState();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const stageHostRef = useRef<HTMLDivElement>(null);
   const videoHolderRef = useRef<HTMLDivElement>(null);
   const [restartKey, setRestartKey] = useState(0);
 
@@ -27,7 +27,7 @@ export function PlayScreen() {
   return (
     <GameLoopRunner
       key={restartKey}
-      canvasRef={canvasRef}
+      stageHostRef={stageHostRef}
       onRestart={() => setRestartKey((k) => k + 1)}
     >
       <div style={{ position: 'relative', width: '100%', height: '100%', background: '#111' }}>
@@ -39,9 +39,7 @@ export function PlayScreen() {
             transform: settings.mirror ? 'scaleX(-1)' : undefined,
           }}
         />
-        <div style={{ position: 'absolute', inset: 0 }}>
-          <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
-        </div>
+        <div ref={stageHostRef} style={{ position: 'absolute', inset: 0 }} />
         <button
           style={{ position: 'absolute', top: 12, left: 12, opacity: 0.6, zIndex: 5 }}
           onClick={() => setScreen('home')}
@@ -54,15 +52,15 @@ export function PlayScreen() {
 }
 
 function GameLoopRunner({
-  canvasRef,
+  stageHostRef,
   onRestart,
   children,
 }: {
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  stageHostRef: React.RefObject<HTMLDivElement | null>;
   onRestart: () => void;
   children: React.ReactNode;
 }) {
-  const { phase, count, fatal, resume, quit } = useGameLoop(canvasRef);
+  const { phase, count, fatal, resume, quit } = useGameLoop(stageHostRef);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

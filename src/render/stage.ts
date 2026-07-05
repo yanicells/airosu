@@ -14,16 +14,24 @@ export interface Stage {
 /**
  * Pixi stage over a transparent canvas. The camera <video> (arcade mode) sits
  * behind the canvas in the DOM; focus mode uses a solid dark background.
+ *
+ * The stage creates and owns its canvas inside `host`. Sharing one external
+ * canvas between stages breaks under React StrictMode: the unmounted twin's
+ * destroy() loses the WebGL context the surviving stage is rendering to.
  */
-export async function createStage(canvas: HTMLCanvasElement, focusMode: boolean): Promise<Stage> {
+export async function createStage(host: HTMLElement, focusMode: boolean): Promise<Stage> {
   const app = new Application();
   await app.init({
-    canvas,
     backgroundAlpha: focusMode ? 1 : 0,
     background: '#111111',
-    resizeTo: canvas.parentElement ?? undefined,
+    resizeTo: host,
     antialias: true,
   });
+  app.canvas.style.position = 'absolute';
+  app.canvas.style.inset = '0';
+  app.canvas.style.width = '100%';
+  app.canvas.style.height = '100%';
+  host.append(app.canvas);
 
   const playfieldRoot = new Container();
   const playfield = new PlayfieldLayer();
@@ -58,7 +66,7 @@ export async function createStage(canvas: HTMLCanvasElement, focusMode: boolean)
     },
     resize: layout,
     destroy() {
-      app.destroy(false, { children: true });
+      app.destroy({ removeView: true }, { children: true });
     },
   };
 }

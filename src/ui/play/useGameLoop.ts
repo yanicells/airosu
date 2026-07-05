@@ -10,7 +10,7 @@ import { useAppState } from '../appState';
 
 export type PlayPhase = 'countdown' | 'playing' | 'paused' | 'done';
 
-export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
+export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
   const { map, settings, calibration, setScreen, setLastResult } = useAppState();
   const [phase, setPhase] = useState<PlayPhase>('countdown');
   const [count, setCount] = useState(3);
@@ -37,9 +37,9 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
   }, [setLastResult, setScreen]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const host = stageHostRef.current;
     const cv = peekCvSession();
-    if (!map || !canvas) {
+    if (!map || !host) {
       setScreen('home');
       return;
     }
@@ -64,7 +64,7 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>) {
       let stage;
       let clock;
       try {
-        stage = await createStage(canvas, settings.visualMode === 'focus');
+        stage = await createStage(host, settings.visualMode === 'focus');
         clock = await AudioClock.create(map.audio, settings.volume);
       } catch (e) {
         setFatal(
