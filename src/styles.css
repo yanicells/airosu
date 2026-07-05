@@ -100,6 +100,67 @@ h3 {
   backdrop-filter: blur(12px);
 }
 
+/* full-screen centered column, used by menu screens */
+.screen-center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 32px;
+  overflow: hidden auto;
+}
+
+/* blurred beatmap background behind a whole screen */
+.bg-blur {
+  position: absolute;
+  inset: -32px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(24px) brightness(0.35);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* song select row */
+.song-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 18px;
+  border-left: 4px solid var(--pink);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 15px;
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease;
+}
+
+.song-row:hover:enabled {
+  transform: translateX(4px);
+  background: rgba(60, 45, 80, 0.9);
+}
+
+.song-row:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.song-row__title {
+  font-weight: 700;
+  font-style: italic;
+  font-size: 17px;
+}
+
+.song-row__artist {
+  color: var(--ink-dim);
+  font-size: 13px;
+}
+
 /* small uppercase data label */
 .eyebrow {
   font-size: 11px;
