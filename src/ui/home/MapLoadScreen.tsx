@@ -122,7 +122,11 @@ export function MapLoadScreen() {
 
       {mapset && (
         <>
-          <button className="btn" style={{ position: 'absolute', top: 16, left: 16 }} onClick={backToList}>
+          <button
+            className="btn btn--back"
+            style={{ position: 'absolute', top: 16, left: 16 }}
+            onClick={backToList}
+          >
             ‹ Songs
           </button>
           <h2 style={{ margin: 0, fontSize: 30, textAlign: 'center' }}>{mapset.label}</h2>

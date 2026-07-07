@@ -93,6 +93,23 @@ h3 {
   box-shadow: 0 6px 32px rgba(255, 45, 135, 0.6);
 }
 
+/* back-navigation pill, osu! lazer's pink back corner */
+.btn--back {
+  border: 1px solid rgba(255, 102, 170, 0.55);
+  background: rgba(255, 102, 170, 0.16);
+  color: var(--pink);
+  font-weight: 800;
+  font-style: italic;
+  box-shadow: 0 0 18px rgba(255, 45, 135, 0.25);
+}
+
+.btn--back:hover {
+  background: linear-gradient(135deg, var(--pink), var(--pink-hot));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 24px rgba(255, 45, 135, 0.5);
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
