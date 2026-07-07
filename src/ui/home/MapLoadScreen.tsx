@@ -1,12 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent, ChangeEvent } from 'react';
 import { listDifficulties, loadFromOsz, loadFromOsu, previewOsz } from '../../beatmap/load';
+import { bundledMaps } from '../../beatmap/bundled';
 import type { BundledMap } from '../../beatmap/bundled';
 import { useAppState } from '../appState';
 import { useObjectUrl } from '../useObjectUrl';
 import { DifficultyPicker } from './DifficultyPicker';
 import { MapCard } from './MapCard';
 import { SongList } from './SongList';
+import { useSongBackground } from './useSongBackground';
 
 export function MapLoadScreen() {
   const { map, mapset, settings, setSettings, setMap, setMapset, setScreen } = useAppState();
@@ -14,6 +16,15 @@ export function MapLoadScreen() {
   const [busyUrl, setBusyUrl] = useState<string | null>(null);
 
   const bgUrl = useObjectUrl(mapset?.preview.background);
+
+  // song list: a random map starts selected, arrow keys move, Enter opens
+  const maps = useMemo(bundledMaps, []);
+  const [selectedIdx, setSelectedIdx] = useState(() =>
+    maps.length ? Math.floor(Math.random() * maps.length) : 0,
+  );
+  const onSongList = !mapset && !map;
+  const selected = onSongList && maps.length ? maps[selectedIdx] : undefined;
+  const previewBgUrl = useObjectUrl(useSongBackground(selected));
 
   const openMapset = useCallback(
     (bytes: Uint8Array, label: string) => {
@@ -72,6 +83,23 @@ export function MapLoadScreen() {
     [mapset, setMap],
   );
 
+  useEffect(() => {
+    if (!onSongList || maps.length === 0) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (busyUrl) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const step = e.key === 'ArrowDown' ? 1 : -1;
+        setSelectedIdx((i) => (i + step + maps.length) % maps.length);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        void pickBundled(maps[selectedIdx]);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onSongList, maps, busyUrl, selectedIdx, pickBundled]);
+
   const backToList = useCallback(() => {
     setMapset(undefined);
     setMap(undefined);
@@ -102,7 +130,12 @@ export function MapLoadScreen() {
       onDrop={onDrop}
       style={{ gap: 18 }}
     >
-      {bgUrl && <div className="bg-blur" style={{ backgroundImage: `url(${bgUrl})` }} />}
+      {(onSongList ? previewBgUrl : bgUrl) && (
+        <div
+          className="bg-blur"
+          style={{ backgroundImage: `url(${onSongList ? previewBgUrl : bgUrl})` }}
+        />
+      )}
 
       {!mapset && (
         <>
@@ -112,7 +145,12 @@ export function MapLoadScreen() {
           <p className="eyebrow" style={{ margin: 0 }}>
             Play osu! beatmaps with your hand
           </p>
-          <SongList onPick={(m) => void pickBundled(m)} busyUrl={busyUrl} />
+          <SongList
+            maps={maps}
+            onPick={(m) => void pickBundled(m)}
+            busyUrl={busyUrl}
+            selectedUrl={selected?.url}
+          />
           <label className="panel" style={{ padding: '14px 32px', cursor: 'pointer', borderStyle: 'dashed' }}>
             …or drop your own .osz / .osu file
             <input type="file" accept=".osz,.osu" style={{ display: 'none' }} onChange={onChange} />

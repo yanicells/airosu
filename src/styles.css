@@ -165,6 +165,14 @@ h3 {
   background: rgba(60, 45, 80, 0.9);
 }
 
+/* keyboard-selected row: pink like the difficulty picker's active pill */
+.song-row--active {
+  background: rgba(60, 45, 80, 0.9);
+  border-left-color: var(--pink-hot);
+  box-shadow: 0 0 20px rgba(255, 45, 135, 0.35);
+  transform: translateX(4px);
+}
+
 .song-row:disabled {
   opacity: 0.6;
   cursor: default;

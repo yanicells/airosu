@@ -71,20 +71,20 @@ export function previewOsz(oszBytes: Uint8Array): MapsetPreview {
   const difficulties = entries
     .map((e) => ({ name: e.difficultyName, stars: starRating(e.osuText) }))
     .sort((a, b) => a.stars - b.stars);
+  return { background: oszBackground(oszBytes, entries), difficulties };
+}
 
-  let background: Blob | undefined;
+/** Just the mapset background image, no star ratings — cheap enough for list previews. */
+export function oszBackground(oszBytes: Uint8Array, entries?: OszEntry[]): Blob | undefined {
   const files = unzipSync(oszBytes);
   const decoder = new BeatmapDecoder();
-  for (const e of entries) {
+  for (const e of entries ?? listDifficulties(oszBytes)) {
     const bgPath = decoder.decodeFromString(e.osuText, { parseStoryboard: false }).events
       .backgroundPath;
     const bgBytes = bgPath ? findEntry(files, bgPath) : undefined;
-    if (bgBytes) {
-      background = new Blob([bgBytes.slice().buffer as ArrayBuffer]);
-      break;
-    }
+    if (bgBytes) return new Blob([bgBytes.slice().buffer as ArrayBuffer]);
   }
-  return { background, difficulties };
+  return undefined;
 }
 
 export function loadFromOsu(osuText: string, audio: ArrayBuffer): LoadedBeatmap {
