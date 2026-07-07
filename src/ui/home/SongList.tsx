@@ -1,16 +1,17 @@
-import { useMemo } from 'react';
-import { bundledMaps } from '../../beatmap/bundled';
 import type { BundledMap } from '../../beatmap/bundled';
 
 /** osu! song-select style list of the maps shipped with the app. */
 export function SongList({
+  maps,
   onPick,
   busyUrl,
+  selectedUrl,
 }: {
+  maps: BundledMap[];
   onPick: (m: BundledMap) => void;
   busyUrl: string | null;
+  selectedUrl?: string;
 }) {
-  const maps = useMemo(bundledMaps, []);
   if (maps.length === 0) return null;
 
   return (
@@ -24,12 +25,12 @@ export function SongList({
       }}
     >
       <p className="eyebrow" style={{ margin: '0 0 2px' }}>
-        Song select
+        Song select <span style={{ opacity: 0.6 }}>— ↑↓ + Enter</span>
       </p>
       {maps.map((m) => (
         <button
           key={m.url}
-          className="panel song-row fade-up"
+          className={`panel song-row fade-up${m.url === selectedUrl ? ' song-row--active' : ''}`}
           disabled={busyUrl !== null}
           onClick={() => onPick(m)}
         >

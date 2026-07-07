@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
-import { listDifficulties, loadFromOsz, previewOsz } from './load';
+import { listDifficulties, loadFromOsz, oszBackground, previewOsz } from './load';
 
 const osz = new Uint8Array(
   readFileSync('game-assets/maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
@@ -70,6 +70,12 @@ describe('osz loading', () => {
     expect([...stars].sort((a, b) => a - b)).toEqual(stars);
     for (const d of preview.difficulties) expect(d.stars).toBeGreaterThan(0.5);
     expect(preview.background).toBeInstanceOf(Blob);
+  });
+
+  it('extracts just the background without computing stars', () => {
+    const bg = oszBackground(osz);
+    expect(bg).toBeInstanceOf(Blob);
+    expect(bg!.size).toBeGreaterThan(1000);
   });
 
   it('sliders have endTime > time and a path', () => {
