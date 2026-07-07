@@ -46,6 +46,8 @@ export interface LastResult {
   score: number;
   maxCombo: number;
   accuracy: number;
+  /** performance points (nomod approximation) */
+  pp: number;
   counts: { 300: number; 100: number; 50: number; 0: number };
 }
 

@@ -11,6 +11,7 @@ export class HudLayer {
   private comboDigits: DigitRow | null = null;
   private comboX: Text | null = null;
   private accText: Text;
+  private ppText: Text;
   private lostText: Text;
   private lastCombo = 0;
   private comboPopAt = 0;
@@ -46,6 +47,12 @@ export class HudLayer {
 
     this.accText = new Text({ text: '100.0%', style: { fontSize: 18, fill: 0xcccccc } });
     this.accText.anchor.set(1, 0);
+    this.ppText = new Text({
+      text: '',
+      style: { fontSize: 16, fill: 0xff66aa, fontWeight: 'bold', fontStyle: 'italic' },
+    });
+    this.ppText.anchor.set(1, 0);
+    this.container.addChild(this.ppText);
     this.lostText = new Text({ text: 'hand lost', style: { fontSize: 16, fill: 0xffaa55 } });
     this.lostText.anchor.set(0.5, 0);
     this.lostText.visible = false;
@@ -56,11 +63,19 @@ export class HudLayer {
     this.scoreText?.position.set(w - 16, 12);
     this.scoreDigits?.container.position.set(w - 16, 12);
     this.accText.position.set(w - 16, 56);
+    this.ppText.position.set(w - 16, 80);
     this.comboRoot.position.set(16, h - 12);
     this.lostText.position.set(w / 2, 12);
   }
 
-  render(score: number, combo: number, accuracy: number, cursorLost: boolean, nowMs: number): void {
+  render(
+    score: number,
+    combo: number,
+    accuracy: number,
+    pp: number,
+    cursorLost: boolean,
+    nowMs: number,
+  ): void {
     if (this.scoreDigits) this.scoreDigits.set(String(score));
     else this.scoreText!.text = String(score);
 
@@ -77,6 +92,7 @@ export class HudLayer {
     }
 
     this.accText.text = `${(accuracy * 100).toFixed(1)}%`;
+    this.ppText.text = pp > 0 ? `${Math.round(pp)}pp` : '';
     if (combo > this.lastCombo) this.comboPopAt = nowMs;
     this.lastCombo = combo;
     const pop = Math.max(0, 1 - (nowMs - this.comboPopAt) / 150);

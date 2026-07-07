@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 import type { Vec2 } from '../../beatmap/model';
 import { peekCvSession } from '../../cv/cvSession';
 import { AudioClock } from '../../game/audioClock';
+import { PpCounter, type HitStats } from '../../game/pp';
 import { GameSession } from '../../game/session';
 import { createStage } from '../../render/stage';
 import type { RenderView } from '../../render/types';
@@ -13,6 +14,19 @@ import type { HitEvent } from '../../game/session';
 import { useAppState } from '../appState';
 
 export type PlayPhase = 'countdown' | 'playing' | 'paused' | 'done';
+
+function toHitStats(
+  counts: { 300: number; 100: number; 50: number; 0: number },
+  maxCombo: number,
+): HitStats {
+  return {
+    count300: counts[300],
+    count100: counts[100],
+    count50: counts[50],
+    countMiss: counts[0],
+    maxCombo,
+  };
+}
 
 export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
   const { map, settings, calibration, setScreen, setLastResult } = useAppState();
@@ -25,6 +39,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
   const sessionRef = useRef<GameSession | null>(null);
   const cursorRef = useRef<Vec2 | null>(null);
   const skinRef = useRef<Skin | null>(null);
+  const ppRef = useRef<PpCounter | null>(null);
 
   const finish = useCallback(() => {
     const session = sessionRef.current;
@@ -34,6 +49,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         score: s.score,
         maxCombo: s.maxCombo,
         accuracy: s.accuracy,
+        pp: ppRef.current?.final(toHitStats(s.counts, s.maxCombo)) ?? 0,
         counts: s.counts,
       });
     }
@@ -90,7 +106,14 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
       skinRef.current = skin;
       stageDestroy = () => stage.destroy();
 
+      try {
+        ppRef.current = new PpCounter(map.rawOsu);
+      } catch {
+        ppRef.current = null; // pp is cosmetic — never block play on it
+      }
+
       let prevCombo = 0;
+      let livePp = 0;
       const playHitSounds = (events: HitEvent[], comboBefore: number) => {
         if (!skin) return;
         if (events.some((e) => e.judgment > 0) && skin.sounds.hitnormal)
@@ -112,6 +135,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
             score: 0,
             combo: 0,
             accuracy: 1,
+            pp: 0,
             preemptMs: preempt,
             cs: map.meta.cs,
             recentHits: [],
@@ -125,6 +149,9 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         playHitSounds(events, prevCombo);
         const state = session.state;
         prevCombo = state.score.combo;
+        if (events.length && ppRef.current) {
+          livePp = ppRef.current.currentAt(t, toHitStats(state.score.counts, state.score.maxCombo));
+        }
         const view: RenderView = {
           timeMs: t,
           objects: state.activeObjects.map((i) => ({
@@ -136,6 +163,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
           score: state.score.score,
           combo: state.score.combo,
           accuracy: state.score.accuracy,
+          pp: livePp,
           preemptMs: preempt,
           cs: map.meta.cs,
           recentHits: events,
