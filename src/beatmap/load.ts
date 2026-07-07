@@ -56,7 +56,7 @@ export function loadFromOsz(oszBytes: Uint8Array, difficultyName: string): Loade
     if (bgBytes) background = new Blob([bgBytes.slice().buffer as ArrayBuffer]);
   }
 
-  return toInternal(decoded, toArrayBuffer(audioBytes), background);
+  return toInternal(decoded, entry.osuText, toArrayBuffer(audioBytes), background);
 }
 
 export interface MapsetPreview {
@@ -90,5 +90,5 @@ export function previewOsz(oszBytes: Uint8Array): MapsetPreview {
 export function loadFromOsu(osuText: string, audio: ArrayBuffer): LoadedBeatmap {
   const decoder = new BeatmapDecoder();
   const decoded = decoder.decodeFromString(osuText, { parseStoryboard: false });
-  return toInternal(decoded, audio);
+  return toInternal(decoded, osuText, audio);
 }
