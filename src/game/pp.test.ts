@@ -8,6 +8,9 @@ const osz = new Uint8Array(
 );
 const diffs = listDifficulties(osz);
 
+const quaverOsz = new Uint8Array(readFileSync('game-assets/maps/873811 dj TAKA - quaver.osz'));
+const quaverDiffs = listDifficulties(quaverOsz);
+
 /** rough SS stats: every object a 300, combo = object count */
 function ssStats(osuText: string): HitStats {
   const objectCount = osuText
@@ -45,6 +48,20 @@ describe('PpCounter', () => {
     const easyPp = new PpCounter(easy.osuText).final(ssStats(easy.osuText));
     const insanePp = new PpCounter(insane.osuText).final(ssStats(insane.osuText));
     expect(insanePp).toBeGreaterThan(easyPp);
+  });
+
+  it('rewards a decent hand-tracked play on a low-star map with visible pp', () => {
+    // real session: quaver [Akitoshi's Beginner] 1.23★, 84.48% acc, 19x combo —
+    // raw lazer pp is 0.18 which rounds to a demoralizing 0
+    const beginner = quaverDiffs.find((d) => d.difficultyName.includes('Beginner'));
+    if (!beginner) throw new Error('fixture difficulties changed');
+    const counter = new PpCounter(beginner.osuText);
+    const play = counter.final({ count300: 47, count100: 6, count50: 0, countMiss: 5, maxCombo: 19 });
+    const ss = counter.final(ssStats(beginner.osuText));
+    expect(play).toBeGreaterThan(5);
+    expect(play).toBeLessThan(ss);
+    expect(ss).toBeGreaterThan(20);
+    expect(ss).toBeLessThan(60);
   });
 
   it('treats a full per-object combo as a true full combo (no tick penalty)', () => {

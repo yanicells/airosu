@@ -14,8 +14,17 @@ const ruleset = new StandardRuleset();
 const decoder = new BeatmapDecoder();
 
 /**
- * Performance-point calculator for one difficulty, backed by the same
- * osu-standard-stable code that produces the song-select star ratings.
+ * Performance-point calculator for one difficulty.
+ *
+ * The map's worth is real osu!lazer pp (osu-standard-stable, the same code
+ * that produces the song-select star ratings): the pp an SS full combo would
+ * earn. The player's share of it uses an airosu quality curve instead of
+ * lazer's — hand tracking can't hit lazer-grade accuracy or combos, so
+ * lazer's multiplicative penalties crush every realistic play toward 0.
+ *
+ * A hand-tracking multiplier that decays with star rating scales the total:
+ * with a webcam, low-star maps are far harder relative to a mouse than
+ * high-star maps are, so they get the bigger boost.
  *
  * pp is always computed nomod: relax input mode and the forgiveness
  * multiplier have no pp equivalent, so values are approximate by design.
@@ -51,21 +60,29 @@ export class PpCounter {
   }
 
   private pp(attributes: StandardDifficultyAttributes, stats: HitStats): number {
-    // game combo counts hit objects; the calculator's maxCombo also counts
-    // slider ticks, so map the player's per-object combo ratio onto it —
-    // otherwise even a genuine FC gets a heavy combo penalty
     const judged = stats.count300 + stats.count100 + stats.count50 + stats.countMiss;
-    const comboRatio = judged > 0 ? Math.min(1, stats.maxCombo / judged) : 0;
-    const score = new ScoreInfo();
-    score.ruleset = ruleset;
-    score.maxCombo = Math.round(attributes.maxCombo * comboRatio);
-    score.count300 = stats.count300;
-    score.count100 = stats.count100;
-    score.count50 = stats.count50;
-    score.countMiss = stats.countMiss;
-    const result = ruleset
-      .createPerformanceCalculator(attributes, score)
+    if (judged === 0) return 0;
+
+    // map worth: lazer pp of an SS full combo over the judged objects
+    const perfect = new ScoreInfo();
+    perfect.ruleset = ruleset;
+    perfect.maxCombo = attributes.maxCombo;
+    perfect.count300 = judged;
+    const ssPp = ruleset
+      .createPerformanceCalculator(attributes, perfect)
       .calculateAttributes().totalPerformance;
-    return Number.isFinite(result) ? result : 0;
+    if (!Number.isFinite(ssPp)) return 0;
+
+    // player's share: gentler than lazer's curve — misses already cost
+    // accuracy and break combo, so no separate miss penalty on top
+    const accuracy =
+      (stats.count300 * 300 + stats.count100 * 100 + stats.count50 * 50) / (300 * judged);
+    const comboRatio = Math.min(1, stats.maxCombo / judged);
+    const quality = Math.pow(accuracy, 2.5) * (0.35 + 0.65 * Math.pow(comboRatio, 0.6));
+
+    // hand-tracking handicap: ~×10 at 1★ easing to ~×2 past 5★
+    const handicap = 2 + 30 * Math.exp(-attributes.starRating);
+
+    return ssPp * quality * handicap;
   }
 }
