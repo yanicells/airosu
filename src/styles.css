@@ -172,12 +172,12 @@ h3 {
   box-shadow:
     0 0 28px rgba(255, 45, 135, 0.45),
     0 6px 18px rgba(0, 0, 0, 0.35);
-  transform: translateX(14px) scale(1.05);
+  transform: translateX(-26px) scale(1.09);
   z-index: 1;
 }
 
 .song-row--active .song-row__title {
-  font-size: 19px;
+  font-size: 21px;
   color: #fff;
 }
 
