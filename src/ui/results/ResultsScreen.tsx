@@ -1,88 +1,90 @@
 import { useAppState } from '../appState';
+import { useObjectUrl } from '../useObjectUrl';
+import { AccuracyRing } from './AccuracyRing';
+import { JudgmentGrid } from './JudgmentGrid';
 import { grade } from './grade';
+import { useCountUp } from './useCountUp';
 
 export function ResultsScreen() {
-  const { map, lastResult, setScreen, setMap } = useAppState();
+  const { map, mapset, lastResult, setScreen, setMap } = useAppState();
+
+  // created in an effect so StrictMode's unmount/remount recreates a valid URL
+  const bgUrl = useObjectUrl(map?.background);
+
+  const shownScore = useCountUp(lastResult?.score ?? 0);
+  const shownPp = useCountUp(Math.round(lastResult?.pp ?? 0), 1400);
 
   if (!lastResult || !map) {
     return (
-      <div style={{ padding: 32 }}>
-        No results. <button onClick={() => setScreen('home')}>Home</button>
+      <div className="screen-center">
+        <p>No results yet — play a map first.</p>
+        <button className="btn" onClick={() => setScreen('home')}>
+          Back to song select
+        </button>
       </div>
     );
   }
 
   const g = grade(lastResult.accuracy);
+  const stars = mapset?.preview.difficulties.find((d) => d.name === map.meta.version)?.stars;
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-        height: '100%',
-        padding: 32,
-      }}
-    >
-      <p style={{ margin: 0, opacity: 0.7 }}>
-        {map.meta.artist} — {map.meta.title}{' '}
-        <span style={{ color: 'var(--pink)', fontWeight: 700 }}>[{map.meta.version}]</span>
-      </p>
-      <div
-        className="fade-up"
-        style={{
-          fontSize: 130,
-          fontWeight: 800,
-          fontStyle: 'italic',
-          lineHeight: 1,
-          color: gradeColor(g),
-          textShadow: `0 0 48px ${gradeColor(g)}55`,
-        }}
-      >
-        {g}
-      </div>
-      <div style={{ fontSize: 40, fontWeight: 'bold' }}>{lastResult.score.toLocaleString()}</div>
-      <div style={{ fontSize: 20 }}>
-        {(lastResult.accuracy * 100).toFixed(2)}% · {lastResult.maxCombo}x max combo
-      </div>
-      <div style={{ display: 'flex', gap: 20, opacity: 0.85, fontSize: 18 }}>
-        <span style={{ color: '#66ccff' }}>300 × {lastResult.counts[300]}</span>
-        <span style={{ color: '#88ee88' }}>100 × {lastResult.counts[100]}</span>
-        <span style={{ color: '#ffcc66' }}>50 × {lastResult.counts[50]}</span>
-        <span style={{ color: '#ff5555' }}>miss × {lastResult.counts[0]}</span>
-      </div>
-      <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-        <button className="btn btn--primary" style={{ fontSize: 16 }} onClick={() => setScreen('play')}>
-          Retry
-        </button>
-        <button
-          className="btn"
-          onClick={() => {
-            setMap(undefined);
-            setScreen('home');
-          }}
-        >
-          Change map
-        </button>
+    <div className="screen-center">
+      {bgUrl && <div className="bg-blur" style={{ backgroundImage: `url(${bgUrl})` }} />}
+      <div className="results-panel panel fade-up">
+        <header className="results-header">
+          <div className="results-title">{map.meta.title}</div>
+          <div className="results-sub">{map.meta.artist}</div>
+          <div className="results-diff">
+            <span className="results-diff__pill">
+              {stars !== undefined && <>★ {stars.toFixed(2)} · </>}
+              {map.meta.version}
+            </span>
+            <span className="results-sub"> mapped by {map.meta.creator}</span>
+          </div>
+        </header>
+
+        <AccuracyRing counts={lastResult.counts} grade={g} />
+
+        <div className="results-score">{shownScore.toLocaleString()}</div>
+
+        <div className="results-stats">
+          <Stat label="Accuracy" value={`${(lastResult.accuracy * 100).toFixed(2)}%`} />
+          <Stat label="Max combo" value={`${lastResult.maxCombo}x`} />
+          <Stat label="pp" value={String(shownPp)} accent />
+        </div>
+
+        <JudgmentGrid counts={lastResult.counts} />
+
+        <div className="results-actions">
+          <button className="btn btn--primary" onClick={() => setScreen('play')}>
+            Retry
+          </button>
+          <button
+            className="btn"
+            onClick={() => {
+              setMap(undefined);
+              setScreen('home');
+            }}
+          >
+            Change map
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function gradeColor(g: string): string {
-  switch (g) {
-    case 'SS':
-    case 'S':
-      return '#ffd700';
-    case 'A':
-      return '#88ee88';
-    case 'B':
-      return '#66aaff';
-    case 'C':
-      return '#cc88ff';
-    default:
-      return '#ff5555';
-  }
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="results-stat">
+      <span className="eyebrow">{label}</span>
+      <span
+        className="results-stat__value"
+        style={accent ? { color: 'var(--pink)' } : undefined}
+      >
+        {value}
+      </span>
+    </div>
+  );
 }
