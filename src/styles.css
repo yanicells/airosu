@@ -165,12 +165,24 @@ h3 {
   background: rgba(60, 45, 80, 0.9);
 }
 
-/* keyboard-selected row: pink like the difficulty picker's active pill */
+/* keyboard-selected row: grows and slides out of the column, osu! style */
 .song-row--active {
-  background: rgba(60, 45, 80, 0.9);
-  border-left-color: var(--pink-hot);
-  box-shadow: 0 0 20px rgba(255, 45, 135, 0.35);
-  transform: translateX(4px);
+  background: linear-gradient(90deg, rgba(255, 45, 135, 0.22), rgba(60, 45, 80, 0.92) 55%);
+  border-left: 6px solid var(--pink-hot);
+  box-shadow:
+    0 0 28px rgba(255, 45, 135, 0.45),
+    0 6px 18px rgba(0, 0, 0, 0.35);
+  transform: translateX(14px) scale(1.05);
+  z-index: 1;
+}
+
+.song-row--active .song-row__title {
+  font-size: 19px;
+  color: #fff;
+}
+
+.song-row--active .song-row__artist {
+  color: var(--pink);
 }
 
 .song-row:disabled {
