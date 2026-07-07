@@ -47,6 +47,15 @@ describe('PpCounter', () => {
     expect(insanePp).toBeGreaterThan(easyPp);
   });
 
+  it('treats a full per-object combo as a true full combo (no tick penalty)', () => {
+    // game combo counts objects; the calculator's max combo counts slider
+    // ticks too — a genuine FC must not be punished for the difference
+    const counter = new PpCounter(insane.osuText);
+    const ss = ssStats(insane.osuText);
+    const inflated = { ...ss, maxCombo: ss.maxCombo * 10 };
+    expect(counter.final(ss)).toBeCloseTo(counter.final(inflated), 6);
+  });
+
   it('live pp is 0 before any object and grows toward final', () => {
     const counter = new PpCounter(insane.osuText);
     const ss = ssStats(insane.osuText);

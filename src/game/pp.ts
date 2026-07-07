@@ -51,9 +51,14 @@ export class PpCounter {
   }
 
   private pp(attributes: StandardDifficultyAttributes, stats: HitStats): number {
+    // game combo counts hit objects; the calculator's maxCombo also counts
+    // slider ticks, so map the player's per-object combo ratio onto it —
+    // otherwise even a genuine FC gets a heavy combo penalty
+    const judged = stats.count300 + stats.count100 + stats.count50 + stats.countMiss;
+    const comboRatio = judged > 0 ? Math.min(1, stats.maxCombo / judged) : 0;
     const score = new ScoreInfo();
     score.ruleset = ruleset;
-    score.maxCombo = stats.maxCombo;
+    score.maxCombo = Math.round(attributes.maxCombo * comboRatio);
     score.count300 = stats.count300;
     score.count100 = stats.count100;
     score.count50 = stats.count50;

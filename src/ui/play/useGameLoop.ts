@@ -108,8 +108,9 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
 
       try {
         ppRef.current = new PpCounter(map.rawOsu);
-      } catch {
+      } catch (e) {
         ppRef.current = null; // pp is cosmetic — never block play on it
+        console.warn('pp calculator unavailable for this map:', e);
       }
 
       let prevCombo = 0;
