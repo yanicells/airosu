@@ -151,9 +151,9 @@ partially-run migration is resumable and auditable.
 - `PpCounter` keeps osu-standard-stable timed attributes for live pp, but
   delegates the final math to `ppFormula`.
 
-`LoadedBeatmap.meta` gains `md5`, `beatmapId?`, `beatmapSetId?`,
-`objectCount` (computed in the adapter; osu-parsers exposes
-`metadata.beatmapId/beatmapsetId`).
+The client model needs no new fields: `registerMap` receives the raw `.osu`
+text and the server derives md5, beatmap ids, object count and attributes
+itself (`src/beatmap/attributes.ts`, shared with tests).
 
 ## Error handling
 
