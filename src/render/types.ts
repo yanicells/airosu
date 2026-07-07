@@ -8,6 +8,8 @@ export interface RenderView {
   score: number;
   combo: number;
   accuracy: number;
+  /** live performance points so far */
+  pp: number;
   preemptMs: number;
   cs: number;
   recentHits: HitEvent[];

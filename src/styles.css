@@ -93,6 +93,23 @@ h3 {
   box-shadow: 0 6px 32px rgba(255, 45, 135, 0.6);
 }
 
+/* back-navigation pill, osu! lazer's pink back corner */
+.btn--back {
+  border: 1px solid rgba(255, 102, 170, 0.55);
+  background: rgba(255, 102, 170, 0.16);
+  color: var(--pink);
+  font-weight: 800;
+  font-style: italic;
+  box-shadow: 0 0 18px rgba(255, 45, 135, 0.25);
+}
+
+.btn--back:hover {
+  background: linear-gradient(135deg, var(--pink), var(--pink-hot));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 24px rgba(255, 45, 135, 0.5);
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -103,6 +120,9 @@ h3 {
 /* full-screen centered column, used by menu screens */
 .screen-center {
   position: relative;
+  /* own stacking context so the z-index:-1 .bg-blur paints above the
+     opaque #root background instead of being buried under it */
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -239,6 +259,124 @@ h3 {
     transform: scale(1.9);
     opacity: 0;
   }
+}
+
+/* results screen */
+.results-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 28px 48px 32px;
+  width: min(560px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.results-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.results-title {
+  font-size: 24px;
+  font-weight: 800;
+  font-style: italic;
+}
+
+.results-sub {
+  font-size: 14px;
+  color: var(--ink-dim);
+}
+
+.results-diff {
+  margin-top: 6px;
+}
+
+.results-diff__pill {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.results-ring {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.results-ring svg {
+  position: absolute;
+  inset: 0;
+}
+
+.results-grade {
+  font-size: 96px;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1;
+}
+
+.results-score {
+  font-size: 52px;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.results-stats {
+  display: flex;
+  gap: 44px;
+}
+
+.results-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.results-stat__value {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.results-judgments {
+  display: flex;
+  gap: 32px;
+  padding: 12px 28px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.results-judgment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.results-judgment__count {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.results-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
 }
 
 .count-pop {

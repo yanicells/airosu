@@ -17,7 +17,12 @@ function sliderPath(slider: SlidableObject): Vec2[] {
   return points;
 }
 
-export function toInternal(decoded: Beatmap, audio: ArrayBuffer, background?: Blob): LoadedBeatmap {
+export function toInternal(
+  decoded: Beatmap,
+  rawOsu: string,
+  audio: ArrayBuffer,
+  background?: Blob,
+): LoadedBeatmap {
   const objects: HitObject[] = [];
 
   let comboIndex = -1;
@@ -77,6 +82,7 @@ export function toInternal(decoded: Beatmap, audio: ArrayBuffer, background?: Bl
       bpm: decoded.bpm,
       lengthMs: decoded.length,
     },
+    rawOsu,
     objects,
     audio,
     background,

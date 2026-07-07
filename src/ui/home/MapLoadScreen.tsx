@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { DragEvent, ChangeEvent } from 'react';
 import { listDifficulties, loadFromOsz, loadFromOsu, previewOsz } from '../../beatmap/load';
 import type { BundledMap } from '../../beatmap/bundled';
 import { useAppState } from '../appState';
+import { useObjectUrl } from '../useObjectUrl';
 import { DifficultyPicker } from './DifficultyPicker';
 import { MapCard } from './MapCard';
 import { SongList } from './SongList';
@@ -12,17 +13,7 @@ export function MapLoadScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busyUrl, setBusyUrl] = useState<string | null>(null);
 
-  const bgUrl = useMemo(
-    () =>
-      mapset?.preview.background ? URL.createObjectURL(mapset.preview.background) : undefined,
-    [mapset?.preview.background],
-  );
-  useEffect(
-    () => () => {
-      if (bgUrl) URL.revokeObjectURL(bgUrl);
-    },
-    [bgUrl],
-  );
+  const bgUrl = useObjectUrl(mapset?.preview.background);
 
   const openMapset = useCallback(
     (bytes: Uint8Array, label: string) => {
@@ -131,7 +122,11 @@ export function MapLoadScreen() {
 
       {mapset && (
         <>
-          <button className="btn" style={{ position: 'absolute', top: 16, left: 16 }} onClick={backToList}>
+          <button
+            className="btn btn--back"
+            style={{ position: 'absolute', top: 16, left: 16 }}
+            onClick={backToList}
+          >
             ‹ Songs
           </button>
           <h2 style={{ margin: 0, fontSize: 30, textAlign: 'center' }}>{mapset.label}</h2>

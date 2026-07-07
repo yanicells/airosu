@@ -68,7 +68,7 @@ export async function createStage(
       playfield.render(view);
       cursorLost = view.cursor === null;
       cursor.render(view.cursor);
-      hud.render(view.score, view.combo, view.accuracy, cursorLost, view.timeMs);
+      hud.render(view.score, view.combo, view.accuracy, view.pp, cursorLost, view.timeMs);
     },
     resize: layout,
     destroy() {

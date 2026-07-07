@@ -54,6 +54,8 @@ export type HitObject = CircleObj | SliderObj | SpinnerObj;
 
 export interface LoadedBeatmap {
   meta: BeatmapMeta;
+  /** raw .osu file contents, kept for pp/difficulty recalculation */
+  rawOsu: string;
   /** sorted by time ascending */
   objects: HitObject[];
   /** encoded audio file bytes */

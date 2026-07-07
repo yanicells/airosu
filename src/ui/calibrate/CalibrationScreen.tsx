@@ -48,7 +48,7 @@ export function CalibrationScreen() {
   return (
     <div style={panel}>
       <button
-        className="btn"
+        className="btn btn--back"
         style={{ position: 'absolute', top: 16, left: 16 }}
         onClick={() => setScreen('home')}
       >
