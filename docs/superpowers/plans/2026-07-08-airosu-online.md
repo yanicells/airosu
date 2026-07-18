@@ -4,9 +4,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** licensed starter maps, palm/index-finger aiming, osu! URL-assisted import, osu! sign-in, server-validated scores with authoritative airosu-scaled pp, global/country leaderboards, profiles, and a persistent local map library.
+**Goal:** licensed starter maps, palm/index-finger aiming, osu! sign-in, server-validated scores with authoritative airosu-scaled pp, global/country leaderboards, profiles, and a persistent local map library.
 
-**Architecture:** A manifest-approved starter pack is bundled client-side; other `.osz` files are local uploads cached in IndexedDB. Palm/index selection feeds the existing calibration and One Euro filter pipeline. Convex provides osu!-only auth, URL metadata resolution, map registration, score submission, profiles, and aggregate leaderboards; it never stores audio or `.osz`. PP keeps the existing osu!lazer map-worth calculation plus airosu's computer-vision quality/handicap scaling, shared by client and server and protected by `PP_VERSION`/`ATTRIBUTES_VERSION` migrations.
+**Architecture:** A manifest-approved starter pack is bundled client-side; other `.osz` files are local uploads cached in IndexedDB. Palm/index selection feeds the existing calibration and One Euro filter pipeline. Convex provides osu!-only auth, map registration, score submission, profiles, and aggregate leaderboards; it never stores audio or `.osz`. PP keeps the existing osu!lazer map-worth calculation plus airosu's computer-vision quality/handicap scaling, shared by client and server and protected by `PP_VERSION`/`ATTRIBUTES_VERSION` migrations.
 
 **Tech Stack:** Vite + React 19 + TypeScript, MediaPipe HandLandmarker, Convex, `@convex-dev/auth` + `@auth/core` (osu! provider), `@convex-dev/aggregate`, `@convex-dev/migrations`, `react-router` (library mode), `idb`, `fflate`, osu-parsers/osu-standard-stable, Vitest.
 
@@ -28,12 +28,11 @@
 - Production `.osz` files may come only from `game-assets/starter-maps/manifest.json`, must match its SHA-256 and size, contain no video, and total at most 15 MB. Files under `game-assets/test-maps/` are test-only.
 - Relax/manual, palm/index, and forgiveness values 1.0–2.5 share one leaderboard in v2; non-default settings are visible on play rows. Separate competitive rulesets are out of scope.
 - Preserve PP v1 exactly: official osu!lazer-derived map worth, airosu accuracy/combo quality, and the existing low-star computer-vision handicap. Cursor anchor does not change PP in v2.
-- osu! URL import uses documented API v2 metadata only. Do not use mirrors, scrape website HTML, forward browser cookies, retain osu! user tokens, or claim automatic download support.
+- Automatic map download from osu! or unofficial mirrors is out of scope unless osu! exposes a supported third-party download API.
 
 ## Official references
 
-- osu! OAuth grants/scopes and the statement that `lazer` routes are unavailable to third-party authorization-code/client-credentials apps: <https://osu.ppy.sh/docs/#authentication>
-- Beatmapset download endpoint (`lazer`, therefore not usable here): <https://osu.ppy.sh/docs/#beatmapsetsbeatmapsetdownload>
+- osu! OAuth grants and scopes: <https://osu.ppy.sh/docs/#authentication>
 - Content permission guidance: <https://osu.ppy.sh/wiki/en/Rules/Content_usage_permissions>
 - Featured Artist licensing scope and contact: <https://osu.ppy.sh/legal/en/Music_licensing>
 - MediaPipe landmark 8 is the index fingertip: <https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker>
@@ -1901,7 +1900,7 @@ export const patchOsuStats = internalMutation({
 
 ---
 
-# Milestone 5 — Local map library + osu! URL assistance (branch `v2.4-map-library`, from `v2.3-profile`)
+# Milestone 5 — Local map library (branch `v2.4-map-library`, from `v2.3-profile`)
 
 ### Task 14: IndexedDB library module — TDD
 
@@ -2060,165 +2059,15 @@ export async function deleteMapset(id: string): Promise<void> {
 
 - [ ] **Step 4: Manual verification** — upload an `.osz`, reload the page → it's under "your maps"; click → difficulty picker opens; delete removes it after reload too; private-browsing (or DevTools → Application → block storage) still lets you upload and play. `pnpm test && pnpm lint && pnpm build`.
 
-- [ ] **Step 5: Commit** — `feat: persistent local map library`.
-
-### Task 16: Official osu! URL-assisted import
-
-Automatic download is deliberately excluded: the official beatmapset download
-API is a `lazer` route, and osu! documents that `lazer` routes are unavailable
-to third-party authorization-code/client-credentials apps. This task resolves
-the URL and exact difficulty, sends the user to the official page to download,
-then resumes through the normal local `.osz` picker. No mirror or scraping.
-
-**Files:**
-- Create: `src/beatmap/acquisition/osuUrl.ts`, `src/beatmap/acquisition/osuUrl.test.ts`, `src/beatmap/acquisition/index.ts`, `src/ui/home/OsuUrlImport.tsx`
-- Modify: `convex/osuApi.ts`, `src/beatmap/load.ts`, `src/beatmap/load.test.ts`, `src/ui/home/MapLoadScreen.tsx`, `src/ui/home/index.ts`, `README.md`
-
-**Interfaces:**
-
-```ts
-export type OsuUrlTarget =
-  | { kind: 'beatmapset'; id: number }
-  | { kind: 'beatmap'; id: number };
-
-export function parseOsuUrl(input: string): OsuUrlTarget | null;
-export function beatmapIdFromOsuText(osuText: string): number | null;
-export function findDifficultyByBeatmapId(
-  entries: { difficultyName: string; osuText: string }[],
-  beatmapId: number,
-): string | null;
-```
-
-`api.osuApi.resolveBeatmapSource` accepts `OsuUrlTarget` and returns:
-
-```ts
-{
-  beatmapsetId: number;
-  beatmapId?: number;
-  artist: string;
-  title: string;
-  creator: string;
-  coverUrl?: string;
-  status: string;
-  pageUrl: string;
-}
-```
-
-- [ ] **Step 1: Write URL parser tests**:
-
-```ts
-import { describe, expect, it } from 'vitest';
-import { parseOsuUrl } from './osuUrl';
-
-describe('parseOsuUrl', () => {
-  it('accepts canonical beatmapset and beatmap URLs', () => {
-    expect(parseOsuUrl('https://osu.ppy.sh/beatmapsets/123#osu/456'))
-      .toEqual({ kind: 'beatmap', id: 456 });
-    expect(parseOsuUrl('https://osu.ppy.sh/beatmapsets/123'))
-      .toEqual({ kind: 'beatmapset', id: 123 });
-    expect(parseOsuUrl('https://osu.ppy.sh/beatmaps/456'))
-      .toEqual({ kind: 'beatmap', id: 456 });
-  });
-  it('rejects non-osu hosts, non-https URLs and unrelated paths', () => {
-    expect(parseOsuUrl('https://mirror.example/beatmapsets/123')).toBeNull();
-    expect(parseOsuUrl('http://osu.ppy.sh/beatmapsets/123')).toBeNull();
-    expect(parseOsuUrl('https://osu.ppy.sh/users/123')).toBeNull();
-  });
-});
-```
-
-Run → FAIL, then implement with `new URL(input.trim())`, exact host
-`osu.ppy.sh`, protocol `https:`, positive safe-integer IDs, canonical
-`/beatmapsets/:id` and `/beatmaps/:id` paths, and optional `#osu/:beatmapId`.
-Do not accept or rewrite mirror URLs.
-
-- [ ] **Step 2: Add exact-difficulty matching tests** — in `load.test.ts`, use two synthetic `.osu` texts containing `BeatmapID:111` / `BeatmapID:222`; assert `beatmapIdFromOsuText` returns the ID and `findDifficultyByBeatmapId(entries, 222)` returns the second difficulty. Implement by matching the metadata line `/^BeatmapID\s*:\s*(\d+)\s*$/m`; return `null` for missing/invalid IDs.
-
-- [ ] **Step 3: Add the Convex resolver** — in `convex/osuApi.ts`, add an authenticated public action:
-
-```ts
-async function osuJson(url: string, token: string): Promise<Record<string, any>> {
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-  });
-  if (response.status === 404) throw new ConvexError('osu! map not found');
-  if (!response.ok) throw new ConvexError('osu! lookup is temporarily unavailable');
-  return await response.json() as Record<string, any>;
-}
-
-export const resolveBeatmapSource = action({
-  args: {
-    kind: v.union(v.literal('beatmapset'), v.literal('beatmap')),
-    id: v.number(),
-  },
-  handler: async (ctx, { kind, id }) => {
-    if (!(await getAuthUserId(ctx))) throw new ConvexError('sign in to resolve osu! URLs');
-    if (!Number.isSafeInteger(id) || id <= 0) throw new ConvexError('invalid osu! id');
-    const token = await osuToken();
-    let beatmapId: number | undefined;
-    let beatmapsetId = id;
-    if (kind === 'beatmap') {
-      const beatmap = await osuJson(`https://osu.ppy.sh/api/v2/beatmaps/${id}`, token);
-      beatmapId = beatmap.id;
-      beatmapsetId = beatmap.beatmapset_id;
-    }
-    const set = await osuJson(
-      `https://osu.ppy.sh/api/v2/beatmapsets/${beatmapsetId}`,
-      token,
-    );
-    return {
-      beatmapsetId, beatmapId,
-      artist: set.artist, title: set.title, creator: set.creator,
-      coverUrl: set.covers?.['cover@2x'] ?? set.covers?.cover,
-      status: set.status ?? 'unknown',
-      pageUrl: beatmapId
-        ? `https://osu.ppy.sh/beatmapsets/${beatmapsetId}#osu/${beatmapId}`
-        : `https://osu.ppy.sh/beatmapsets/${beatmapsetId}`,
-    };
-  },
-});
-```
-
-Import `action`, `getAuthUserId`, and `ConvexError`. Verify the response field
-names against the installed/current official API response before committing.
-Do not add a download request or token field to the return value.
-
-- [ ] **Step 4: Build `OsuUrlImport.tsx`** — signed-out state explains that osu!
-sign-in is needed for lookup but leaves upload/starter maps usable. Signed-in
-state has a URL input and Resolve button. On success show cover, artist/title,
-mapper/status, then an external `<a target="_blank" rel="noreferrer">Open on
-osu! to download</a>` pointing only to returned `pageUrl`, plus a file input
-labelled “Choose the downloaded .osz”. Display this honest note: “osu! does not
-offer third-party apps an automatic beatmap download API, so your browser must
-download the file from osu! first.”
-
-- [ ] **Step 5: Resume the existing loader** — mount the component beside the
-drop zone. Refactor `handleFile(file, preferredBeatmapId?)`; URL-assisted file
-selection passes the resolved `beatmapId`. After `listDifficulties`, call
-`findDifficultyByBeatmapId`; if found, set `pickedName` and load it immediately;
-otherwise show the normal difficulty picker. The successful `.osz` still saves
-to IndexedDB through Task 15.
-
-- [ ] **Step 6: Verify supported and unsupported paths** — manually test a
-beatmapset URL and a difficulty URL while signed in, confirm metadata is exact,
-the official page opens, selecting the downloaded file imports it, and a
-difficulty URL preselects its difficulty. Test signed-out, invalid URL, 404,
-offline Convex, and wrong `.osz`; local upload/starter play must remain usable.
-Run `pnpm test && pnpm lint && pnpm build`.
-
-- [ ] **Step 7: Document and commit** — README says URL import is assisted, not
-automatic, links the official API limitation, and promises no mirrors/scraping.
-Commit `feat: add official osu url-assisted import`; push and open PR “airosu
-online M5: local and osu! URL map library” based on `v2.3-profile`.
+- [ ] **Step 5: Commit + PR** — commit `feat: persistent local map library`; push and open PR "airosu online M5: your maps library" based on `v2.3-profile`.
 
 ---
 
 ## Final integration checklist (after M5 merges)
 
-- [ ] Full manual pass on dev: play a licensed starter map without importing → play once with palm and once with index → sign in → submit → leaderboard rank → profile top plays → paste an osu! URL → open the official page → choose the downloaded `.osz` → play + submit → reload, library persists.
+- [ ] Full manual pass on dev: play a licensed starter map without importing → play once with palm and once with index → sign in → submit → leaderboard rank → profile top plays → upload a custom `.osz` → play + submit → reload, library persists.
 - [ ] Repeat one submit with the same `playId` and confirm one score/play-count increment; complete a slider map and confirm its score passes `judgmentCount` validation.
 - [ ] `pnpm run verify:starter-maps && pnpm build`; confirm every production `.osz` matches the approved manifest and no `game-assets/test-maps` fixture appears in `dist`.
-- [ ] Confirm URL import never calls a mirror or download API, never returns a token, and clearly requires the user to download/select the file from osu!.
 - [ ] Production bring-up (repo owner, Human prerequisite 4): prod deployment, production-only osu! OAuth client/env vars, Vercel `VITE_CONVEX_URL`; verify sign-in on airosu.ycells.com.
 - [ ] Update the README's setup, architecture, privacy/data-storage summary, and relevant design/plan links.
 
@@ -2230,5 +2079,4 @@ online M5: local and osu! URL map library” based on `v2.3-profile`.
 - `judgmentCount` is stored separately from osu! `objectCount` because the existing airosu engine emits two score judgments for sliders.
 - `playId` is stored on scores so automatic submission and retries are idempotent.
 - Bundled maps remain for onboarding, but the broad fixture glob is replaced by a narrow manifest-approved starter-map glob; all other maps are test-only or local.
-- osu! URL import is guided rather than automatic because the official download route is unavailable to third-party OAuth applications.
 - Palm and index share PP v1; `cursorAnchor` is stored on scores so a future version can change this deliberately and recalculate.
