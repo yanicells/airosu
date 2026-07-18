@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint src",
+    "verify:starter-maps": "node scripts/verify-starter-maps.mjs",
     "test": "vitest run",
     "preview": "vite preview"
   },

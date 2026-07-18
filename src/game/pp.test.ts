@@ -4,11 +4,11 @@ import { listDifficulties } from '../beatmap/load';
 import { PpCounter, type HitStats } from './pp';
 
 const osz = new Uint8Array(
-  readFileSync('game-assets/maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
+  readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
 );
 const diffs = listDifficulties(osz);
 
-const quaverOsz = new Uint8Array(readFileSync('game-assets/maps/873811 dj TAKA - quaver.osz'));
+const quaverOsz = new Uint8Array(readFileSync('game-assets/test-maps/873811 dj TAKA - quaver.osz'));
 const quaverDiffs = listDifficulties(quaverOsz);
 
 /** rough SS stats: every object a 300, combo = object count */
