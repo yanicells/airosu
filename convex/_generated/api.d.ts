@@ -14,6 +14,7 @@ import type * as lib_scoring from "../lib/scoring.js";
 import type * as maps from "../maps.js";
 import type * as mapsNode from "../mapsNode.js";
 import type * as osuApi from "../osuApi.js";
+import type * as scores from "../scores.js";
 import type * as users from "../users.js";
 
 import type {
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   maps: typeof maps;
   mapsNode: typeof mapsNode;
   osuApi: typeof osuApi;
+  scores: typeof scores;
   users: typeof users;
 }>;
 
