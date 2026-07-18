@@ -1,10 +1,12 @@
 # airosu online (v2) Implementation Plan
 
+**Last reviewed:** 2026-07-19 — revised against the current repo, current package APIs, and the approved design.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** osu! sign-in, server-verified score submission with pp, global/country leaderboards, osu!-style profile pages, and a persistent local map library.
+**Goal:** osu! sign-in, server-validated score submission with authoritative pp, global/country leaderboards, osu!-style profile pages, and a persistent local map library.
 
-**Architecture:** Convex is the backend (database + auth + actions). Auth is Convex Auth with the built-in Auth.js osu! provider — osu! OAuth is the only sign-in. The client sends raw `.osu` text (map registration) and raw hit stats (score submission); the server recomputes difficulty attributes and pp itself using the same pure TypeScript formula module the client uses for live pp, versioned with `PP_VERSION` so formula changes can be replayed over stored stats with `@convex-dev/migrations`. Leaderboard ranks come from `@convex-dev/aggregate`. Uploaded `.osz` files persist in IndexedDB — no map audio ever leaves the browser.
+**Architecture:** Convex is the backend (database + auth + actions). Auth is Convex Auth with the built-in Auth.js osu! provider — osu! OAuth is the only sign-in. The client sends raw `.osu` text (map registration) and raw hit stats plus an idempotent `playId` (score submission); the server recomputes difficulty attributes and pp using the same pure TypeScript formula module as the client. `PP_VERSION` covers formula changes and `ATTRIBUTES_VERSION` covers parser/difficulty-calculator changes, so both kinds of rework can be replayed. Leaderboard ranks come from `@convex-dev/aggregate`. Uploaded `.osz` files persist in IndexedDB — no map audio ever leaves the browser.
 
 **Tech Stack:** Vite + React 19 + TypeScript, Convex, `@convex-dev/auth` + `@auth/core` (osu! provider), `@convex-dev/aggregate`, `@convex-dev/migrations`, `react-router` (library mode), `idb`, osu-parsers/osu-standard-stable (already installed), vitest.
 
@@ -20,24 +22,53 @@
 - Never ship copyrighted audio or `.osz` fixtures in the deployed bundle. Never upload audio or `.osz` bytes to Convex — only `.osu` **text**.
 - Never add Vercel deploy automation. Production deploy notes are documentation only.
 - Verify installed package APIs at install time; if reality differs from this plan (Convex Auth, aggregate, migrations APIs move), **trust the installed library**, adapt, and note the deviation in the PR description.
-- Use the `vercel-react-best-practices` skill when writing React/TSX; `frontend-design` for UI polish; `convex-migration-helper` skill when touching migrations; `convex-setup-auth` skill during Milestone 1.
+- Use the installed `vercel-react-best-practices` skill when writing React/TSX and `frontend-design` for UI polish. For Convex Auth, aggregate, and migrations, follow the installed package README/types and the official Convex docs; do not assume optional `convex-*` skills are installed.
 - The game must remain fully playable signed-out and offline. No online call may block the play loop.
+- Map registration requires a signed-in user, accepts at most 1 MB of UTF-8 `.osu` text, and must never upload audio or `.osz` bytes.
+- A production build must contain no `.osz`, `.mp3`, or `.ogg` fixture. Files under `game-assets/maps/` are test inputs only and must not be reachable from the Vite client import graph.
+- Relax/manual and forgiveness values 1.0–2.5 share one leaderboard in v2; non-default settings are visible on play rows. Separate competitive rulesets are out of scope.
 
 ## Human prerequisites (repo owner — do these before/during Milestone 1)
 
 1. **Convex project**: run `pnpm dlx convex dev` once and complete the interactive login/project creation. This writes `CONVEX_DEPLOYMENT` to `.env.local` and prints the deployment URL (`https://<name>.convex.cloud`) and site URL (`https://<name>.convex.site`).
-2. **osu! OAuth client**: at <https://osu.ppy.sh/home/account/edit#oauth> click "New OAuth Application". Name: `airosu`. Application Callback URL: `https://<name>.convex.site/api/auth/callback/osu` (the dev deployment's site URL; add the prod deployment's callback later — osu! allows editing). Save the Client ID and Client Secret.
+2. **Development osu! OAuth client**: at <https://osu.ppy.sh/home/account/edit#oauth> click "New OAuth Application". Name: `airosu dev`. Application Callback URL: `https://<dev-name>.convex.site/api/auth/callback/osu`. Save the Client ID and Client Secret. An osu! OAuth application has one callback URL, so do not reuse this client for production.
 3. **Convex env vars** (dev deployment): 
    ```bash
    pnpm dlx convex env set AUTH_OSU_ID <client id>
    pnpm dlx convex env set AUTH_OSU_SECRET <client secret>
    pnpm dlx convex env set SITE_URL http://localhost:5173
    ```
-4. **Production checklist** (later, manual, no automation): create a prod Convex deployment via `pnpm dlx convex deploy`, set the same three env vars on it (`SITE_URL=https://airosu.ycells.com`), add the prod callback URL to the osu! OAuth app, and set `VITE_CONVEX_URL` in Vercel project settings to the prod deployment URL.
+4. **Production checklist** (later, manual, no automation): create the production Convex deployment, create a second osu! OAuth application named `airosu` whose callback is `https://<prod-name>.convex.site/api/auth/callback/osu`, set that client's `AUTH_OSU_ID`/`AUTH_OSU_SECRET` plus `SITE_URL=https://airosu.ycells.com` on the production deployment, and set `VITE_CONVEX_URL` in Vercel project settings to the production deployment URL.
 
 ---
 
 # Milestone 1 — Convex, routing, osu! sign-in (branch `v2.0-online-auth`)
+
+### Task 0: Remove copyrighted beatmaps from the production import graph
+
+**Files:**
+- Modify: `src/ui/home/MapLoadScreen.tsx` (make upload/local-library entry the production home flow)
+- Delete: `src/beatmap/bundled.ts`, `src/beatmap/bundled.test.ts`, `src/ui/home/SongList.tsx`, `src/ui/home/useSongBackground.ts`
+- Keep test-only: `game-assets/maps/*.osz` (read only through `node:fs` in Vitest)
+
+**Interfaces:**
+- Produces: the current upload → difficulty picker → play flow, without any client import of `game-assets/maps/*.osz`.
+- Preserves: the fixture paths used by `src/beatmap/*.test.ts` and `src/game/pp.test.ts`.
+
+- [ ] **Step 1: Remove bundled-map imports and state** — in `MapLoadScreen.tsx`, remove `bundledMaps`, `BundledMap`, `SongList`, `useSongBackground`, `maps`, `selectedIdx`, `selected`, `busyUrl`, `pickBundled`, and the song-list keyboard effect. Rename `onSongList` to a plain `!mapset && !map` condition and keep the existing file input/drop handler as the home entry point. Do not move fixtures into `public/`.
+
+- [ ] **Step 2: Delete the now-unused client modules** listed above. Keep `.osz` fixture tests unchanged; Vite only ships files reachable from production imports.
+
+- [ ] **Step 3: Verify the boundary**:
+
+```bash
+pnpm test
+pnpm lint
+pnpm build
+test -z "$(find dist -type f \( -iname '*.osz' -o -iname '*.mp3' -o -iname '*.ogg' \) -print -quit)"
+```
+
+Expected: all commands pass and the final command prints nothing. Commit: `fix: keep copyrighted beatmaps out of production bundle`.
 
 ### Task 1: Install Convex + router, wire providers and routes
 
@@ -53,8 +84,14 @@
 
 ```bash
 git checkout -b v2.0-online-auth
-pnpm add convex react-router
+pnpm view convex version
+pnpm view react-router version
+pnpm view @convex-dev/auth version peerDependencies
+pnpm add convex react-router @convex-dev/auth
+pnpm add "@auth/core@$(pnpm view @convex-dev/auth peerDependencies.@auth/core)"
 ```
+
+Confirm `pnpm list @convex-dev/auth @auth/core` shows a peer-compatible pair. This explicit range matters because the npm `latest` tag for `@auth/core` can lag behind versions required by current Convex Auth; trust the installed Convex Auth peer requirement rather than the older version number from this plan's first draft.
 
 - [ ] **Step 2: Start Convex dev once** — `pnpm dlx convex dev --once`. If it asks for interactive login, STOP and ask the repo owner to complete Human prerequisite 1, then rerun. Confirm `convex/` dir and `.env.local` (with `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL`) exist. Confirm `.env.local` is gitignored; add it if not.
 
@@ -101,8 +138,6 @@ createRoot(document.getElementById('root')!).render(
 );
 ```
 
-(`@convex-dev/auth` is installed in Task 2 — finish Step 5/6 after Task 2 Step 1 if the import blocks the build; or install both packages now: `pnpm add @convex-dev/auth @auth/core@0.37.0`.)
-
 - [ ] **Step 5: Create `vercel.json`** (SPA fallback so `/u/123` deep links work; Vercel serves real files first, so assets are unaffected):
 
 ```json
@@ -123,10 +158,9 @@ createRoot(document.getElementById('root')!).render(
 - Produces: `api.users.me` query returning the users doc (or null); users table fields `osuId: number`, `name`, `image`, `countryCode`, `countryName`, `totalPp`, `playCount`, `hitAccuracy`, `ppVersion`, `osuPp`, `osuGlobalRank`, `osuStatsSyncedAt` (all optional in schema); index `by_osuId`.
 - Consumes: routes from Task 1.
 
-- [ ] **Step 1: Install and initialize** — follow the `convex-setup-auth` skill and https://labs.convex.dev/auth/setup for the current procedure. Baseline commands:
+- [ ] **Step 1: Initialize** — follow <https://labs.convex.dev/auth/setup> and the installed `@convex-dev/auth` CLI help for the current procedure. Dependencies were installed in Task 1. Baseline command:
 
 ```bash
-pnpm add @convex-dev/auth @auth/core@0.37.0
 pnpm dlx @convex-dev/auth
 ```
 
@@ -189,6 +223,7 @@ export default defineSchema({
     osuStatsSyncedAt: v.optional(v.number()),
   })
     .index('email', ['email'])
+    .index('phone', ['phone'])
     .index('by_osuId', ['osuId']),
 });
 ```
@@ -249,7 +284,7 @@ export function AuthButton() {
   return (
     <div className="auth-chip">
       <button className="auth-chip__face" onClick={() => setOpen((o) => !o)}>
-        <img src={me.image} alt="" width={28} height={28} style={{ borderRadius: '50%' }} />
+        {me.image && <img src={me.image} alt="" width={28} height={28} style={{ borderRadius: '50%' }} />}
         <span>{me.name}</span>
       </button>
       {open && (
@@ -291,7 +326,17 @@ export function NavBar() {
 
 - [ ] **Step 4: Manual verification** — `pnpm run dev`: sign in from home, avatar chip appears, menu links navigate, sign out works, game still playable signed out. `pnpm lint && pnpm build` pass.
 
-- [ ] **Step 5: Commit and open PR** — `feat: auth navbar and sign-in UI`. Push branch, open PR "airosu online M1: convex + osu! sign-in" per the finishing-a-development-branch skill.
+- [ ] **Step 5: Commit and open PR**:
+
+```bash
+git add -A
+git commit -m "feat: auth navbar and sign-in UI"
+git push -u origin v2.0-online-auth
+gh pr create --base main --title "airosu online M1: convex + osu! sign-in" \
+  --body "Convex Auth with osu!-only sign-in, shareable routes, and an upload-only production home. Dev and production use separate osu! OAuth applications/callbacks. Verified that dist contains no bundled .osz or audio fixture."
+```
+
+The PR body must list the separate dev/production OAuth callback setup and confirm the production asset audit.
 
 ---
 
@@ -311,6 +356,7 @@ export function NavBar() {
   - `accuracyOf(s: HitStats): number` — 0 when nothing judged
   - `playPp(worth: { ssPp: number; starRating: number }, s: HitStats): number`
   - `src/game/grade.ts`: `type Grade`, `grade(accuracy: number): Grade` (moved from `src/ui/results/grade.ts`; colors/labels stay in the UI file)
+  - The refactor preserves current `PpCounter.final()` values, including maps with sliders where airosu records two judgments per slider.
 
 - [ ] **Step 1: Write `src/game/ppFormula.test.ts`** (failing first):
 
@@ -444,10 +490,13 @@ with `import { judgedCount, playPp } from './ppFormula';` and `export type { Hit
 export interface MapAttributes {
   title: string; artist: string; version: string; creator: string;
   bpm: number; lengthMs: number; cs: number; ar: number; od: number; hp: number;
-  starRating: number; maxCombo: number; objectCount: number; ssPp: number;
+  starRating: number; maxCombo: number; objectCount: number; judgmentCount: number;
+  ssPp: number; attributesVersion: number;
   beatmapId?: number; beatmapSetId?: number;
 }
 ```
+
+`objectCount` is the number of `.osu` hit objects. `judgmentCount` is what airosu emits: circles/spinners count once and sliders count twice (head + follow result). Submission validation and airosu's combo ratio use `judgmentCount`.
 
 - Consumes: `toInternal` from `src/beatmap/adapter.ts` (meta + objects), osu-standard-stable ruleset. Runs in the Convex Node action (Task 6) and in vitest — must not touch DOM APIs.
 
@@ -456,8 +505,10 @@ export interface MapAttributes {
 ```ts
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { listDifficulties } from './load';
+import { listDifficulties, loadFromOsz } from './load';
 import { computeMapAttributes } from './attributes';
+import { PpCounter } from '../game/pp';
+import { playPp } from '../game/ppFormula';
 
 const osz = new Uint8Array(readFileSync('game-assets/maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'));
 const easy = listDifficulties(osz).find((d) => /easy/i.test(d.difficultyName))!;
@@ -467,11 +518,23 @@ describe('computeMapAttributes', () => {
     const a = computeMapAttributes(easy.osuText);
     expect(a.title.length).toBeGreaterThan(0);
     expect(a.objectCount).toBeGreaterThan(0);
+    expect(a.judgmentCount).toBeGreaterThanOrEqual(a.objectCount);
+    expect(a.judgmentCount).toBe(
+      loadFromOsz(osz, easy.difficultyName).objects.reduce(
+        (count, object) => count + (object.kind === 'slider' ? 2 : 1),
+        0,
+      ),
+    );
     expect(a.maxCombo).toBeGreaterThanOrEqual(a.objectCount);
     expect(a.starRating).toBeGreaterThan(0);
     expect(a.starRating).toBeLessThan(3);
     expect(a.ssPp).toBeGreaterThan(0);
     expect(a.beatmapSetId).toBe(444335);
+    const ss = {
+      count300: a.judgmentCount, count100: 0, count50: 0, countMiss: 0,
+      maxCombo: a.judgmentCount,
+    };
+    expect(playPp(a, ss)).toBeCloseTo(new PpCounter(easy.osuText).final(ss), 6);
   });
 });
 ```
@@ -489,10 +552,14 @@ import { toInternal } from './adapter';
 const decoder = new BeatmapDecoder();
 const ruleset = new StandardRuleset();
 
+/** Bump when parser/ruleset upgrades can change stored map attributes. */
+export const ATTRIBUTES_VERSION = 1;
+
 export interface MapAttributes {
   title: string; artist: string; version: string; creator: string;
   bpm: number; lengthMs: number; cs: number; ar: number; od: number; hp: number;
-  starRating: number; maxCombo: number; objectCount: number; ssPp: number;
+  starRating: number; maxCombo: number; objectCount: number; judgmentCount: number;
+  ssPp: number; attributesVersion: number;
   beatmapId?: number; beatmapSetId?: number;
 }
 
@@ -502,11 +569,16 @@ export function computeMapAttributes(osuText: string): MapAttributes {
   const internal = toInternal(parsed, osuText, new ArrayBuffer(0));
   const beatmap = ruleset.applyToBeatmap(parsed);
   const attributes = ruleset.createDifficultyCalculator(beatmap).calculate();
+  const judgmentCount = internal.objects.reduce(
+    (count, object) => count + (object.kind === 'slider' ? 2 : 1),
+    0,
+  );
 
   const perfect = new ScoreInfo();
   perfect.ruleset = ruleset;
   perfect.maxCombo = attributes.maxCombo;
-  perfect.count300 = internal.objects.length;
+  // Match PpCounter.final(): airosu gives sliders a head + final judgment.
+  perfect.count300 = judgmentCount;
   const ssPp = ruleset
     .createPerformanceCalculator(attributes, perfect)
     .calculateAttributes().totalPerformance;
@@ -518,7 +590,9 @@ export function computeMapAttributes(osuText: string): MapAttributes {
     starRating: attributes.starRating,
     maxCombo: attributes.maxCombo,
     objectCount: internal.objects.length,
+    judgmentCount,
     ssPp: Number.isFinite(ssPp) ? ssPp : 0,
+    attributesVersion: ATTRIBUTES_VERSION,
     beatmapId: parsed.metadata.beatmapId || undefined,
     beatmapSetId: parsed.metadata.beatmapSetId || undefined,
   };
@@ -538,7 +612,7 @@ export function computeMapAttributes(osuText: string): MapAttributes {
 **Interfaces:**
 - Produces:
   - schema tables `maps`, `scores` (fields below — later tasks rely on the exact names)
-  - `convex/lib/scoring.ts`: `validateSubmission(map: { objectCount: number }, s: HitStats): string | null` (error string or null when valid) and `scoreDerived(map: { ssPp: number; starRating: number }, s: HitStats): { accuracy: number; grade: Grade; pp: number; ppVersion: number }` and `weightedTotals(best: { pp: number; accuracy: number }[]): { totalPp: number; hitAccuracy: number }` (0.95ⁱ weights, top 100)
+  - `convex/lib/scoring.ts`: `validateSubmission(map: { judgmentCount: number }, s: HitStats): string | null` (error string or null when valid) and `scoreDerived(map: { ssPp: number; starRating: number }, s: HitStats): { accuracy: number; grade: Grade; pp: number; ppVersion: number }` and `weightedTotals(best: { pp: number; accuracy: number }[]): { totalPp: number; hitAccuracy: number }` (0.95ⁱ weights, top 100)
   - `api.mapsNode.registerMap` action `{ osuText: string } → Id<'maps'>` (idempotent by md5)
   - `internal.maps.byMd5`, `internal.maps.insert`, `internal.maps.patchEnrichment` helpers
   - `internal.osuApi.enrichMap` action
@@ -559,7 +633,9 @@ maps: defineTable({
   starRating: v.number(),
   maxCombo: v.number(),
   objectCount: v.number(),
+  judgmentCount: v.number(),
   ssPp: v.number(),
+  attributesVersion: v.number(),
   osuFileId: v.id('_storage'),
   // osu! website enrichment (best effort)
   osuBeatmapId: v.optional(v.number()),
@@ -572,6 +648,7 @@ maps: defineTable({
 scores: defineTable({
   userId: v.id('users'),
   mapId: v.id('maps'),
+  playId: v.string(), // crypto.randomUUID() per completed play; retry key
   count300: v.number(),
   count100: v.number(),
   count50: v.number(),
@@ -586,7 +663,9 @@ scores: defineTable({
   inputMode: v.string(), // 'relax' | 'manual'
   forgiveness: v.number(),
 })
+  .index('by_user_play', ['userId', 'playId'])
   .index('by_user_map', ['userId', 'mapId'])
+  .index('by_user_map_pp', ['userId', 'mapId', 'pp'])
   .index('by_map_best', ['mapId', 'isBest', 'pp'])
   .index('by_user_best', ['userId', 'isBest', 'pp'])
   .index('by_user', ['userId']),
@@ -599,11 +678,13 @@ import { describe, expect, it } from 'vitest';
 import { PP_VERSION } from './ppFormula';
 import { scoreDerived, validateSubmission, weightedTotals } from '../../convex/lib/scoring';
 
-const map = { objectCount: 100, ssPp: 100, starRating: 3 };
+const map = { judgmentCount: 100, ssPp: 100, starRating: 3 };
 const ss = { count300: 100, count100: 0, count50: 0, countMiss: 0, maxCombo: 100 };
 
 describe('validateSubmission', () => {
   it('accepts a full clean play', () => expect(validateSubmission(map, ss)).toBeNull());
+  it('accepts slider-aware judgment totals larger than osu object count', () =>
+    expect(validateSubmission({ judgmentCount: 100 }, ss)).toBeNull());
   it('rejects judgment counts that do not cover the map', () =>
     expect(validateSubmission(map, { ...ss, count300: 50 })).toMatch(/judgment/i));
   it('rejects impossible combo', () =>
@@ -644,11 +725,11 @@ import { PP_VERSION, accuracyOf, judgedCount, playPp, type HitStats } from '../.
 import { grade, type Grade } from '../../src/game/grade';
 
 /** null when valid, else a human-readable rejection reason */
-export function validateSubmission(map: { objectCount: number }, s: HitStats): string | null {
+export function validateSubmission(map: { judgmentCount: number }, s: HitStats): string | null {
   const counts = [s.count300, s.count100, s.count50, s.countMiss, s.maxCombo];
   if (counts.some((c) => !Number.isInteger(c) || c < 0)) return 'invalid counts';
-  if (judgedCount(s) !== map.objectCount) return 'judgment counts do not match the map';
-  if (s.maxCombo > map.objectCount) return 'combo exceeds map maximum';
+  if (judgedCount(s) !== map.judgmentCount) return 'judgment counts do not match the map';
+  if (s.maxCombo > map.judgmentCount) return 'combo exceeds map maximum';
   return null;
 }
 
@@ -691,20 +772,26 @@ export const byMd5 = internalQuery({
     ctx.db.query('maps').withIndex('by_md5', (q) => q.eq('md5', md5)).unique(),
 });
 
+export const getInternal = internalQuery({
+  args: { mapId: v.id('maps') },
+  handler: (ctx, { mapId }) => ctx.db.get(mapId),
+});
+
 export const insert = internalMutation({
   args: {
     md5: v.string(), osuFileId: v.id('_storage'),
     title: v.string(), artist: v.string(), version: v.string(), creator: v.string(),
     bpm: v.number(), lengthMs: v.number(),
     cs: v.number(), ar: v.number(), od: v.number(), hp: v.number(),
-    starRating: v.number(), maxCombo: v.number(), objectCount: v.number(), ssPp: v.number(),
+    starRating: v.number(), maxCombo: v.number(), objectCount: v.number(),
+    judgmentCount: v.number(), ssPp: v.number(), attributesVersion: v.number(),
     osuBeatmapId: v.optional(v.number()), osuBeatmapSetId: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query('maps').withIndex('by_md5', (q) => q.eq('md5', args.md5)).unique();
-    if (existing) return existing._id; // registration raced — keep first
-    return await ctx.db.insert('maps', args);
+    if (existing) return { mapId: existing._id, created: false }; // registration raced
+    return { mapId: await ctx.db.insert('maps', args), created: true };
   },
 });
 
@@ -736,31 +823,41 @@ import { createHash } from 'node:crypto';
 import { v } from 'convex/values';
 import { action } from './_generated/server';
 import { internal } from './_generated/api';
+import { getAuthUserId } from '@convex-dev/auth/server';
 import { computeMapAttributes } from '../src/beatmap/attributes';
 
 /** Registers a difficulty by its .osu text. Idempotent by md5. Returns mapId. */
 export const registerMap = action({
   args: { osuText: v.string() },
   handler: async (ctx, { osuText }) => {
+    if (!(await getAuthUserId(ctx))) throw new Error('not signed in');
+    if (new TextEncoder().encode(osuText).byteLength > 1_000_000) {
+      throw new Error('.osu file is too large');
+    }
     const md5 = createHash('md5').update(osuText, 'utf8').digest('hex');
     const existing = await ctx.runQuery(internal.maps.byMd5, { md5 });
     if (existing) {
       if (!existing.rankedStatus) {
-        await ctx.scheduler.runAfter(0, internal.osuApi.enrichMap, { mapId: existing._id, md5 });
+        await ctx.scheduler.runAfter(0, internal.osuApi.enrichMap, { mapId: existing._id });
       }
       return existing._id;
     }
     const a = computeMapAttributes(osuText);
     const osuFileId = await ctx.storage.store(new Blob([osuText], { type: 'text/plain' }));
-    const mapId = await ctx.runMutation(internal.maps.insert, {
-      md5, osuFileId,
-      title: a.title, artist: a.artist, version: a.version, creator: a.creator,
-      bpm: a.bpm, lengthMs: a.lengthMs, cs: a.cs, ar: a.ar, od: a.od, hp: a.hp,
-      starRating: a.starRating, maxCombo: a.maxCombo, objectCount: a.objectCount, ssPp: a.ssPp,
-      osuBeatmapId: a.beatmapId, osuBeatmapSetId: a.beatmapSetId,
+    const inserted = await ctx.runMutation(internal.maps.insert, {
+        md5, osuFileId,
+        title: a.title, artist: a.artist, version: a.version, creator: a.creator,
+        bpm: a.bpm, lengthMs: a.lengthMs, cs: a.cs, ar: a.ar, od: a.od, hp: a.hp,
+        starRating: a.starRating, maxCombo: a.maxCombo, objectCount: a.objectCount,
+        judgmentCount: a.judgmentCount, ssPp: a.ssPp, attributesVersion: a.attributesVersion,
+        osuBeatmapId: a.beatmapId, osuBeatmapSetId: a.beatmapSetId,
+      }).catch(async (error) => {
+      await ctx.storage.delete(osuFileId);
+      throw error;
     });
-    await ctx.scheduler.runAfter(0, internal.osuApi.enrichMap, { mapId, md5 });
-    return mapId;
+    if (!inserted.created) await ctx.storage.delete(osuFileId); // concurrent registration lost
+    await ctx.scheduler.runAfter(0, internal.osuApi.enrichMap, { mapId: inserted.mapId });
+    return inserted.mapId;
   },
 });
 ```
@@ -789,12 +886,17 @@ export async function osuToken(): Promise<string> {
 }
 
 export const enrichMap = internalAction({
-  args: { mapId: v.id('maps'), md5: v.string() },
-  handler: async (ctx, { mapId, md5 }) => {
+  args: { mapId: v.id('maps') },
+  handler: async (ctx, { mapId }) => {
     try {
+      const map = await ctx.runQuery(internal.maps.getInternal, { mapId });
+      if (!map) return;
       const token = await osuToken();
+      const lookup = map.osuBeatmapId
+        ? `id=${map.osuBeatmapId}`
+        : `checksum=${encodeURIComponent(map.md5)}`;
       const res = await fetch(
-        `https://osu.ppy.sh/api/v2/beatmaps/lookup?checksum=${encodeURIComponent(md5)}`,
+        `https://osu.ppy.sh/api/v2/beatmaps/lookup?${lookup}`,
         { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } },
       );
       if (res.status === 404) {
@@ -823,12 +925,12 @@ export const enrichMap = internalAction({
 ### Task 7: Score submission (server) + user totals
 
 **Files:**
-- Create: `convex/scores.ts`
-- Test: covered by `scoring.test.ts` (pure parts); handler smoke-tested in Task 8 via the app
+- Create: `convex/scores.ts`, `convex/scores.test.ts`
+- Test: `src/game/scoring.test.ts` (pure rules) + `convex/scores.test.ts` (auth/idempotency handler)
 
 **Interfaces:**
 - Produces:
-  - `api.scores.submit` mutation `{ mapId, count300, count100, count50, countMiss, maxCombo, score, inputMode, forgiveness } → { pp: number; isBest: boolean; grade: string; accuracy: number }`, throws `ConvexError('not signed in')` / `ConvexError('score could not be verified: <reason>')`
+  - `api.scores.submit` mutation `{ playId, mapId, count300, count100, count50, countMiss, maxCombo, score, inputMode, forgiveness } → { pp: number; isBest: boolean; grade: string; accuracy: number }`. A repeated `(userId, playId)` returns the original score without incrementing play count.
   - `recomputeUserTotals(ctx: MutationCtx, userId: Id<'users'>): Promise<void>` (exported — reused by the recalc migration in Task 9 and aggregates in Milestone 3)
   - `api.scores.mapLeaderboard` query `{ mapId } → rows` (top 50 best scores + user name/avatar/country)
 - Consumes: schema (Task 6), `scoring.ts`, `getAuthUserId`.
@@ -859,16 +961,34 @@ export async function recomputeUserTotals(ctx: MutationCtx, userId: Id<'users'>)
 
 export const submit = mutation({
   args: {
+    playId: v.string(),
     mapId: v.id('maps'),
     count300: v.number(), count100: v.number(), count50: v.number(), countMiss: v.number(),
     maxCombo: v.number(), score: v.number(),
-    inputMode: v.string(), forgiveness: v.number(),
+    inputMode: v.union(v.literal('relax'), v.literal('manual')), forgiveness: v.number(),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError('not signed in');
+    if (!/^[0-9a-f-]{36}$/i.test(args.playId)) throw new ConvexError('invalid play id');
+    const duplicate = await ctx.db
+      .query('scores')
+      .withIndex('by_user_play', (q) => q.eq('userId', userId).eq('playId', args.playId))
+      .unique();
+    if (duplicate) {
+      return {
+        pp: duplicate.pp, isBest: duplicate.isBest,
+        grade: duplicate.grade, accuracy: duplicate.accuracy,
+      };
+    }
     const map = await ctx.db.get(args.mapId);
     if (!map) throw new ConvexError('unknown map');
+    if (!Number.isSafeInteger(args.score) || args.score < 0) {
+      throw new ConvexError('score could not be verified: invalid score');
+    }
+    if (!Number.isFinite(args.forgiveness) || args.forgiveness < 1 || args.forgiveness > 2.5) {
+      throw new ConvexError('score could not be verified: invalid forgiveness');
+    }
 
     const stats = {
       count300: args.count300, count100: args.count100, count50: args.count50,
@@ -879,17 +999,18 @@ export const submit = mutation({
 
     const derived = scoreDerived(map, stats);
 
-    // previous best on this map (few docs per user+map — scan is fine)
-    const onMap = await ctx.db
+    // previous best on this map, indexed by pp
+    const prevBest = await ctx.db
       .query('scores')
-      .withIndex('by_user_map', (q) => q.eq('userId', userId).eq('mapId', args.mapId))
-      .collect();
-    const prevBest = onMap.find((s) => s.isBest);
-    const isBest = !prevBest || derived.pp > prevBest.pp;
+      .withIndex('by_user_map_pp', (q) => q.eq('userId', userId).eq('mapId', args.mapId))
+      .order('desc')
+      .first();
+    // A pp tie replaces the older play, matching the index's pp/creation-time order.
+    const isBest = !prevBest || derived.pp >= prevBest.pp;
     if (isBest && prevBest) await ctx.db.patch(prevBest._id, { isBest: false });
 
     await ctx.db.insert('scores', {
-      userId, mapId: args.mapId, ...stats,
+      userId, playId: args.playId, mapId: args.mapId, ...stats,
       score: args.score, inputMode: args.inputMode, forgiveness: args.forgiveness,
       accuracy: derived.accuracy, grade: derived.grade, pp: derived.pp,
       ppVersion: derived.ppVersion, isBest,
@@ -926,19 +1047,63 @@ export const mapLeaderboard = query({
 });
 ```
 
-- [ ] **Step 2: Deploy** — `pnpm dlx convex dev --once` compiles. `pnpm test && pnpm lint` pass. Commit: `feat: score submission with server-side pp and per-map leaderboard query`
+- [ ] **Step 2: Add a Convex idempotency test** — install `pnpm add -D convex-test`, verify its peer range against installed `convex`, then create `convex/scores.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { convexTest } from 'convex-test';
+import { api } from './_generated/api';
+import schema from './schema';
+
+const modules = import.meta.glob('./**/*.ts');
+
+describe('scores.submit', () => {
+  it('stores the same playId only once', async () => {
+    const t = convexTest(schema, modules);
+    const { userId, mapId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert('users', { osuId: 7, name: 'player' });
+      const osuFileId = await ctx.storage.store(new Blob(['osu file format v14']));
+      const mapId = await ctx.db.insert('maps', {
+        md5: 'a'.repeat(32), title: 'T', artist: 'A', version: 'Hard', creator: 'M',
+        bpm: 120, lengthMs: 60_000, cs: 4, ar: 8, od: 7, hp: 5,
+        starRating: 3, maxCombo: 120, objectCount: 80, judgmentCount: 100,
+        ssPp: 100, attributesVersion: 1, osuFileId,
+      });
+      return { userId, mapId };
+    });
+    const authed = t.withIdentity({ subject: `${userId}|test-session` });
+    const args = {
+      playId: '11111111-1111-4111-8111-111111111111', mapId,
+      count300: 100, count100: 0, count50: 0, countMiss: 0,
+      maxCombo: 100, score: 123_456, inputMode: 'relax' as const, forgiveness: 1.5,
+    };
+
+    const first = await authed.mutation(api.scores.submit, args);
+    const second = await authed.mutation(api.scores.submit, args);
+    expect(second).toEqual(first);
+    const state = await t.run(async (ctx) => ({
+      scores: await ctx.db.query('scores').collect(),
+      user: await ctx.db.get(userId),
+    }));
+    expect(state.scores).toHaveLength(1);
+    expect(state.user?.playCount).toBe(1);
+  });
+});
+```
+
+- [ ] **Step 3: Deploy** — `pnpm dlx convex dev --once` compiles. `pnpm test && pnpm lint` pass. Commit: `feat: score submission with server-side pp and per-map leaderboard query`
 
 ### Task 8: Results-screen submission UI
 
 **Files:**
 - Create: `src/online/useSubmitScore.ts`, `src/ui/results/SubmitPanel.tsx`, `src/ui/results/MapLeaderboard.tsx`, `src/ui/shared/flag.ts`, `src/ui/shared/flag.test.ts`
-- Modify: `src/ui/appState.ts` (LastResult gains `inputMode`, `forgiveness`), the `setLastResult` call site in `src/ui/play/` (grep `setLastResult` — pass the two settings values from the active settings), `src/ui/results/ResultsScreen.tsx` (mount `<SubmitPanel />`), `src/ui/results/index.ts`
+- Modify: `src/ui/appState.ts` (LastResult gains `playId`, `inputMode`, `forgiveness`), the `setLastResult` call site in `src/ui/play/` (generate one UUID and pass the two active settings values), `src/ui/results/ResultsScreen.tsx` (mount `<SubmitPanel />`), `src/ui/results/index.ts`
 
 **Interfaces:**
 - Consumes: `api.mapsNode.registerMap`, `api.scores.submit`, `api.users.me`, appState (`map.rawOsu`, `lastResult`).
 - Produces: `useSubmitScore(): { status: 'signedOut'|'idle'|'submitting'|'done'|'error'; result?: { pp: number; isBest: boolean }; mapId?: Id<'maps'>; error?: string; submit(): void }` — auto-submits once on mount when signed in; `mapId` is set once registration succeeds and drives the per-map leaderboard.
 
-- [ ] **Step 1: Extend LastResult** — in `appState.ts` add `inputMode: 'relax' | 'manual'; forgiveness: number;` to `LastResult`. Fix the producer (in the play screen, add `inputMode: settings.inputMode, forgiveness: settings.forgiveness`) and any test fixtures that construct `LastResult`.
+- [ ] **Step 1: Extend LastResult** — in `appState.ts` add `playId: string; inputMode: 'relax' | 'manual'; forgiveness: number;` to `LastResult`. In `useGameLoop.finish`, add `playId: crypto.randomUUID(), inputMode: settings.inputMode, forgiveness: settings.forgiveness`. The ID is created once when the result is captured, not inside the submit hook, so every retry reuses it. Fix any test fixtures that construct `LastResult`.
 
 - [ ] **Step 2: `src/online/useSubmitScore.ts`**:
 
@@ -947,6 +1112,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { ConvexError } from 'convex/values';
 import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { useAppState } from '../ui/appState';
 
 export type SubmitStatus = 'signedOut' | 'idle' | 'submitting' | 'done' | 'error';
@@ -959,6 +1125,7 @@ export function useSubmitScore() {
   const submitScore = useMutation(api.scores.submit);
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const [result, setResult] = useState<{ pp: number; isBest: boolean }>();
+  const [mapId, setMapId] = useState<Id<'maps'>>();
   const [error, setError] = useState<string>();
   const startedRef = useRef(false);
 
@@ -969,8 +1136,9 @@ export function useSubmitScore() {
     void (async () => {
       try {
         const mapId = await registerMap({ osuText: map.rawOsu });
+        setMapId(mapId);
         const res = await submitScore({
-          mapId,
+          playId: lastResult.playId, mapId,
           count300: lastResult.counts[300], count100: lastResult.counts[100],
           count50: lastResult.counts[50], countMiss: lastResult.counts[0],
           maxCombo: lastResult.maxCombo, score: lastResult.score,
@@ -996,8 +1164,6 @@ export function useSubmitScore() {
   return { status, result, mapId, error, submit };
 }
 ```
-
-(Track `mapId` in a `useState` set right after `await registerMap(...)` resolves inside `submit`.)
 
 - [ ] **Step 3: `src/ui/results/SubmitPanel.tsx`** — small panel under the stats: signedOut → "sign in with osu! to submit scores" (`<AuthButton />` or a signIn button); submitting → "submitting…"; done → "score submitted · +{pp}pp{isBest ? ' · personal best!' : ''}"; error → message + retry button calling `submit()`. Keep under 60 lines, match results-screen styling. Mount it in `ResultsScreen.tsx` below the stats block.
 
@@ -1028,7 +1194,7 @@ Run again — PASS.
 
 - [ ] **Step 3c: `src/ui/results/MapLeaderboard.tsx`** — per-map top plays, rendered under the SubmitPanel once `mapId` is known (spec: per-map leaderboard on results). `useQuery(api.scores.mapLeaderboard, mapId ? { mapId } : 'skip')`; render nothing while loading/empty; otherwise a compact list of the top 10: `#i · flagEmoji(countryCode)+name (link to /u/{osuId}) · grade · accuracy · pp`, highlighting the signed-in user's row. Keep <100 lines.
 
-- [ ] **Step 4: Manual verification (full loop)** — `pnpm run dev`: signed out, finish a short play → prompt shown, game unaffected. Sign in, play again → "submitting…" then "+Xpp · personal best!". Convex dashboard: `maps` row exists (with `rankedStatus`/`coverUrl` arriving a moment later via enrichment — bundled maps are real osu! maps so lookup succeeds), `scores` row has `isBest: true`, user doc has `totalPp > 0`, `playCount: 1`. Play the same map worse → second score `isBest: false`, `totalPp` unchanged. `pnpm test && pnpm lint && pnpm build`.
+- [ ] **Step 4: Manual verification (full loop)** — `pnpm run dev`: signed out, finish a short play → prompt shown, game unaffected. Sign in, play again → "submitting…" then "+Xpp · personal best!". Convex dashboard: `maps` row exists (with enrichment arriving later when the map is known to osu!), `scores` row has `isBest: true`, user doc has `totalPp > 0`, `playCount: 1`. Click retry submission or remount the results UI with the same `playId` → still one score and `playCount: 1`. Play the same map worse with a new `playId` → second score `isBest: false`, `totalPp` unchanged. Include a slider map to prove `judgmentCount` validation accepts it. `pnpm test && pnpm lint && pnpm build`.
 
 - [ ] **Step 5: Commit** — `feat: auto-submit scores from results screen`
 
@@ -1036,13 +1202,13 @@ Run again — PASS.
 
 **Files:**
 - Create: `convex/convex.config.ts`, `convex/migrations.ts`, `docs/pp-rework-runbook.md`
-- Modify: none
+- Modify: `convex/maps.ts`, `convex/mapsNode.ts` (attribute refresh path)
 
 **Interfaces:**
 - Consumes: `recomputeUserTotals` (Task 7), `scoreDerived` (Task 6), `PP_VERSION`.
-- Produces: internal migrations `recalcScores`, `recalcBestFlags`, `recalcUsers`; runner `internal.migrations.runPpRework`.
+- Produces: internal migrations `recalcScores`, `recalcBestFlags`, `recalcUsers`; runner `internal.migrations.runPpRework`; resumable Node action `api.mapsNode.refreshAttributes` for `ATTRIBUTES_VERSION` changes.
 
-Use the `convex-migration-helper` skill while implementing this task.
+Read the installed `@convex-dev/migrations` README and types before implementing; its runner API is version-sensitive.
 
 - [ ] **Step 1: Install + register component**:
 
@@ -1085,23 +1251,18 @@ export const recalcScores = migrations.define({
   },
 });
 
-/** Phase 2: new formula may reorder a user's plays on a map — refresh isBest. */
+/** Phase 2: new formula may reorder plays on a map — refresh each flag with an indexed lookup. */
 export const recalcBestFlags = migrations.define({
-  table: 'users',
-  migrateOne: async (ctx, user) => {
-    const scores = await ctx.db
+  table: 'scores',
+  migrateOne: async (ctx, score) => {
+    const best = await ctx.db
       .query('scores')
-      .withIndex('by_user', (q) => q.eq('userId', user._id))
-      .collect();
-    const bestPerMap = new Map<string, (typeof scores)[number]>();
-    for (const s of scores) {
-      const cur = bestPerMap.get(s.mapId);
-      if (!cur || s.pp > cur.pp) bestPerMap.set(s.mapId, s);
-    }
-    for (const s of scores) {
-      const shouldBeBest = bestPerMap.get(s.mapId)?._id === s._id;
-      if (s.isBest !== shouldBeBest) await ctx.db.patch(s._id, { isBest: shouldBeBest });
-    }
+      .withIndex('by_user_map_pp', (q) =>
+        q.eq('userId', score.userId).eq('mapId', score.mapId),
+      )
+      .order('desc')
+      .first();
+    return { isBest: best?._id === score._id };
   },
 });
 
@@ -1120,14 +1281,66 @@ export const runPpRework = migrations.runner([
 ]);
 ```
 
-(Scale note: `recalcBestFlags` collects all of one user's scores in one transaction — fine for thousands of scores per user; revisit if that assumption breaks.)
+- [ ] **Step 2b: Add attribute refresh** — add `.index('by_attributes_version', ['attributesVersion'])` to the maps table. Add this query/patch shape to `convex/maps.ts` (import `paginationOptsValidator` from `convex/server`):
+
+```ts
+export const staleAttributes = internalQuery({
+  args: { version: v.number(), paginationOpts: paginationOptsValidator },
+  handler: (ctx, { version, paginationOpts }) =>
+    ctx.db.query('maps')
+      .withIndex('by_attributes_version', (q) => q.lt('attributesVersion', version))
+      .paginate(paginationOpts),
+});
+
+export const patchAttributes = internalMutation({
+  args: {
+    mapId: v.id('maps'), attributesVersion: v.number(),
+    title: v.string(), artist: v.string(), version: v.string(), creator: v.string(),
+    bpm: v.number(), lengthMs: v.number(), cs: v.number(), ar: v.number(),
+    od: v.number(), hp: v.number(), starRating: v.number(), maxCombo: v.number(),
+    objectCount: v.number(), judgmentCount: v.number(), ssPp: v.number(),
+    osuBeatmapId: v.optional(v.number()), osuBeatmapSetId: v.optional(v.number()),
+  },
+  handler: (ctx, { mapId, ...attributes }) => ctx.db.patch(mapId, attributes),
+});
+```
+
+In `convex/mapsNode.ts`, import `internalAction` and `ATTRIBUTES_VERSION`, then add:
+
+```ts
+export const refreshAttributes = internalAction({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, { cursor }) => {
+    const batch = await ctx.runQuery(internal.maps.staleAttributes, {
+      version: ATTRIBUTES_VERSION,
+      paginationOpts: { numItems: 25, cursor: cursor ?? null },
+    });
+    let updated = 0;
+    for (const map of batch.page) {
+      const blob = await ctx.storage.get(map.osuFileId);
+      if (!blob) continue;
+      const attributes = computeMapAttributes(await blob.text());
+      await ctx.runMutation(internal.maps.patchAttributes, { mapId: map._id, ...attributes });
+      updated++;
+    }
+    if (!batch.isDone) {
+      await ctx.scheduler.runAfter(0, internal.mapsNode.refreshAttributes, {
+        cursor: batch.continueCursor,
+      });
+    }
+    return { updated, isDone: batch.isDone, continueCursor: batch.continueCursor };
+  },
+});
+```
+
+Run it from the dashboard or CLI as `pnpm dlx convex run mapsNode:refreshAttributes`. It is internal, so browser clients cannot call it. Do not try to read file blobs inside a migration mutation.
 
 - [ ] **Step 3: `docs/pp-rework-runbook.md`**:
 
 ```markdown
 # pp rework runbook
 
-When the pp formula changes (anything in `src/game/ppFormula.ts`):
+For a formula-only change (`src/game/ppFormula.ts`):
 
 1. Change the math and **bump `PP_VERSION`**.
 2. Update `src/game/ppFormula.test.ts` expectations; keep old-version tests as history if useful.
@@ -1138,11 +1351,21 @@ When the pp formula changes (anything in `src/game/ppFormula.ts`):
    leaderboard order changed as expected. Scores keep their `ppVersion`, so an
    interrupted run is resumable by rerunning step 4.
 
+For a parser or `osu-standard-stable` change that can alter star rating,
+max combo, or SS worth:
+
+1. Bump `ATTRIBUTES_VERSION` in `src/beatmap/attributes.ts` and also bump
+   `PP_VERSION` so every dependent score is replayed.
+2. Deploy, run the attribute-refresh runner until no stale maps remain, then
+   run `migrations:runPpRework`.
+3. Verify sampled maps have the new `attributesVersion`, then verify scores,
+   best flags, user totals, and leaderboard ranks as above.
+
 Never edit stored pp by hand: stored hit stats + map attributes are the source
 of truth; pp is always derivable.
 ```
 
-- [ ] **Step 4: Verify** — `pnpm dlx convex dev --once` deploys; run `pnpm dlx convex run migrations:runPpRework` against dev data from Task 8 and confirm it completes and totals are unchanged (same PP_VERSION → no-op). `pnpm test && pnpm lint && pnpm build`.
+- [ ] **Step 4: Verify** — `pnpm dlx convex dev --once` deploys; run `pnpm dlx convex run migrations:runPpRework` against dev data from Task 8 and confirm it completes and totals are unchanged (same PP_VERSION → no-op). Temporarily exercise the attribute refresh against one dev map and confirm it is resumable; restore version constants before committing. `pnpm test && pnpm lint && pnpm build`.
 
 - [ ] **Step 5: Commit + PR** — `feat: pp rework migrations and runbook`; open PR "airosu online M2: scores + pp pipeline" based on `v2.0-online-auth`.
 
@@ -1154,7 +1377,7 @@ of truth; pp is always derivable.
 
 **Files:**
 - Create: `convex/leaderboard.ts`
-- Modify: `convex/convex.config.ts` (two aggregate components), `convex/scores.ts` (`recomputeUserTotals` maintains aggregates), `convex/schema.ts` (add `countries` table)
+- Modify: `convex/convex.config.ts` (two aggregate components), `convex/scores.ts` (`recomputeUserTotals` maintains aggregates), `convex/auth.ts` (country-change sync), `convex/schema.ts` (add `countries` table + `users.boardCountryCode`)
 
 **Interfaces:**
 - Produces:
@@ -1181,11 +1404,13 @@ app.use(aggregate, { name: 'globalBoard' });
 app.use(aggregate, { name: 'countryBoard' });
 ```
 
-- [ ] **Step 2: Add `countries` table to schema** (drives the filter dropdown without scanning users):
+- [ ] **Step 2: Add `countries` table and board-country snapshot to schema** (drives the filter dropdown without scanning users and lets a later osu! country change move the aggregate safely):
 
 ```ts
 countries: defineTable({ code: v.string(), name: v.string() }).index('by_code', ['code']),
 ```
+
+Add `boardCountryCode: v.optional(v.string())` to the existing users table.
 
 - [ ] **Step 3: `convex/leaderboard.ts`**:
 
@@ -1193,7 +1418,7 @@ countries: defineTable({ code: v.string(), name: v.string() }).index('by_code', 
 import { TableAggregate } from '@convex-dev/aggregate';
 import { v } from 'convex/values';
 import { components } from './_generated/api';
-import { query, type MutationCtx } from './_generated/server';
+import { query, type MutationCtx, type QueryCtx } from './_generated/server';
 import type { DataModel, Doc } from './_generated/dataModel';
 
 export const globalBoard = new TableAggregate<{
@@ -1208,31 +1433,36 @@ export const countryBoard = new TableAggregate<{
   DataModel: DataModel;
   TableName: 'users';
 }>(components.countryBoard, {
-  namespace: (u) => u.countryCode ?? '??',
+  namespace: (u) => u.boardCountryCode ?? u.countryCode ?? '??',
   sortKey: (u) => -(u.totalPp ?? 0),
 });
 
 /** Call whenever a user's totalPp (or country) may have changed. */
 export async function syncBoards(ctx: MutationCtx, before: Doc<'users'> | null, after: Doc<'users'>) {
-  if (before) {
+  const wasRanked = (before?.totalPp ?? 0) > 0;
+  const isRanked = (after.totalPp ?? 0) > 0;
+  if (wasRanked && isRanked && before) {
     await globalBoard.replace(ctx, before, after);
     await countryBoard.replace(ctx, before, after);
-  } else {
+  } else if (wasRanked && before) {
+    await globalBoard.deleteIfExists(ctx, before);
+    await countryBoard.deleteIfExists(ctx, before);
+  } else if (isRanked) {
     await globalBoard.insertIfDoesNotExist(ctx, after);
     await countryBoard.insertIfDoesNotExist(ctx, after);
   }
-  if (after.countryCode && after.countryName) {
+  if (isRanked && after.countryCode && after.countryName) {
     const seen = await ctx.db
       .query('countries').withIndex('by_code', (q) => q.eq('code', after.countryCode!)).unique();
     if (!seen) await ctx.db.insert('countries', { code: after.countryCode, name: after.countryName });
   }
 }
 
-export async function userRanks(ctx: { db: MutationCtx['db'] } & any, user: Doc<'users'>) {
-  if (!user.totalPp) return { globalRank: null, countryRank: null };
-  const globalRank = 1 + (await globalBoard.indexOf(ctx, -(user.totalPp ?? 0), { id: user._id }));
+export async function userRanks(ctx: QueryCtx | MutationCtx, user: Doc<'users'>) {
+  if ((user.totalPp ?? 0) <= 0) return { globalRank: null, countryRank: null };
+  const globalRank = 1 + (await globalBoard.indexOfDoc(ctx, user));
   const countryRank = user.countryCode
-    ? 1 + (await countryBoard.indexOf(ctx, -(user.totalPp ?? 0), { id: user._id, namespace: user.countryCode }))
+    ? 1 + (await countryBoard.indexOfDoc(ctx, user))
     : null;
   return { globalRank, countryRank };
 }
@@ -1245,17 +1475,23 @@ export const page = query({
     const ns = countryCode ? { namespace: countryCode } : undefined;
     const board = countryCode ? countryBoard : globalBoard;
     const total = await board.count(ctx, ns as never);
-    const rows = [];
-    for (let i = offset; i < Math.min(offset + PAGE, total); i++) {
-      const item = await board.at(ctx, i, ns as never);
-      const u = await ctx.db.get(item.id);
-      if (!u || !u.totalPp) continue; // rank 0 users trail the board — stop early
-      rows.push({
-        rank: i + 1, osuId: u.osuId, name: u.name, image: u.image,
+    const offsets = Array.from(
+      { length: Math.max(0, Math.min(PAGE, total - offset)) },
+      (_, i) => offset + i,
+    );
+    const items = countryCode
+      ? await countryBoard.atBatch(ctx, offsets.map((itemOffset) => ({ offset: itemOffset, namespace: countryCode })))
+      : await globalBoard.atBatch(ctx, offsets.map((itemOffset) => ({ offset: itemOffset })));
+    const users = await Promise.all(items.map((item) => ctx.db.get(item.id)));
+    const rows = users.flatMap((u, i) =>
+      u
+        ? [{
+        rank: offsets[i] + 1, osuId: u.osuId, name: u.name, image: u.image,
         countryCode: u.countryCode, totalPp: u.totalPp,
         hitAccuracy: u.hitAccuracy ?? 0, playCount: u.playCount ?? 0,
-      });
-    }
+          }]
+        : [],
+    );
     return { total, rows };
   },
 });
@@ -1270,6 +1506,22 @@ export const countries = query({
 ```
 
 - [ ] **Step 4: Hook into `recomputeUserTotals`** in `convex/scores.ts` — read the user doc before patching, patch, read after, then `await syncBoards(ctx, before, after)` (import from `./leaderboard`). Users only enter the boards after their first submission — exactly what we want.
+
+Also import `syncBoards` in `convex/auth.ts` and add this callback beside `providers`:
+
+```ts
+callbacks: {
+  async afterUserCreatedOrUpdated(ctx, { userId }) {
+    const before = await ctx.db.get(userId);
+    if (!before || before.boardCountryCode === before.countryCode) return;
+    await ctx.db.patch(userId, { boardCountryCode: before.countryCode });
+    const after = await ctx.db.get(userId);
+    if (after) await syncBoards(ctx, before, after);
+  },
+},
+```
+
+This moves an already-ranked user between country namespaces if their osu! country changes. New/unranked users do not enter either board.
 
 - [ ] **Step 5: Backfill migration** — add to `convex/migrations.ts`:
 
@@ -1436,7 +1688,7 @@ export const patchOsuStats = internalMutation({
 
 - [ ] **Step 2: `ProfileHeader.tsx`** — big avatar, `flagEmoji(countryCode)` + name, stat tiles: `#globalRank` / `countryFlag #countryRank` / `Math.round(totalPp)pp` / play count / `(hitAccuracy*100).toFixed(2)%`. Comparison line when `osuPp` present: `real osu!: {osuPp}pp (#{osuGlobalRank}) · airosu: {totalPp}pp`. Keep <150 lines.
 
-- [ ] **Step 3: `PlayRow.tsx`** — one row per play: left cover thumbnail (`map.coverUrl` if set, else the panel background), map `title [version]` (linked to `https://osu.ppy.sh/beatmaps/{osuBeatmapId}` when present) + `artist`, star badge (reuse `src/ui/home/starColor.ts`), ranked-status badge when `rankedStatus === 'ranked' || 'loved' || 'approved'`, grade letter colored by `gradeColor`, accuracy, `{maxCombo}x`, settings badge when non-default (`inputMode !== 'relax' || forgiveness !== 1.5` → e.g. `manual · 1.0×`), right-aligned `pp` and (topPlays only) `weighted {Math.round(pp * weight)}pp ({Math.round(weight * 100)}%)`.
+- [ ] **Step 3: `PlayRow.tsx`** — one row per play: left cover thumbnail (`map.coverUrl` if set, else the panel background), map `title [version]` + `artist` (when both IDs exist, link to `https://osu.ppy.sh/beatmapsets/{osuBeatmapSetId}#osu/{osuBeatmapId}`), star badge (reuse `src/ui/home/starColor.ts`), ranked-status badge when `rankedStatus === 'ranked' || 'loved' || 'approved'`, grade letter colored by `gradeColor`, accuracy, `{maxCombo}x`, settings badge when non-default (`inputMode !== 'relax' || forgiveness !== 1.5` → e.g. `manual · 1.0×`), right-aligned `pp` and (topPlays only) `weighted {Math.round(pp * weight)}pp ({Math.round(weight * 100)}%)`.
 
 - [ ] **Step 4: Route + verify** — replace the `/u/:osuId` placeholder. Manual: own profile from navbar shows header stats matching dashboard, top plays sorted by pp with weights 100%, 95%, …; osu! comparison appears after sync; unknown osuId shows not-found. `pnpm test && pnpm lint && pnpm build`.
 
@@ -1455,8 +1707,8 @@ export const patchOsuStats = internalMutation({
 - Produces:
 
 ```ts
-export interface LibraryEntry { id: string; label: string; addedAt: number }
-export function saveMapset(bytes: Uint8Array, label: string): Promise<LibraryEntry>  // id = sha-256 hex of bytes; overwrites duplicates
+export interface LibraryEntry { id: string; label: string; addedAt: number; byteLength: number; difficultyCount: number }
+export function saveMapset(bytes: Uint8Array, label: string, difficultyCount: number): Promise<LibraryEntry>  // id = sha-256 hex of bytes; overwrites duplicates
 export function listMapsets(): Promise<LibraryEntry[]>                               // newest first, no bytes
 export function getMapsetBytes(id: string): Promise<Uint8Array | undefined>
 export function deleteMapset(id: string): Promise<void>
@@ -1486,24 +1738,26 @@ describe('map library', () => {
   });
 
   it('round-trips a mapset', async () => {
-    const entry = await saveMapset(bytes('osz-bytes'), 'Artist — Title');
+    const entry = await saveMapset(bytes('osz-bytes'), 'Artist — Title', 3);
     expect(entry.id).toMatch(/^[0-9a-f]{64}$/);
     const listed = await listMapsets();
     expect(listed).toHaveLength(1);
     expect(listed[0].label).toBe('Artist — Title');
+    expect(listed[0].difficultyCount).toBe(3);
+    expect(listed[0].byteLength).toBe(bytes('osz-bytes').byteLength);
     expect(await getMapsetBytes(entry.id)).toEqual(bytes('osz-bytes'));
   });
 
   it('dedupes identical bytes', async () => {
-    await saveMapset(bytes('same'), 'first');
-    await saveMapset(bytes('same'), 'second');
+    await saveMapset(bytes('same'), 'first', 1);
+    await saveMapset(bytes('same'), 'second', 1);
     expect(await listMapsets()).toHaveLength(1);
   });
 
   it('lists newest first and deletes', async () => {
-    const a = await saveMapset(bytes('a'), 'A');
+    const a = await saveMapset(bytes('a'), 'A', 1);
     await new Promise((r) => setTimeout(r, 5));
-    await saveMapset(bytes('b'), 'B');
+    await saveMapset(bytes('b'), 'B', 2);
     expect((await listMapsets()).map((e) => e.label)).toEqual(['B', 'A']);
     await deleteMapset(a.id);
     expect(await getMapsetBytes(a.id)).toBeUndefined();
@@ -1520,6 +1774,8 @@ export interface LibraryEntry {
   id: string;
   label: string;
   addedAt: number;
+  byteLength: number;
+  difficultyCount: number;
 }
 
 interface LibraryDB extends DBSchema {
@@ -1544,9 +1800,13 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export async function saveMapset(bytes: Uint8Array, label: string): Promise<LibraryEntry> {
+export async function saveMapset(
+  bytes: Uint8Array,
+  label: string,
+  difficultyCount: number,
+): Promise<LibraryEntry> {
   const id = await sha256Hex(bytes);
-  const entry: LibraryEntry = { id, label, addedAt: Date.now() };
+  const entry: LibraryEntry = { id, label, addedAt: Date.now(), byteLength: bytes.byteLength, difficultyCount };
   const d = await db();
   const tx = d.transaction(['meta', 'files'], 'readwrite');
   await tx.objectStore('meta').put(entry);
@@ -1585,13 +1845,13 @@ export async function deleteMapset(id: string): Promise<void> {
 
 **Interfaces:**
 - Consumes: library module (Task 14), `openMapset` callback in MapLoadScreen.
-- Produces: `useLibrary(): { entries: LibraryEntry[]; save(bytes, label): Promise<void>; remove(id): Promise<void>; open(id): Promise<Uint8Array | undefined>; unavailable: boolean }` — every method try/catches; failures set `unavailable` and leave the session working in-memory (today's behavior).
+- Produces: `useLibrary(): { entries: LibraryEntry[]; save(bytes, label, difficultyCount): Promise<void>; remove(id): Promise<void>; open(id): Promise<Uint8Array | undefined>; unavailable: boolean }` — every method try/catches; failures set `unavailable` and leave the session working in-memory (today's behavior).
 
 - [ ] **Step 1: `useLibrary.ts`** — state `entries: LibraryEntry[]`, `unavailable: boolean`; `useEffect` on mount calls `listMapsets()` (catch → `unavailable = true`); `save` calls `saveMapset` then refreshes entries (catch → `unavailable = true`, don't rethrow — upload continues in-memory); `remove` deletes + refreshes; `open` returns `getMapsetBytes(id)`.
 
-- [ ] **Step 2: Wire uploads** — in `MapLoadScreen.handleFile`, after a successful `openMapset(bytes, label)` for a `.osz`, call `void library.save(bytes, label)` (fire-and-forget; `.osu` single files skip the library). 
+- [ ] **Step 2: Wire uploads** — in `MapLoadScreen.handleFile`, compute `const difficultyCount = listDifficulties(bytes).length`; after a successful `openMapset(bytes, label)` for a `.osz`, call `void library.save(bytes, label, difficultyCount)` (fire-and-forget; `.osu` single files skip the library).
 
-- [ ] **Step 3: `YourMaps.tsx`** — renders nothing when `entries.length === 0`; otherwise an eyebrow heading "your maps" + rows (label, added date, ✕ delete button with `confirm()`), click row → `open(id)` → `openMapset(bytes, entry.label)`; when `unavailable`, a muted one-liner "browser storage unavailable — uploads won't persist". Mount below the drop-zone label in MapLoadScreen (only in the `!mapset` branch). Keep <100 lines.
+- [ ] **Step 3: `YourMaps.tsx`** — when `unavailable`, render the muted warning "browser storage unavailable — uploads won't persist"; otherwise render nothing when `entries.length === 0`. With entries, show an eyebrow heading "your maps" + rows (label, difficulty count, readable file size, added date, ✕ delete button with `confirm()`); click row → `open(id)` → `openMapset(bytes, entry.label)`. Mount below the drop-zone label in MapLoadScreen (only in the `!mapset` branch). Keep <100 lines.
 
 - [ ] **Step 4: Manual verification** — upload an `.osz`, reload the page → it's under "your maps"; click → difficulty picker opens; delete removes it after reload too; private-browsing (or DevTools → Application → block storage) still lets you upload and play. `pnpm test && pnpm lint && pnpm build`.
 
@@ -1601,12 +1861,17 @@ export async function deleteMapset(id: string): Promise<void> {
 
 ## Final integration checklist (after M5 merges)
 
-- [ ] Full manual pass on dev: sign in → play bundled map → submit → leaderboard rank → profile top plays → upload custom map → play + submit (enriches as `graveyard`/`unknown` if unsubmitted) → reload, library persists.
-- [ ] Production bring-up (repo owner, Human prerequisite 4): prod deployment, env vars, osu! callback URL, Vercel `VITE_CONVEX_URL`; verify sign-in on airosu.ycells.com.
-- [ ] Update `docs/superpowers/specs` links in README if any; update memory/progress notes.
+- [ ] Full manual pass on dev: sign in → upload a local test map → play → submit → leaderboard rank → profile top plays → upload an unsubmitted custom map → play + submit (enriches as `graveyard`/`unknown`) → reload, library persists.
+- [ ] Repeat one submit with the same `playId` and confirm one score/play-count increment; complete a slider map and confirm its score passes `judgmentCount` validation.
+- [ ] `pnpm build`, then confirm `dist` contains no `.osz`, `.mp3`, or `.ogg` fixture.
+- [ ] Production bring-up (repo owner, Human prerequisite 4): prod deployment, production-only osu! OAuth client/env vars, Vercel `VITE_CONVEX_URL`; verify sign-in on airosu.ycells.com.
+- [ ] Update the README's setup, architecture, privacy/data-storage summary, and relevant design/plan links.
 
 ## Deviations from spec (intentional)
 
 - `LoadedBeatmap.meta` does **not** gain `md5`/`beatmapId`/`objectCount`: the server derives all of them from the submitted `.osu` text in `registerMap`, so the client never needs them (YAGNI).
 - Client-side md5 (spark-md5) dropped for the same reason; the local library keys by WebCrypto SHA-256 instead.
 - `countries` table added (not in spec's table list) to power the filter dropdown without scanning users.
+- `judgmentCount` is stored separately from osu! `objectCount` because the existing airosu engine emits two score judgments for sliders.
+- `playId` is stored on scores so automatic submission and retries are idempotent.
+- Existing bundled-map client modules are removed before online work because their Vite glob currently copies copyrighted `.osz` fixtures into production.
