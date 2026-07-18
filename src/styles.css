@@ -539,3 +539,83 @@ h3 {
   background: var(--panel);
   color: var(--pink);
 }
+
+/* ── results: submit panel + map leaderboard ─────────────────── */
+.submit-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 0 0;
+}
+
+.submit-panel__ok {
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.submit-panel__error {
+  color: #ff6b81;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.map-board {
+  margin-top: 10px;
+  text-align: left;
+}
+
+.map-board__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.map-board__row--me {
+  background: rgba(255, 102, 170, 0.12);
+}
+
+.map-board__rank {
+  width: 28px;
+  font-weight: 800;
+  color: var(--ink-dim);
+}
+
+.map-board__player {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.map-board__player a {
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-board__player a:hover {
+  color: var(--pink);
+}
+
+.map-board__badge {
+  font-size: 11px;
+  color: var(--ink-dim);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.map-board__pp {
+  width: 64px;
+  text-align: right;
+  font-weight: 800;
+  color: var(--pink);
+}

@@ -1,12 +1,16 @@
+import { useSubmitScore } from '../../online/useSubmitScore';
 import { useAppState } from '../appState';
 import { useObjectUrl } from '../useObjectUrl';
 import { AccuracyRing } from './AccuracyRing';
 import { JudgmentGrid } from './JudgmentGrid';
+import { MapLeaderboard } from './MapLeaderboard';
+import { SubmitPanel } from './SubmitPanel';
 import { grade } from './grade';
 import { useCountUp } from './useCountUp';
 
 export function ResultsScreen() {
   const { map, mapset, lastResult, setScreen, setMap } = useAppState();
+  const submission = useSubmitScore();
 
   // created in an effect so StrictMode's unmount/remount recreates a valid URL
   const bgUrl = useObjectUrl(map?.background);
@@ -55,6 +59,9 @@ export function ResultsScreen() {
         </div>
 
         <JudgmentGrid counts={lastResult.counts} />
+
+        <SubmitPanel submission={submission} />
+        <MapLeaderboard mapId={submission.mapId} />
 
         <div className="results-actions">
           <button className="btn btn--primary" onClick={() => setScreen('play')}>

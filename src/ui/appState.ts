@@ -53,6 +53,11 @@ export interface LastResult {
   /** performance points (nomod approximation) */
   pp: number;
   counts: { 300: number; 100: number; 50: number; 0: number };
+  /** idempotency key for online submission; one per completed play */
+  playId: string;
+  inputMode: 'relax' | 'manual';
+  forgiveness: number;
+  cursorAnchor: CursorAnchor;
 }
 
 export interface AppState {

@@ -51,11 +51,16 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         accuracy: s.accuracy,
         pp: ppRef.current?.final(toHitStats(s.counts, s.maxCombo)) ?? 0,
         counts: s.counts,
+        // created once at capture so every submit retry reuses the same key
+        playId: crypto.randomUUID(),
+        inputMode: settings.inputMode,
+        forgiveness: settings.forgiveness,
+        cursorAnchor: settings.cursorAnchor,
       });
     }
     clockRef.current?.stop();
     setScreen('results');
-  }, [setLastResult, setScreen]);
+  }, [setLastResult, setScreen, settings]);
 
   useEffect(() => {
     const host = stageHostRef.current;
