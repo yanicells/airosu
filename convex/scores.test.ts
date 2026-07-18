@@ -1,13 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { convexTest } from 'convex-test';
+import aggregate from '@convex-dev/aggregate/test';
 import { api } from './_generated/api';
 import schema from './schema';
 
 const modules = import.meta.glob('./**/*.ts');
 
+function makeTest() {
+  const t = convexTest(schema, modules);
+  aggregate.register(t, 'globalBoard');
+  aggregate.register(t, 'countryBoard');
+  return t;
+}
+
 describe('scores.submit', () => {
   it('stores the same playId only once', async () => {
-    const t = convexTest(schema, modules);
+    const t = makeTest();
     const { userId, mapId } = await t.run(async (ctx) => {
       const userId = await ctx.db.insert('users', { osuId: 7, name: 'player' });
       const osuFileId = await ctx.storage.store(new Blob(['osu file format v14']));
@@ -60,7 +68,7 @@ describe('scores.submit', () => {
   });
 
   it('marks a better replay as best and flips the old flag', async () => {
-    const t = convexTest(schema, modules);
+    const t = makeTest();
     const { userId, mapId } = await t.run(async (ctx) => {
       const userId = await ctx.db.insert('users', { osuId: 8, name: 'p2' });
       const osuFileId = await ctx.storage.store(new Blob(['osu file format v14']));

@@ -4,6 +4,7 @@ import { mutation, query, type MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { PP_VERSION } from '../src/game/ppFormula';
 import { scoreDerived, validateSubmission, weightedTotals } from './lib/scoring';
+import { syncBoards } from './leaderboard';
 
 export async function recomputeUserTotals(ctx: MutationCtx, userId: Id<'users'>): Promise<void> {
   const best = await ctx.db
@@ -12,11 +13,14 @@ export async function recomputeUserTotals(ctx: MutationCtx, userId: Id<'users'>)
     .order('desc')
     .take(100);
   const totals = weightedTotals(best);
+  const before = await ctx.db.get(userId);
   await ctx.db.patch(userId, {
     totalPp: totals.totalPp,
     hitAccuracy: totals.hitAccuracy,
     ppVersion: PP_VERSION,
   });
+  const after = await ctx.db.get(userId);
+  if (before && after) await syncBoards(ctx, before, after);
 }
 
 export const submit = mutation({

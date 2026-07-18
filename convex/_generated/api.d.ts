@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as leaderboard from "../leaderboard.js";
 import type * as lib_scoring from "../lib/scoring.js";
 import type * as maps from "../maps.js";
 import type * as mapsNode from "../mapsNode.js";
@@ -27,6 +28,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
+  leaderboard: typeof leaderboard;
   "lib/scoring": typeof lib_scoring;
   maps: typeof maps;
   mapsNode: typeof mapsNode;
@@ -64,4 +66,6 @@ export declare const internal: FilterApi<
 
 export declare const components: {
   migrations: import("@convex-dev/migrations/_generated/component.js").ComponentApi<"migrations">;
+  globalBoard: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"globalBoard">;
+  countryBoard: import("@convex-dev/aggregate/_generated/component.js").ComponentApi<"countryBoard">;
 };
