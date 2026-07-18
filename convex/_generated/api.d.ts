@@ -10,6 +10,10 @@
 
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as lib_scoring from "../lib/scoring.js";
+import type * as maps from "../maps.js";
+import type * as mapsNode from "../mapsNode.js";
+import type * as osuApi from "../osuApi.js";
 import type * as users from "../users.js";
 
 import type {
@@ -21,6 +25,10 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
+  "lib/scoring": typeof lib_scoring;
+  maps: typeof maps;
+  mapsNode: typeof mapsNode;
+  osuApi: typeof osuApi;
   users: typeof users;
 }>;
 
