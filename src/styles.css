@@ -619,3 +619,99 @@ h3 {
   font-weight: 800;
   color: var(--pink);
 }
+
+/* ── web pages: leaderboard ──────────────────────────────────── */
+.webpage {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.webpage__body {
+  width: min(920px, 94vw);
+  margin: 28px auto 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.board__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.board {
+  border-collapse: collapse;
+  width: 100%;
+  overflow: hidden;
+}
+
+.board th {
+  padding: 12px 14px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+}
+
+.board td {
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.board__rank {
+  width: 56px;
+  font-weight: 800;
+  color: var(--ink-dim);
+}
+
+.board__player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.board__player img {
+  border-radius: 50%;
+}
+
+.board__player a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board__player a:hover {
+  color: var(--pink);
+}
+
+.board__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.board__pp {
+  font-weight: 800;
+  color: var(--pink);
+}
+
+.board__pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.board__empty {
+  color: var(--ink-dim);
+  text-align: center;
+  padding: 48px 0;
+}
