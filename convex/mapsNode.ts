@@ -1,11 +1,11 @@
 'use node';
 import { createHash } from 'node:crypto';
 import { v } from 'convex/values';
-import { action } from './_generated/server';
+import { action, internalAction } from './_generated/server';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { getAuthUserId } from '@convex-dev/auth/server';
-import { computeMapAttributes } from '../src/beatmap/attributes';
+import { ATTRIBUTES_VERSION, computeMapAttributes } from '../src/beatmap/attributes';
 
 /** Registers a difficulty by its .osu text. Idempotent by md5. Returns mapId. */
 export const registerMap = action({
@@ -55,5 +55,53 @@ export const registerMap = action({
     if (!inserted.created) await ctx.storage.delete(osuFileId); // concurrent registration lost
     await ctx.scheduler.runAfter(0, internal.osuApi.enrichMap, { mapId: inserted.mapId });
     return inserted.mapId;
+  },
+});
+
+/** Resumable refresh of stored map attributes after an ATTRIBUTES_VERSION bump. */
+export const refreshAttributes = internalAction({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (
+    ctx,
+    { cursor },
+  ): Promise<{ updated: number; isDone: boolean; continueCursor: string }> => {
+    const batch = await ctx.runQuery(internal.maps.staleAttributes, {
+      version: ATTRIBUTES_VERSION,
+      paginationOpts: { numItems: 25, cursor: cursor ?? null },
+    });
+    let updated = 0;
+    for (const map of batch.page) {
+      const blob = await ctx.storage.get(map.osuFileId);
+      if (!blob) continue;
+      const a = computeMapAttributes(await blob.text());
+      await ctx.runMutation(internal.maps.patchAttributes, {
+        mapId: map._id,
+        attributesVersion: a.attributesVersion,
+        title: a.title,
+        artist: a.artist,
+        version: a.version,
+        creator: a.creator,
+        bpm: a.bpm,
+        lengthMs: a.lengthMs,
+        cs: a.cs,
+        ar: a.ar,
+        od: a.od,
+        hp: a.hp,
+        starRating: a.starRating,
+        maxCombo: a.maxCombo,
+        objectCount: a.objectCount,
+        judgmentCount: a.judgmentCount,
+        ssPp: a.ssPp,
+        osuBeatmapId: a.beatmapId,
+        osuBeatmapSetId: a.beatmapSetId,
+      });
+      updated++;
+    }
+    if (!batch.isDone) {
+      await ctx.scheduler.runAfter(0, internal.mapsNode.refreshAttributes, {
+        cursor: batch.continueCursor,
+      });
+    }
+    return { updated, isDone: batch.isDone, continueCursor: batch.continueCursor };
   },
 });

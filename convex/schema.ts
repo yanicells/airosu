@@ -56,7 +56,9 @@ export default defineSchema({
     rankedStatus: v.optional(v.string()), // ranked|approved|qualified|loved|graveyard|wip|pending|unknown
     coverUrl: v.optional(v.string()),
     officialStarRating: v.optional(v.number()),
-  }).index('by_md5', ['md5']),
+  })
+    .index('by_md5', ['md5'])
+    .index('by_attributes_version', ['attributesVersion']),
 
   scores: defineTable({
     userId: v.id('users'),
