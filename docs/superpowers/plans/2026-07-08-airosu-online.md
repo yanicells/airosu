@@ -4,11 +4,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** osu! sign-in, server-validated score submission with authoritative pp, global/country leaderboards, osu!-style profile pages, and a persistent local map library.
+**Goal:** licensed starter maps, palm/index-finger aiming, osu! URL-assisted import, osu! sign-in, server-validated scores with authoritative airosu-scaled pp, global/country leaderboards, profiles, and a persistent local map library.
 
-**Architecture:** Convex is the backend (database + auth + actions). Auth is Convex Auth with the built-in Auth.js osu! provider — osu! OAuth is the only sign-in. The client sends raw `.osu` text (map registration) and raw hit stats plus an idempotent `playId` (score submission); the server recomputes difficulty attributes and pp using the same pure TypeScript formula module as the client. `PP_VERSION` covers formula changes and `ATTRIBUTES_VERSION` covers parser/difficulty-calculator changes, so both kinds of rework can be replayed. Leaderboard ranks come from `@convex-dev/aggregate`. Uploaded `.osz` files persist in IndexedDB — no map audio ever leaves the browser.
+**Architecture:** A manifest-approved starter pack is bundled client-side; other `.osz` files are local uploads cached in IndexedDB. Palm/index selection feeds the existing calibration and One Euro filter pipeline. Convex provides osu!-only auth, URL metadata resolution, map registration, score submission, profiles, and aggregate leaderboards; it never stores audio or `.osz`. PP keeps the existing osu!lazer map-worth calculation plus airosu's computer-vision quality/handicap scaling, shared by client and server and protected by `PP_VERSION`/`ATTRIBUTES_VERSION` migrations.
 
-**Tech Stack:** Vite + React 19 + TypeScript, Convex, `@convex-dev/auth` + `@auth/core` (osu! provider), `@convex-dev/aggregate`, `@convex-dev/migrations`, `react-router` (library mode), `idb`, osu-parsers/osu-standard-stable (already installed), vitest.
+**Tech Stack:** Vite + React 19 + TypeScript, MediaPipe HandLandmarker, Convex, `@convex-dev/auth` + `@auth/core` (osu! provider), `@convex-dev/aggregate`, `@convex-dev/migrations`, `react-router` (library mode), `idb`, `fflate`, osu-parsers/osu-standard-stable, Vitest.
 
 **Spec:** `docs/superpowers/specs/2026-07-08-airosu-online-design.md`
 
@@ -18,17 +18,27 @@
 - TypeScript everywhere. Feature folders under `src/ui/<screen>/` with an `index.ts` barrel; split components past ~150 lines.
 - TDD for all pure logic. UI verified manually via `pnpm run dev`.
 - Conventional commits. Commit after every green test cycle.
-- Stacked PRs: one branch + PR per milestone, each branched from the previous (`v2.0-online-auth` → `v2.1-scores` → `v2.2-leaderboard` → `v2.3-profile` → `v2.4-map-library`).
-- Never ship copyrighted audio or `.osz` fixtures in the deployed bundle. Never upload audio or `.osz` bytes to Convex — only `.osu` **text**.
+- Stacked PRs: one branch + PR per milestone, each branched from the previous (`v1.4-onboarding` → `v2.0-online-auth` → `v2.1-scores` → `v2.2-leaderboard` → `v2.3-profile` → `v2.4-map-library`).
+- Ship only starter `.osz` assets with explicit airosu redistribution rights and a verified manifest. Never ship unapproved fixtures. Never upload audio or `.osz` bytes to Convex — only `.osu` **text**.
 - Never add Vercel deploy automation. Production deploy notes are documentation only.
 - Verify installed package APIs at install time; if reality differs from this plan (Convex Auth, aggregate, migrations APIs move), **trust the installed library**, adapt, and note the deviation in the PR description.
 - Use the installed `vercel-react-best-practices` skill when writing React/TSX and `frontend-design` for UI polish. For Convex Auth, aggregate, and migrations, follow the installed package README/types and the official Convex docs; do not assume optional `convex-*` skills are installed.
 - The game must remain fully playable signed-out and offline. No online call may block the play loop.
 - Map registration requires a signed-in user, accepts at most 1 MB of UTF-8 `.osu` text, and must never upload audio or `.osz` bytes.
-- A production build must contain no `.osz`, `.mp3`, or `.ogg` fixture. Files under `game-assets/maps/` are test inputs only and must not be reachable from the Vite client import graph.
-- Relax/manual and forgiveness values 1.0–2.5 share one leaderboard in v2; non-default settings are visible on play rows. Separate competitive rulesets are out of scope.
+- Production `.osz` files may come only from `game-assets/starter-maps/manifest.json`, must match its SHA-256 and size, contain no video, and total at most 15 MB. Files under `game-assets/test-maps/` are test-only.
+- Relax/manual, palm/index, and forgiveness values 1.0–2.5 share one leaderboard in v2; non-default settings are visible on play rows. Separate competitive rulesets are out of scope.
+- Preserve PP v1 exactly: official osu!lazer-derived map worth, airosu accuracy/combo quality, and the existing low-star computer-vision handicap. Cursor anchor does not change PP in v2.
+- osu! URL import uses documented API v2 metadata only. Do not use mirrors, scrape website HTML, forward browser cookies, retain osu! user tokens, or claim automatic download support.
 
-## Human prerequisites (repo owner — do these before/during Milestone 1)
+## Official references
+
+- osu! OAuth grants/scopes and the statement that `lazer` routes are unavailable to third-party authorization-code/client-credentials apps: <https://osu.ppy.sh/docs/#authentication>
+- Beatmapset download endpoint (`lazer`, therefore not usable here): <https://osu.ppy.sh/docs/#beatmapsetsbeatmapsetdownload>
+- Content permission guidance: <https://osu.ppy.sh/wiki/en/Rules/Content_usage_permissions>
+- Featured Artist licensing scope and contact: <https://osu.ppy.sh/legal/en/Music_licensing>
+- MediaPipe landmark 8 is the index fingertip: <https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker>
+
+## Human prerequisites (repo owner — do these before/during Milestones 0–1)
 
 1. **Convex project**: run `pnpm dlx convex dev` once and complete the interactive login/project creation. This writes `CONVEX_DEPLOYMENT` to `.env.local` and prints the deployment URL (`https://<name>.convex.cloud`) and site URL (`https://<name>.convex.site`).
 2. **Development osu! OAuth client**: at <https://osu.ppy.sh/home/account/edit#oauth> click "New OAuth Application". Name: `airosu dev`. Application Callback URL: `https://<dev-name>.convex.site/api/auth/callback/osu`. Save the Client ID and Client Secret. An osu! OAuth application has one callback URL, so do not reuse this client for production.
@@ -39,36 +49,178 @@
    pnpm dlx convex env set SITE_URL http://localhost:5173
    ```
 4. **Production checklist** (later, manual, no automation): create the production Convex deployment, create a second osu! OAuth application named `airosu` whose callback is `https://<prod-name>.convex.site/api/auth/callback/osu`, set that client's `AUTH_OSU_ID`/`AUTH_OSU_SECRET` plus `SITE_URL=https://airosu.ycells.com` on the production deployment, and set `VITE_CONVEX_URL` in Vercel project settings to the production deployment URL.
+5. **Starter-map rights**: provide 2–3 playable `.osz` files, each 60–150 seconds with at least an Easy/Normal difficulty and no video. For every audio, background, hitsound, and beatmap, provide a license or direct permission that explicitly allows redistribution in airosu. An osu! download page or Featured Artist listing alone is not sufficient evidence for third-party bundling.
 
 ---
 
-# Milestone 1 — Convex, routing, osu! sign-in (branch `v2.0-online-auth`)
+# Milestone 0 — Licensed starter maps + cursor choice (branch `v1.4-onboarding`, PR base `main`)
 
-### Task 0: Remove copyrighted beatmaps from the production import graph
+### Task 0.1: Licensed starter-map manifest and production boundary
 
 **Files:**
-- Modify: `src/ui/home/MapLoadScreen.tsx` (make upload/local-library entry the production home flow)
-- Delete: `src/beatmap/bundled.ts`, `src/beatmap/bundled.test.ts`, `src/ui/home/SongList.tsx`, `src/ui/home/useSongBackground.ts`
-- Keep test-only: `game-assets/maps/*.osz` (read only through `node:fs` in Vitest)
+- Create: `game-assets/starter-maps/manifest.json`, `game-assets/starter-maps/LICENSES/`, `scripts/verify-starter-maps.mjs`, `src/beatmap/starterMaps.ts`, `src/beatmap/starterMaps.test.ts`
+- Move: current `game-assets/maps/*.osz` → `game-assets/test-maps/*.osz` unless an item has the prerequisite's explicit redistribution evidence
+- Modify: fixture paths in `src/beatmap/*.test.ts` and `src/game/pp.test.ts`; `src/beatmap/bundled.ts`; `src/ui/home/MapLoadScreen.tsx`; `package.json`; `.github/workflows/ci.yml`
+- Delete: `src/beatmap/bundled.test.ts` (filename parsing is replaced by manifest validation)
 
 **Interfaces:**
-- Produces: the current upload → difficulty picker → play flow, without any client import of `game-assets/maps/*.osz`.
-- Preserves: the fixture paths used by `src/beatmap/*.test.ts` and `src/game/pp.test.ts`.
+- Produces `StarterMapEntry = { id, artist, title, file, sha256, byteLength, license, sourceUrl, attribution, evidence }`, `StarterMap = StarterMapEntry & { url: string }`, and `starterMaps(): StarterMap[]`.
+- Only `game-assets/starter-maps/*.osz` is reachable from the Vite production graph. `game-assets/test-maps/` is read only by Vitest through `node:fs`.
 
-- [ ] **Step 1: Remove bundled-map imports and state** — in `MapLoadScreen.tsx`, remove `bundledMaps`, `BundledMap`, `SongList`, `useSongBackground`, `maps`, `selectedIdx`, `selected`, `busyUrl`, `pickBundled`, and the song-list keyboard effect. Rename `onSongList` to a plain `!mapset && !map` condition and keep the existing file input/drop handler as the home entry point. Do not move fixtures into `public/`.
+- [ ] **Step 1: Separate test fixtures** — move all current mainstream-song `.osz` files to `game-assets/test-maps/`; update every `readFileSync('game-assets/maps/...')` test path. Do not place either test or starter maps in `public/`.
 
-- [ ] **Step 2: Delete the now-unused client modules** listed above. Keep `.osz` fixture tests unchanged; Vite only ships files reachable from production imports.
+- [ ] **Step 2: Add the rights manifest** — for each Human prerequisite 5
+asset, add its `.osz`, a local evidence file under `LICENSES/`, and one JSON
+entry matching this exact schema:
 
-- [ ] **Step 3: Verify the boundary**:
+```ts
+interface StarterManifest {
+  version: 1;
+  maps: Array<{
+    id: string;          // unique lowercase slug: /^[a-z0-9-]+$/
+    artist: string;
+    title: string;
+    file: string;        // same slug + .osz
+    sha256: string;      // computed lowercase SHA-256
+    byteLength: number;  // exact on-disk byte length
+    license: string;     // exact license/direct-permission name
+    sourceUrl: string;   // HTTPS rights/source page
+    attribution: string; // exact required credit
+    evidence: string;    // LICENSES/<same-slug>.md
+  }>;
+}
+```
+
+Use the prerequisite's exact values and computed hash/size; do not commit a
+starter map without all fields and human-reviewed evidence. Keep 2–3 maps,
+60–150 seconds each, with at least Easy/Normal, no video, and ≤15 MB total.
+
+- [ ] **Step 3: Write the failing manifest test** — `starterMaps.test.ts` loads the JSON and asserts unique IDs/files, 64-character SHA-256 values, positive byte sizes, HTTPS source URLs, non-empty attribution/license/evidence, 2–3 entries, and total `byteLength <= 15_000_000`. Run `pnpm test src/beatmap/starterMaps.test.ts` → FAIL until loader/manifest validation exists.
+
+- [ ] **Step 4: Implement and verify assets** — `starterMaps.ts` imports the JSON and uses a narrow eager glob:
+
+```ts
+const starterUrls = import.meta.glob('/game-assets/starter-maps/*.osz', {
+  query: '?url', import: 'default', eager: true,
+}) as Record<string, string>;
+```
+
+Map manifest filenames to these URLs; throw if a listed file is absent or an unlisted `.osz` appears. Move the `BundledMap` type to `starterMaps.ts`; make `bundled.ts` a compatibility barrel that exports `type BundledMap = StarterMap` and `starterMaps as bundledMaps`, so existing home components need minimal changes and there is no circular import. `scripts/verify-starter-maps.mjs` reads each file, checks SHA-256/size/evidence, uses `fflate.unzipSync` to reject `.mp4`, `.avi`, `.flv`, `.mov`, or `.webm`, confirms at least one `.osu` file, and enforces the 15 MB total. Add `"verify:starter-maps": "node scripts/verify-starter-maps.mjs"` and run it in CI before build.
+
+```js
+import { createHash } from 'node:crypto';
+import { readFile, readdir } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { unzipSync } from 'fflate';
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const dir = join(root, 'game-assets/starter-maps');
+const manifest = JSON.parse(await readFile(join(dir, 'manifest.json'), 'utf8'));
+const fail = (message) => { throw new Error(`starter maps: ${message}`); };
+if (manifest.version !== 1 || !Array.isArray(manifest.maps)) fail('invalid manifest');
+if (manifest.maps.length < 2 || manifest.maps.length > 3) fail('expected 2-3 maps');
+
+const diskFiles = (await readdir(dir)).filter((name) => name.endsWith('.osz')).sort();
+const listedFiles = manifest.maps.map((entry) => entry.file).sort();
+if (JSON.stringify(diskFiles) !== JSON.stringify(listedFiles)) fail('manifest/file mismatch');
+
+let total = 0;
+const ids = new Set();
+for (const entry of manifest.maps) {
+  if (!/^[a-z0-9-]+$/.test(entry.id) || ids.has(entry.id)) fail(`bad id ${entry.id}`);
+  ids.add(entry.id);
+  if (!/^[a-z0-9-]+\.osz$/.test(entry.file)) fail(`bad file ${entry.file}`);
+  if (!/^LICENSES\/[a-z0-9-]+\.md$/.test(entry.evidence)) fail(`bad evidence path ${entry.id}`);
+  if (!/^https:\/\//.test(entry.sourceUrl)) fail(`bad source for ${entry.id}`);
+  for (const field of ['artist', 'title', 'license', 'attribution', 'evidence']) {
+    if (typeof entry[field] !== 'string' || !entry[field].trim()) fail(`${entry.id}: ${field}`);
+  }
+  const bytes = await readFile(join(dir, entry.file));
+  const hash = createHash('sha256').update(bytes).digest('hex');
+  if (hash !== entry.sha256 || bytes.byteLength !== entry.byteLength) fail(`${entry.id}: hash/size`);
+  await readFile(join(dir, entry.evidence), 'utf8');
+  const names = Object.keys(unzipSync(bytes)).map((name) => name.toLowerCase());
+  if (!names.some((name) => name.endsWith('.osu'))) fail(`${entry.id}: no .osu`);
+  if (names.some((name) => /\.(mp4|avi|flv|mov|webm)$/.test(name))) fail(`${entry.id}: video`);
+  total += bytes.byteLength;
+}
+if (total > 15_000_000) fail('15 MB budget exceeded');
+console.log(`verified ${manifest.maps.length} starter maps (${total} bytes)`);
+```
+
+- [ ] **Step 5: Keep the starter UX** — retain `SongList` and `useSongBackground`, but make `bundledMaps()` read only `starterMaps()`. Upload remains visible below the list. Picking a starter map opens the existing difficulty picker; it is not copied to IndexedDB.
+
+- [ ] **Step 6: Verify and commit**:
 
 ```bash
+pnpm run verify:starter-maps
 pnpm test
 pnpm lint
 pnpm build
-test -z "$(find dist -type f \( -iname '*.osz' -o -iname '*.mp3' -o -iname '*.ogg' \) -print -quit)"
 ```
 
-Expected: all commands pass and the final command prints nothing. Commit: `fix: keep copyrighted beatmaps out of production bundle`.
+Expected: all pass; `dist` contains exactly the manifest-approved starter `.osz` assets and no file from `game-assets/test-maps/`. Commit: `feat: add licensed starter map pack`.
+
+### Task 0.2: Optional palm or index-fingertip cursor — TDD
+
+**Files:**
+- Create: `src/cv/cursorPoint.ts`, `src/cv/cursorPoint.test.ts`
+- Modify: `src/ui/appState.ts`, `src/cv/cursorSource.ts`, `src/ui/home/MapCard.tsx`, `src/ui/settings/SettingsScreen.tsx`, `src/ui/calibrate/CalibrationScreen.tsx`
+
+**Interfaces:**
+- Produces `export type CursorAnchor = 'palm' | 'index'` and `cursorPoint(landmarks, anchor): Vec2`.
+- Adds `Settings.cursorAnchor`, default `'palm'`. Every Play action still enters calibration, so the selected anchor is calibrated before gameplay.
+
+- [ ] **Step 1: Write failing tests**:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { cursorPoint } from './cursorPoint';
+
+const landmarks = Array.from({ length: 21 }, (_, i) => ({ x: i / 100, y: i / 50 }));
+
+describe('cursorPoint', () => {
+  it('uses the existing palm center for palm mode', () => {
+    expect(cursorPoint(landmarks, 'palm')).toEqual({ x: 0.088, y: 0.176 });
+  });
+  it('uses MediaPipe landmark 8 for index mode', () => {
+    expect(cursorPoint(landmarks, 'index')).toEqual(landmarks[8]);
+  });
+});
+```
+
+Run `pnpm test src/cv/cursorPoint.test.ts` → FAIL (module missing).
+
+- [ ] **Step 2: Implement**:
+
+```ts
+import type { Vec2 } from '../beatmap/model';
+import { palmCenter } from './palm';
+
+export type CursorAnchor = 'palm' | 'index';
+
+export function cursorPoint(
+  landmarks: { x: number; y: number }[],
+  anchor: CursorAnchor,
+): Vec2 {
+  return anchor === 'index' ? { ...landmarks[8] } : palmCenter(landmarks);
+}
+```
+
+Run the focused test → PASS.
+
+- [ ] **Step 3: Wire settings and tracking** — add `cursorAnchor: CursorAnchor` to `Settings`, set `defaultSettings.cursorAnchor = 'palm'`, and include it in the `CursorSource.setSettings` pick. In `cursorSource.ts`, initialize `let cursorAnchor: CursorAnchor = 'palm'`, assign `cursorAnchor = s.cursorAnchor` in `setSettings`, and replace `palmCenter(result.landmarks)` with `cursorPoint(result.landmarks, cursorAnchor)`. Rename the `CursorSample.camera` comment from “palm position” to “selected raw cursor point.”
+
+- [ ] **Step 4: Add selection UI** — on `MapCard`, add a “Cursor” select beside Mode/Visuals with `Palm` and `Index fingertip`; add the same select in Settings. Calibration text must name the selected anchor (“move your palm” / “move your index finger”). Changing it on the map card is safe because Play always routes through calibration.
+
+- [ ] **Step 5: Manual verify** — run `pnpm dev`; calibrate/play once per anchor. Confirm palm behavior is unchanged, landmark 8 follows the fingertip, smoothing still applies, tracking loss behaves the same, and switching anchor forces the normal calibration flow. Run `pnpm test && pnpm lint && pnpm build`.
+
+- [ ] **Step 6: Commit + PR** — commit `feat: add fingertip cursor option`; push `v1.4-onboarding`; open PR base `main` documenting every starter-map license/evidence and the 15 MB audit.
+
+---
+
+# Milestone 1 — Convex, routing, osu! sign-in (branch `v2.0-online-auth`, from `v1.4-onboarding`)
 
 ### Task 1: Install Convex + router, wire providers and routes
 
@@ -332,11 +484,11 @@ export function NavBar() {
 git add -A
 git commit -m "feat: auth navbar and sign-in UI"
 git push -u origin v2.0-online-auth
-gh pr create --base main --title "airosu online M1: convex + osu! sign-in" \
-  --body "Convex Auth with osu!-only sign-in, shareable routes, and an upload-only production home. Dev and production use separate osu! OAuth applications/callbacks. Verified that dist contains no bundled .osz or audio fixture."
+gh pr create --base v1.4-onboarding --title "airosu online M1: convex + osu! sign-in" \
+  --body "Convex Auth with osu!-only sign-in and shareable routes, stacked on the licensed starter-map/fingertip onboarding PR. Dev and production use separate osu! OAuth applications/callbacks."
 ```
 
-The PR body must list the separate dev/production OAuth callback setup and confirm the production asset audit.
+The PR body must list the separate dev/production OAuth callback setup and reference the starter-map rights audit in its base PR.
 
 ---
 
@@ -345,7 +497,7 @@ The PR body must list the separate dev/production OAuth callback setup and confi
 ### Task 4: Extract pure pp formula (`ppFormula.ts`) — TDD
 
 **Files:**
-- Create: `src/game/ppFormula.ts`, `src/game/ppFormula.test.ts`, `src/game/grade.ts`
+- Create: `src/game/pp.compat.test.ts`, `src/game/ppFormula.ts`, `src/game/ppFormula.test.ts`, `src/game/grade.ts`
 - Modify: `src/game/pp.ts` (delegate math), `src/ui/results/grade.ts` (re-export from game), `src/ui/results/ResultsScreen.tsx` + any `grade` importers (import path unchanged via re-export — verify)
 
 **Interfaces:**
@@ -356,9 +508,53 @@ The PR body must list the separate dev/production OAuth callback setup and confi
   - `accuracyOf(s: HitStats): number` — 0 when nothing judged
   - `playPp(worth: { ssPp: number; starRating: number }, s: HitStats): number`
   - `src/game/grade.ts`: `type Grade`, `grade(accuracy: number): Grade` (moved from `src/ui/results/grade.ts`; colors/labels stay in the UI file)
-  - The refactor preserves current `PpCounter.final()` values, including maps with sliders where airosu records two judgments per slider.
+  - The refactor preserves the current formula: osu!lazer-derived SS worth × airosu accuracy/combo quality × computer-vision handicap `2 + 30 * exp(-starRating)`.
+  - Palm and index cursor plays use identical PP v1 math; `cursorAnchor` is stored for future versioned policy changes.
 
-- [ ] **Step 1: Write `src/game/ppFormula.test.ts`** (failing first):
+- [ ] **Step 1: Lock current PP v1 outputs before refactoring** — create `src/game/pp.compat.test.ts` against the untouched `PpCounter`:
+
+```ts
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { listDifficulties, loadFromOsz } from '../beatmap/load';
+import { PpCounter, type HitStats } from './pp';
+
+const kira = new Uint8Array(
+  readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
+);
+const quaver = new Uint8Array(
+  readFileSync('game-assets/test-maps/873811 dj TAKA - quaver.osz'),
+);
+
+function perfectStats(bytes: Uint8Array, difficultyName: string): HitStats {
+  const map = loadFromOsz(bytes, difficultyName);
+  const judged = map.objects.reduce((n, o) => n + (o.kind === 'slider' ? 2 : 1), 0);
+  return { count300: judged, count100: 0, count50: 0, countMiss: 0, maxCombo: judged };
+}
+
+describe('airosu PP v1 compatibility', () => {
+  it('preserves the scaled low-star and high-star SS values', () => {
+    const diffs = listDifficulties(kira);
+    const easy = diffs.find((d) => d.difficultyName.includes("Rocket's Easy"))!;
+    const insane = diffs.find((d) => d.difficultyName.includes("Mamayu's Insane"))!;
+    expect(new PpCounter(easy.osuText).final(perfectStats(kira, easy.difficultyName)))
+      .toBeCloseTo(42.26395250711483, 8);
+    expect(new PpCounter(insane.osuText).final(perfectStats(kira, insane.difficultyName)))
+      .toBeCloseTo(347.776643644777, 8);
+  });
+
+  it('preserves the real hand-tracked quaver sample', () => {
+    const beginner = listDifficulties(quaver)
+      .find((d) => d.difficultyName.includes("Akitoshi's Beginner"))!;
+    const play = { count300: 47, count100: 6, count50: 0, countMiss: 5, maxCombo: 19 };
+    expect(new PpCounter(beginner.osuText).final(play)).toBeCloseTo(13.401307625182142, 8);
+  });
+});
+```
+
+- [ ] **Step 2: Prove and commit the characterization** — run `pnpm test src/game/pp.compat.test.ts`; expected PASS before any production change. Commit `test: lock airosu pp v1 scaling`.
+
+- [ ] **Step 3: Write `src/game/ppFormula.test.ts`** (failing first):
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -396,9 +592,9 @@ describe('ppFormula', () => {
 });
 ```
 
-- [ ] **Step 2: Run** `pnpm test src/game/ppFormula.test.ts` — FAILS (module not found).
+- [ ] **Step 4: Run** `pnpm test src/game/ppFormula.test.ts` — FAILS (module not found).
 
-- [ ] **Step 3: Implement `src/game/ppFormula.ts`** — lift the math verbatim from `pp.ts` lines 62–87 (quality curve, handicap) into pure functions. **This module must stay dependency-free** (no osu-* imports) — it is imported by Convex functions:
+- [ ] **Step 5: Implement `src/game/ppFormula.ts`** — lift the math verbatim from `pp.ts` lines 62–87 (quality curve, handicap) into pure functions. **This module must stay dependency-free** (no osu-* imports) — it is imported by Convex functions:
 
 ```ts
 /**
@@ -452,7 +648,7 @@ export function playPp(worth: MapWorth, s: HitStats): number {
 }
 ```
 
-- [ ] **Step 4: Refactor `src/game/pp.ts`** — delete the duplicated math; keep the lazer ssPp computation:
+- [ ] **Step 6: Refactor `src/game/pp.ts`** — delete the duplicated math; keep the lazer ssPp computation:
 
 ```ts
 // pp.ts private method becomes:
@@ -472,11 +668,11 @@ private pp(attributes: StandardDifficultyAttributes, stats: HitStats): number {
 
 with `import { judgedCount, playPp } from './ppFormula';` and `export type { HitStats } from './ppFormula';` replacing the local interface (keep the doc comment on the class).
 
-- [ ] **Step 5: Move grade** — create `src/game/grade.ts` with `Grade` + `grade()` copied from `src/ui/results/grade.ts`; change the UI file to `export { grade, type Grade } from '../../game/grade';` keeping `gradeColor`/`judgmentColors`/`judgmentLabels` where they are.
+- [ ] **Step 7: Move grade** — create `src/game/grade.ts` with `Grade` + `grade()` copied from `src/ui/results/grade.ts`; change the UI file to `export { grade, type Grade } from '../../game/grade';` keeping `gradeColor`/`judgmentColors`/`judgmentLabels` where they are.
 
-- [ ] **Step 6: Run everything** — `pnpm test` (all suites incl. existing `pp.test.ts` must still pass — the refactor must not change any number) and `pnpm lint && pnpm build`.
+- [ ] **Step 8: Run everything** — `pnpm test` (including exact compatibility values; no PP v1 number may change) and `pnpm lint && pnpm build`.
 
-- [ ] **Step 7: Commit** — `refactor: extract versioned pp formula and grade into pure shared modules`
+- [ ] **Step 9: Commit** — `refactor: extract versioned pp formula and grade into pure shared modules`
 
 ### Task 5: Server-side map attributes helper — TDD
 
@@ -500,7 +696,7 @@ export interface MapAttributes {
 
 - Consumes: `toInternal` from `src/beatmap/adapter.ts` (meta + objects), osu-standard-stable ruleset. Runs in the Convex Node action (Task 6) and in vitest — must not touch DOM APIs.
 
-- [ ] **Step 1: Write `src/beatmap/attributes.test.ts`** using the existing fixture pattern (`src/beatmap/load.test.ts` reads `game-assets/maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz`):
+- [ ] **Step 1: Write `src/beatmap/attributes.test.ts`** using the test-only fixture pattern (`src/beatmap/load.test.ts` reads `game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz`):
 
 ```ts
 import { readFileSync } from 'node:fs';
@@ -510,7 +706,7 @@ import { computeMapAttributes } from './attributes';
 import { PpCounter } from '../game/pp';
 import { playPp } from '../game/ppFormula';
 
-const osz = new Uint8Array(readFileSync('game-assets/maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'));
+const osz = new Uint8Array(readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'));
 const easy = listDifficulties(osz).find((d) => /easy/i.test(d.difficultyName))!;
 
 describe('computeMapAttributes', () => {
@@ -660,8 +856,9 @@ scores: defineTable({
   pp: v.number(),
   ppVersion: v.number(),
   isBest: v.boolean(), // best pp play by this user on this map
-  inputMode: v.string(), // 'relax' | 'manual'
+  inputMode: v.union(v.literal('relax'), v.literal('manual')),
   forgiveness: v.number(),
+  cursorAnchor: v.union(v.literal('palm'), v.literal('index')),
 })
   .index('by_user_play', ['userId', 'playId'])
   .index('by_user_map', ['userId', 'mapId'])
@@ -930,7 +1127,7 @@ export const enrichMap = internalAction({
 
 **Interfaces:**
 - Produces:
-  - `api.scores.submit` mutation `{ playId, mapId, count300, count100, count50, countMiss, maxCombo, score, inputMode, forgiveness } → { pp: number; isBest: boolean; grade: string; accuracy: number }`. A repeated `(userId, playId)` returns the original score without incrementing play count.
+  - `api.scores.submit` mutation `{ playId, mapId, count300, count100, count50, countMiss, maxCombo, score, inputMode, forgiveness, cursorAnchor } → { pp: number; isBest: boolean; grade: string; accuracy: number }`. A repeated `(userId, playId)` returns the original score without incrementing play count.
   - `recomputeUserTotals(ctx: MutationCtx, userId: Id<'users'>): Promise<void>` (exported — reused by the recalc migration in Task 9 and aggregates in Milestone 3)
   - `api.scores.mapLeaderboard` query `{ mapId } → rows` (top 50 best scores + user name/avatar/country)
 - Consumes: schema (Task 6), `scoring.ts`, `getAuthUserId`.
@@ -965,7 +1162,9 @@ export const submit = mutation({
     mapId: v.id('maps'),
     count300: v.number(), count100: v.number(), count50: v.number(), countMiss: v.number(),
     maxCombo: v.number(), score: v.number(),
-    inputMode: v.union(v.literal('relax'), v.literal('manual')), forgiveness: v.number(),
+    inputMode: v.union(v.literal('relax'), v.literal('manual')),
+    forgiveness: v.number(),
+    cursorAnchor: v.union(v.literal('palm'), v.literal('index')),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -1012,6 +1211,7 @@ export const submit = mutation({
     await ctx.db.insert('scores', {
       userId, playId: args.playId, mapId: args.mapId, ...stats,
       score: args.score, inputMode: args.inputMode, forgiveness: args.forgiveness,
+      cursorAnchor: args.cursorAnchor,
       accuracy: derived.accuracy, grade: derived.grade, pp: derived.pp,
       ppVersion: derived.ppVersion, isBest,
     });
@@ -1038,6 +1238,7 @@ export const mapLeaderboard = query({
         return {
           scoreId: s._id, pp: s.pp, accuracy: s.accuracy, grade: s.grade,
           maxCombo: s.maxCombo, inputMode: s.inputMode, forgiveness: s.forgiveness,
+          cursorAnchor: s.cursorAnchor,
           playedAt: s._creationTime,
           osuId: u?.osuId, name: u?.name, image: u?.image, countryCode: u?.countryCode,
         };
@@ -1076,6 +1277,7 @@ describe('scores.submit', () => {
       playId: '11111111-1111-4111-8111-111111111111', mapId,
       count300: 100, count100: 0, count50: 0, countMiss: 0,
       maxCombo: 100, score: 123_456, inputMode: 'relax' as const, forgiveness: 1.5,
+      cursorAnchor: 'palm' as const,
     };
 
     const first = await authed.mutation(api.scores.submit, args);
@@ -1097,13 +1299,13 @@ describe('scores.submit', () => {
 
 **Files:**
 - Create: `src/online/useSubmitScore.ts`, `src/ui/results/SubmitPanel.tsx`, `src/ui/results/MapLeaderboard.tsx`, `src/ui/shared/flag.ts`, `src/ui/shared/flag.test.ts`
-- Modify: `src/ui/appState.ts` (LastResult gains `playId`, `inputMode`, `forgiveness`), the `setLastResult` call site in `src/ui/play/` (generate one UUID and pass the two active settings values), `src/ui/results/ResultsScreen.tsx` (mount `<SubmitPanel />`), `src/ui/results/index.ts`
+- Modify: `src/ui/appState.ts` (LastResult gains `playId`, `inputMode`, `forgiveness`, `cursorAnchor`), the `setLastResult` call site in `src/ui/play/` (generate one UUID and capture the active settings), `src/ui/results/ResultsScreen.tsx` (mount `<SubmitPanel />`), `src/ui/results/index.ts`
 
 **Interfaces:**
 - Consumes: `api.mapsNode.registerMap`, `api.scores.submit`, `api.users.me`, appState (`map.rawOsu`, `lastResult`).
 - Produces: `useSubmitScore(): { status: 'signedOut'|'idle'|'submitting'|'done'|'error'; result?: { pp: number; isBest: boolean }; mapId?: Id<'maps'>; error?: string; submit(): void }` — auto-submits once on mount when signed in; `mapId` is set once registration succeeds and drives the per-map leaderboard.
 
-- [ ] **Step 1: Extend LastResult** — in `appState.ts` add `playId: string; inputMode: 'relax' | 'manual'; forgiveness: number;` to `LastResult`. In `useGameLoop.finish`, add `playId: crypto.randomUUID(), inputMode: settings.inputMode, forgiveness: settings.forgiveness`. The ID is created once when the result is captured, not inside the submit hook, so every retry reuses it. Fix any test fixtures that construct `LastResult`.
+- [ ] **Step 1: Extend LastResult** — in `appState.ts` add `playId: string; inputMode: 'relax' | 'manual'; forgiveness: number; cursorAnchor: 'palm' | 'index';` to `LastResult`. In `useGameLoop.finish`, add `playId: crypto.randomUUID(), inputMode: settings.inputMode, forgiveness: settings.forgiveness, cursorAnchor: settings.cursorAnchor`. The ID is created once when the result is captured, not inside the submit hook, so every retry reuses it. Fix any test fixtures that construct `LastResult`.
 
 - [ ] **Step 2: `src/online/useSubmitScore.ts`**:
 
@@ -1143,6 +1345,7 @@ export function useSubmitScore() {
           count50: lastResult.counts[50], countMiss: lastResult.counts[0],
           maxCombo: lastResult.maxCombo, score: lastResult.score,
           inputMode: lastResult.inputMode, forgiveness: lastResult.forgiveness,
+          cursorAnchor: lastResult.cursorAnchor,
         });
         setResult({ pp: res.pp, isBest: res.isBest });
         setStatus('done');
@@ -1192,7 +1395,7 @@ export function flagEmoji(code: string): string {
 
 Run again — PASS.
 
-- [ ] **Step 3c: `src/ui/results/MapLeaderboard.tsx`** — per-map top plays, rendered under the SubmitPanel once `mapId` is known (spec: per-map leaderboard on results). `useQuery(api.scores.mapLeaderboard, mapId ? { mapId } : 'skip')`; render nothing while loading/empty; otherwise a compact list of the top 10: `#i · flagEmoji(countryCode)+name (link to /u/{osuId}) · grade · accuracy · pp`, highlighting the signed-in user's row. Keep <100 lines.
+- [ ] **Step 3c: `src/ui/results/MapLeaderboard.tsx`** — per-map top plays, rendered under the SubmitPanel once `mapId` is known (spec: per-map leaderboard on results). `useQuery(api.scores.mapLeaderboard, mapId ? { mapId } : 'skip')`; render nothing while loading/empty; otherwise a compact list of the top 10: `#i · flagEmoji(countryCode)+name (link to /u/{osuId}) · grade · accuracy · pp`, with a small `manual`, `index`, or non-default forgiveness badge when applicable, highlighting the signed-in user's row. Keep <100 lines.
 
 - [ ] **Step 4: Manual verification (full loop)** — `pnpm run dev`: signed out, finish a short play → prompt shown, game unaffected. Sign in, play again → "submitting…" then "+Xpp · personal best!". Convex dashboard: `maps` row exists (with enrichment arriving later when the map is known to osu!), `scores` row has `isBest: true`, user doc has `totalPp > 0`, `playCount: 1`. Click retry submission or remount the results UI with the same `playId` → still one score and `playCount: 1`. Play the same map worse with a new `playId` → second score `isBest: false`, `totalPp` unchanged. Include a slider map to prove `judgmentCount` validation accepts it. `pnpm test && pnpm lint && pnpm build`.
 
@@ -1343,7 +1546,8 @@ Run it from the dashboard or CLI as `pnpm dlx convex run mapsNode:refreshAttribu
 For a formula-only change (`src/game/ppFormula.ts`):
 
 1. Change the math and **bump `PP_VERSION`**.
-2. Update `src/game/ppFormula.test.ts` expectations; keep old-version tests as history if useful.
+2. Add the new version's expectations. Keep `pp.compat.test.ts` PP v1 values as
+   named historical fixtures; do not silently rewrite them to make a refactor pass.
 3. Deploy: `pnpm dlx convex dev --once` (dev) / `pnpm dlx convex deploy` (prod).
 4. Run the recalculation: `pnpm dlx convex run migrations:runPpRework` (add `--prod` for production).
    It replays: score pp → isBest flags → user totals (+ leaderboard aggregates).
@@ -1567,7 +1771,7 @@ export const runBackfillBoards = migrations.runner(internal.migrations.backfillB
 
 **Interfaces:**
 - Produces:
-  - `api.profile.byOsuId` query `{ osuId: number } → null | { user: {...public fields incl. osuPp/osuGlobalRank/osuStatsSyncedAt}, globalRank, countryRank, topPlays: PlayRow[], recentPlays: PlayRow[] }` where `PlayRow = { scoreId, pp, weight (topPlays only), accuracy, grade, maxCombo, inputMode, forgiveness, playedAt, map: { title, artist, version, starRating, coverUrl?, rankedStatus?, osuBeatmapId?, osuBeatmapSetId? } }`
+  - `api.profile.byOsuId` query `{ osuId: number } → null | { user: {...public fields incl. osuPp/osuGlobalRank/osuStatsSyncedAt}, globalRank, countryRank, topPlays: PlayRow[], recentPlays: PlayRow[] }` where `PlayRow = { scoreId, pp, weight (topPlays only), accuracy, grade, maxCombo, inputMode, forgiveness, cursorAnchor, playedAt, map: { title, artist, version, starRating, coverUrl?, rankedStatus?, osuBeatmapId?, osuBeatmapSetId? } }`
   - `api.osuApi.syncOsuStats` action `{ osuId: number } → void` (server-throttled to 1/24h per user)
 - Consumes: `userRanks` (Task 10), `osuToken` (Task 6).
 
@@ -1590,6 +1794,7 @@ export const byOsuId = query({
       return {
         scoreId: s._id, pp: s.pp, weight, accuracy: s.accuracy, grade: s.grade,
         maxCombo: s.maxCombo, inputMode: s.inputMode, forgiveness: s.forgiveness,
+        cursorAnchor: s.cursorAnchor,
         playedAt: s._creationTime,
         map: map && {
           title: map.title, artist: map.artist, version: map.version,
@@ -1688,7 +1893,7 @@ export const patchOsuStats = internalMutation({
 
 - [ ] **Step 2: `ProfileHeader.tsx`** — big avatar, `flagEmoji(countryCode)` + name, stat tiles: `#globalRank` / `countryFlag #countryRank` / `Math.round(totalPp)pp` / play count / `(hitAccuracy*100).toFixed(2)%`. Comparison line when `osuPp` present: `real osu!: {osuPp}pp (#{osuGlobalRank}) · airosu: {totalPp}pp`. Keep <150 lines.
 
-- [ ] **Step 3: `PlayRow.tsx`** — one row per play: left cover thumbnail (`map.coverUrl` if set, else the panel background), map `title [version]` + `artist` (when both IDs exist, link to `https://osu.ppy.sh/beatmapsets/{osuBeatmapSetId}#osu/{osuBeatmapId}`), star badge (reuse `src/ui/home/starColor.ts`), ranked-status badge when `rankedStatus === 'ranked' || 'loved' || 'approved'`, grade letter colored by `gradeColor`, accuracy, `{maxCombo}x`, settings badge when non-default (`inputMode !== 'relax' || forgiveness !== 1.5` → e.g. `manual · 1.0×`), right-aligned `pp` and (topPlays only) `weighted {Math.round(pp * weight)}pp ({Math.round(weight * 100)}%)`.
+- [ ] **Step 3: `PlayRow.tsx`** — one row per play: left cover thumbnail (`map.coverUrl` if set, else the panel background), map `title [version]` + `artist` (when both IDs exist, link to `https://osu.ppy.sh/beatmapsets/{osuBeatmapSetId}#osu/{osuBeatmapId}`), star badge (reuse `src/ui/home/starColor.ts`), ranked-status badge when `rankedStatus === 'ranked' || 'loved' || 'approved'`, grade letter colored by `gradeColor`, accuracy, `{maxCombo}x`, settings badge when non-default (`inputMode !== 'relax' || forgiveness !== 1.5 || cursorAnchor !== 'palm'` → e.g. `manual · index · 1.0×`), right-aligned `pp` and (topPlays only) `weighted {Math.round(pp * weight)}pp ({Math.round(weight * 100)}%)`.
 
 - [ ] **Step 4: Route + verify** — replace the `/u/:osuId` placeholder. Manual: own profile from navbar shows header stats matching dashboard, top plays sorted by pp with weights 100%, 95%, …; osu! comparison appears after sync; unknown osuId shows not-found. `pnpm test && pnpm lint && pnpm build`.
 
@@ -1696,7 +1901,7 @@ export const patchOsuStats = internalMutation({
 
 ---
 
-# Milestone 5 — Local map library (branch `v2.4-map-library`, from `v2.3-profile`)
+# Milestone 5 — Local map library + osu! URL assistance (branch `v2.4-map-library`, from `v2.3-profile`)
 
 ### Task 14: IndexedDB library module — TDD
 
@@ -1855,15 +2060,165 @@ export async function deleteMapset(id: string): Promise<void> {
 
 - [ ] **Step 4: Manual verification** — upload an `.osz`, reload the page → it's under "your maps"; click → difficulty picker opens; delete removes it after reload too; private-browsing (or DevTools → Application → block storage) still lets you upload and play. `pnpm test && pnpm lint && pnpm build`.
 
-- [ ] **Step 5: Commit + PR** — `feat: persistent local map library`; PR "airosu online M5: your maps library" based on `v2.3-profile`.
+- [ ] **Step 5: Commit** — `feat: persistent local map library`.
+
+### Task 16: Official osu! URL-assisted import
+
+Automatic download is deliberately excluded: the official beatmapset download
+API is a `lazer` route, and osu! documents that `lazer` routes are unavailable
+to third-party authorization-code/client-credentials apps. This task resolves
+the URL and exact difficulty, sends the user to the official page to download,
+then resumes through the normal local `.osz` picker. No mirror or scraping.
+
+**Files:**
+- Create: `src/beatmap/acquisition/osuUrl.ts`, `src/beatmap/acquisition/osuUrl.test.ts`, `src/beatmap/acquisition/index.ts`, `src/ui/home/OsuUrlImport.tsx`
+- Modify: `convex/osuApi.ts`, `src/beatmap/load.ts`, `src/beatmap/load.test.ts`, `src/ui/home/MapLoadScreen.tsx`, `src/ui/home/index.ts`, `README.md`
+
+**Interfaces:**
+
+```ts
+export type OsuUrlTarget =
+  | { kind: 'beatmapset'; id: number }
+  | { kind: 'beatmap'; id: number };
+
+export function parseOsuUrl(input: string): OsuUrlTarget | null;
+export function beatmapIdFromOsuText(osuText: string): number | null;
+export function findDifficultyByBeatmapId(
+  entries: { difficultyName: string; osuText: string }[],
+  beatmapId: number,
+): string | null;
+```
+
+`api.osuApi.resolveBeatmapSource` accepts `OsuUrlTarget` and returns:
+
+```ts
+{
+  beatmapsetId: number;
+  beatmapId?: number;
+  artist: string;
+  title: string;
+  creator: string;
+  coverUrl?: string;
+  status: string;
+  pageUrl: string;
+}
+```
+
+- [ ] **Step 1: Write URL parser tests**:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { parseOsuUrl } from './osuUrl';
+
+describe('parseOsuUrl', () => {
+  it('accepts canonical beatmapset and beatmap URLs', () => {
+    expect(parseOsuUrl('https://osu.ppy.sh/beatmapsets/123#osu/456'))
+      .toEqual({ kind: 'beatmap', id: 456 });
+    expect(parseOsuUrl('https://osu.ppy.sh/beatmapsets/123'))
+      .toEqual({ kind: 'beatmapset', id: 123 });
+    expect(parseOsuUrl('https://osu.ppy.sh/beatmaps/456'))
+      .toEqual({ kind: 'beatmap', id: 456 });
+  });
+  it('rejects non-osu hosts, non-https URLs and unrelated paths', () => {
+    expect(parseOsuUrl('https://mirror.example/beatmapsets/123')).toBeNull();
+    expect(parseOsuUrl('http://osu.ppy.sh/beatmapsets/123')).toBeNull();
+    expect(parseOsuUrl('https://osu.ppy.sh/users/123')).toBeNull();
+  });
+});
+```
+
+Run → FAIL, then implement with `new URL(input.trim())`, exact host
+`osu.ppy.sh`, protocol `https:`, positive safe-integer IDs, canonical
+`/beatmapsets/:id` and `/beatmaps/:id` paths, and optional `#osu/:beatmapId`.
+Do not accept or rewrite mirror URLs.
+
+- [ ] **Step 2: Add exact-difficulty matching tests** — in `load.test.ts`, use two synthetic `.osu` texts containing `BeatmapID:111` / `BeatmapID:222`; assert `beatmapIdFromOsuText` returns the ID and `findDifficultyByBeatmapId(entries, 222)` returns the second difficulty. Implement by matching the metadata line `/^BeatmapID\s*:\s*(\d+)\s*$/m`; return `null` for missing/invalid IDs.
+
+- [ ] **Step 3: Add the Convex resolver** — in `convex/osuApi.ts`, add an authenticated public action:
+
+```ts
+async function osuJson(url: string, token: string): Promise<Record<string, any>> {
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  });
+  if (response.status === 404) throw new ConvexError('osu! map not found');
+  if (!response.ok) throw new ConvexError('osu! lookup is temporarily unavailable');
+  return await response.json() as Record<string, any>;
+}
+
+export const resolveBeatmapSource = action({
+  args: {
+    kind: v.union(v.literal('beatmapset'), v.literal('beatmap')),
+    id: v.number(),
+  },
+  handler: async (ctx, { kind, id }) => {
+    if (!(await getAuthUserId(ctx))) throw new ConvexError('sign in to resolve osu! URLs');
+    if (!Number.isSafeInteger(id) || id <= 0) throw new ConvexError('invalid osu! id');
+    const token = await osuToken();
+    let beatmapId: number | undefined;
+    let beatmapsetId = id;
+    if (kind === 'beatmap') {
+      const beatmap = await osuJson(`https://osu.ppy.sh/api/v2/beatmaps/${id}`, token);
+      beatmapId = beatmap.id;
+      beatmapsetId = beatmap.beatmapset_id;
+    }
+    const set = await osuJson(
+      `https://osu.ppy.sh/api/v2/beatmapsets/${beatmapsetId}`,
+      token,
+    );
+    return {
+      beatmapsetId, beatmapId,
+      artist: set.artist, title: set.title, creator: set.creator,
+      coverUrl: set.covers?.['cover@2x'] ?? set.covers?.cover,
+      status: set.status ?? 'unknown',
+      pageUrl: beatmapId
+        ? `https://osu.ppy.sh/beatmapsets/${beatmapsetId}#osu/${beatmapId}`
+        : `https://osu.ppy.sh/beatmapsets/${beatmapsetId}`,
+    };
+  },
+});
+```
+
+Import `action`, `getAuthUserId`, and `ConvexError`. Verify the response field
+names against the installed/current official API response before committing.
+Do not add a download request or token field to the return value.
+
+- [ ] **Step 4: Build `OsuUrlImport.tsx`** — signed-out state explains that osu!
+sign-in is needed for lookup but leaves upload/starter maps usable. Signed-in
+state has a URL input and Resolve button. On success show cover, artist/title,
+mapper/status, then an external `<a target="_blank" rel="noreferrer">Open on
+osu! to download</a>` pointing only to returned `pageUrl`, plus a file input
+labelled “Choose the downloaded .osz”. Display this honest note: “osu! does not
+offer third-party apps an automatic beatmap download API, so your browser must
+download the file from osu! first.”
+
+- [ ] **Step 5: Resume the existing loader** — mount the component beside the
+drop zone. Refactor `handleFile(file, preferredBeatmapId?)`; URL-assisted file
+selection passes the resolved `beatmapId`. After `listDifficulties`, call
+`findDifficultyByBeatmapId`; if found, set `pickedName` and load it immediately;
+otherwise show the normal difficulty picker. The successful `.osz` still saves
+to IndexedDB through Task 15.
+
+- [ ] **Step 6: Verify supported and unsupported paths** — manually test a
+beatmapset URL and a difficulty URL while signed in, confirm metadata is exact,
+the official page opens, selecting the downloaded file imports it, and a
+difficulty URL preselects its difficulty. Test signed-out, invalid URL, 404,
+offline Convex, and wrong `.osz`; local upload/starter play must remain usable.
+Run `pnpm test && pnpm lint && pnpm build`.
+
+- [ ] **Step 7: Document and commit** — README says URL import is assisted, not
+automatic, links the official API limitation, and promises no mirrors/scraping.
+Commit `feat: add official osu url-assisted import`; push and open PR “airosu
+online M5: local and osu! URL map library” based on `v2.3-profile`.
 
 ---
 
 ## Final integration checklist (after M5 merges)
 
-- [ ] Full manual pass on dev: sign in → upload a local test map → play → submit → leaderboard rank → profile top plays → upload an unsubmitted custom map → play + submit (enriches as `graveyard`/`unknown`) → reload, library persists.
+- [ ] Full manual pass on dev: play a licensed starter map without importing → play once with palm and once with index → sign in → submit → leaderboard rank → profile top plays → paste an osu! URL → open the official page → choose the downloaded `.osz` → play + submit → reload, library persists.
 - [ ] Repeat one submit with the same `playId` and confirm one score/play-count increment; complete a slider map and confirm its score passes `judgmentCount` validation.
-- [ ] `pnpm build`, then confirm `dist` contains no `.osz`, `.mp3`, or `.ogg` fixture.
+- [ ] `pnpm run verify:starter-maps && pnpm build`; confirm every production `.osz` matches the approved manifest and no `game-assets/test-maps` fixture appears in `dist`.
+- [ ] Confirm URL import never calls a mirror or download API, never returns a token, and clearly requires the user to download/select the file from osu!.
 - [ ] Production bring-up (repo owner, Human prerequisite 4): prod deployment, production-only osu! OAuth client/env vars, Vercel `VITE_CONVEX_URL`; verify sign-in on airosu.ycells.com.
 - [ ] Update the README's setup, architecture, privacy/data-storage summary, and relevant design/plan links.
 
@@ -1874,4 +2229,6 @@ export async function deleteMapset(id: string): Promise<void> {
 - `countries` table added (not in spec's table list) to power the filter dropdown without scanning users.
 - `judgmentCount` is stored separately from osu! `objectCount` because the existing airosu engine emits two score judgments for sliders.
 - `playId` is stored on scores so automatic submission and retries are idempotent.
-- Existing bundled-map client modules are removed before online work because their Vite glob currently copies copyrighted `.osz` fixtures into production.
+- Bundled maps remain for onboarding, but the broad fixture glob is replaced by a narrow manifest-approved starter-map glob; all other maps are test-only or local.
+- osu! URL import is guided rather than automatic because the official download route is unavailable to third-party OAuth applications.
+- Palm and index share PP v1; `cursorAnchor` is stored on scores so a future version can change this deliberately and recalculate.
