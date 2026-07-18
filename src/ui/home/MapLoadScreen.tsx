@@ -9,12 +9,15 @@ import { AuthButton } from '../nav';
 import { DifficultyPicker } from './DifficultyPicker';
 import { MapCard } from './MapCard';
 import { SongList } from './SongList';
+import { YourMaps } from './YourMaps';
+import { useLibrary } from './useLibrary';
 import { useSongBackground } from './useSongBackground';
 
 export function MapLoadScreen() {
   const { map, mapset, settings, setSettings, setMap, setMapset, setScreen } = useAppState();
   const [error, setError] = useState<string | null>(null);
   const [busyUrl, setBusyUrl] = useState<string | null>(null);
+  const library = useLibrary();
 
   const bgUrl = useObjectUrl(mapset?.preview.background);
 
@@ -46,12 +49,15 @@ export function MapLoadScreen() {
           setMap(loadFromOsu(new TextDecoder().decode(bytes), new ArrayBuffer(0)));
           return;
         }
-        openMapset(bytes, file.name.replace(/\.osz$/i, ''));
+        const label = file.name.replace(/\.osz$/i, '');
+        openMapset(bytes, label);
+        // fire-and-forget: persistence failures never block the upload
+        void library.save(bytes, label, listDifficulties(bytes).length);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load map');
       }
     },
-    [openMapset, setMap],
+    [openMapset, setMap, setMapset, library],
   );
 
   const pickBundled = useCallback(
@@ -156,6 +162,17 @@ export function MapLoadScreen() {
             {maps.length === 0 ? 'Drop your own .osz / .osu file to play' : '…or drop your own .osz / .osu file'}
             <input type="file" accept=".osz,.osu" style={{ display: 'none' }} onChange={onChange} />
           </label>
+          <YourMaps
+            library={library}
+            onOpen={(bytes, label) => {
+              try {
+                openMapset(bytes, label);
+                setError(null);
+              } catch (e) {
+                setError(e instanceof Error ? e.message : 'Failed to load map');
+              }
+            }}
+          />
         </>
       )}
 
