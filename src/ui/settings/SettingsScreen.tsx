@@ -79,6 +79,15 @@ export function SettingsScreen() {
         onChange={(v) => set('inputMode', v as 'relax' | 'manual')}
       />
       <SelectRow
+        label="Cursor anchor"
+        value={settings.cursorAnchor}
+        options={[
+          { value: 'palm', label: 'Palm (stable)' },
+          { value: 'index', label: 'Index fingertip (precise)' },
+        ]}
+        onChange={(v) => set('cursorAnchor', v as 'palm' | 'index')}
+      />
+      <SelectRow
         label="Visual mode"
         value={settings.visualMode}
         options={[

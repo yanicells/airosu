@@ -36,14 +36,15 @@ export function CalibrationScreen() {
       </div>
     );
 
+  const anchorName = settings.cursorAnchor === 'index' ? 'index finger' : 'palm';
   const instruction =
     step === 'intro'
-      ? 'We will map a small hand-movement box to the whole playfield.'
+      ? `We will map a small ${anchorName}-movement box to the whole playfield.`
       : step === 'corner1'
-        ? `Hold your hand on the target… ${countdown}`
+        ? `Hold your ${anchorName} on the target… ${countdown}`
         : step === 'corner2'
           ? `Now the opposite corner… ${countdown}`
-          : 'Move your hand — the dot should reach every edge comfortably.';
+          : `Move your ${anchorName} — the dot should reach every edge comfortably.`;
 
   return (
     <div style={panel}>
