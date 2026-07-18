@@ -18,3 +18,4 @@ Webcam hand-tracking rhythm game that plays osu! beatmaps. Web app: Vite + TS + 
 - Use the `vercel-react-best-practices` skill when writing or refactoring React/TSX code. Use other installed skills when they apply (e.g. `frontend-design` for UI polish, superpowers process skills for TDD/debugging/reviews).
 - pnpm always — never npm or yarn.
 - TypeScript everywhere. Feature-based component folders: each screen lives in its own folder under `src/ui/<screen>/` (e.g. `src/ui/play/`, `src/ui/settings/`) with small focused components and an `index.ts` barrel. No long .tsx files — if a component passes ~150 lines, split it.
+- Convex backend lives in convex/. Local dev needs .env.local (created by pnpm dlx convex dev). Deployment env vars: AUTH_OSU_ID, AUTH_OSU_SECRET, SITE_URL.
