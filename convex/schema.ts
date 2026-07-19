@@ -17,6 +17,8 @@ export default defineSchema({
     osuId: v.optional(v.number()),
     countryCode: v.optional(v.string()),
     countryName: v.optional(v.string()),
+    /** country namespace this user currently occupies in countryBoard */
+    boardCountryCode: v.optional(v.string()),
     // denormalized play stats (written by scores.submit)
     totalPp: v.optional(v.number()),
     playCount: v.optional(v.number()),
@@ -30,6 +32,8 @@ export default defineSchema({
     .index('email', ['email'])
     .index('phone', ['phone'])
     .index('by_osuId', ['osuId']),
+
+  countries: defineTable({ code: v.string(), name: v.string() }).index('by_code', ['code']),
 
   maps: defineTable({
     md5: v.string(),

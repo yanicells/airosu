@@ -5,6 +5,7 @@ import type { DataModel } from './_generated/dataModel';
 import { PP_VERSION } from '../src/game/ppFormula';
 import { scoreDerived } from './lib/scoring';
 import { recomputeUserTotals } from './scores';
+import { syncBoards } from './leaderboard';
 
 export const migrations = new Migrations<DataModel>(components.migrations, { internalMutation });
 
@@ -46,3 +47,13 @@ export const runPpRework = migrations.runner([
   internal.migrations.recalcBestFlags,
   internal.migrations.recalcUsers,
 ]);
+
+/** One-time backfill of leaderboard aggregates from existing ranked users. */
+export const backfillBoards = migrations.define({
+  table: 'users',
+  migrateOne: async (ctx, user) => {
+    if (!user.totalPp) return;
+    await syncBoards(ctx, null, user);
+  },
+});
+export const runBackfillBoards = migrations.runner(internal.migrations.backfillBoards);
