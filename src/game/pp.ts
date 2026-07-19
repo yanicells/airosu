@@ -1,14 +1,9 @@
 import { ScoreInfo, type TimedDifficultyAttributes } from 'osu-classes';
 import { BeatmapDecoder } from 'osu-parsers';
 import { StandardRuleset, type StandardDifficultyAttributes } from 'osu-standard-stable';
+import { judgedCount, playPp, type HitStats } from './ppFormula';
 
-export interface HitStats {
-  count300: number;
-  count100: number;
-  count50: number;
-  countMiss: number;
-  maxCombo: number;
-}
+export type { HitStats } from './ppFormula';
 
 const ruleset = new StandardRuleset();
 const decoder = new BeatmapDecoder();
@@ -60,7 +55,7 @@ export class PpCounter {
   }
 
   private pp(attributes: StandardDifficultyAttributes, stats: HitStats): number {
-    const judged = stats.count300 + stats.count100 + stats.count50 + stats.countMiss;
+    const judged = judgedCount(stats);
     if (judged === 0) return 0;
 
     // map worth: lazer pp of an SS full combo over the judged objects
@@ -71,18 +66,6 @@ export class PpCounter {
     const ssPp = ruleset
       .createPerformanceCalculator(attributes, perfect)
       .calculateAttributes().totalPerformance;
-    if (!Number.isFinite(ssPp)) return 0;
-
-    // player's share: gentler than lazer's curve — misses already cost
-    // accuracy and break combo, so no separate miss penalty on top
-    const accuracy =
-      (stats.count300 * 300 + stats.count100 * 100 + stats.count50 * 50) / (300 * judged);
-    const comboRatio = Math.min(1, stats.maxCombo / judged);
-    const quality = Math.pow(accuracy, 2.5) * (0.35 + 0.65 * Math.pow(comboRatio, 0.6));
-
-    // hand-tracking handicap: ~×10 at 1★ easing to ~×2 past 5★
-    const handicap = 2 + 30 * Math.exp(-attributes.starRating);
-
-    return ssPp * quality * handicap;
+    return playPp({ ssPp, starRating: attributes.starRating }, stats);
   }
 }

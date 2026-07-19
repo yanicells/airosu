@@ -10,6 +10,12 @@
 
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as lib_scoring from "../lib/scoring.js";
+import type * as maps from "../maps.js";
+import type * as mapsNode from "../mapsNode.js";
+import type * as migrations from "../migrations.js";
+import type * as osuApi from "../osuApi.js";
+import type * as scores from "../scores.js";
 import type * as users from "../users.js";
 
 import type {
@@ -21,6 +27,12 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
+  "lib/scoring": typeof lib_scoring;
+  maps: typeof maps;
+  mapsNode: typeof mapsNode;
+  migrations: typeof migrations;
+  osuApi: typeof osuApi;
+  scores: typeof scores;
   users: typeof users;
 }>;
 
@@ -50,4 +62,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  migrations: import("@convex-dev/migrations/_generated/component.js").ComponentApi<"migrations">;
+};
