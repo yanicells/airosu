@@ -5,6 +5,7 @@ import { bundledMaps } from '../../beatmap/bundled';
 import type { BundledMap } from '../../beatmap/bundled';
 import { useAppState } from '../appState';
 import { useObjectUrl } from '../useObjectUrl';
+import { AuthButton } from '../nav';
 import { DifficultyPicker } from './DifficultyPicker';
 import { MapCard } from './MapCard';
 import { SongList } from './SongList';
@@ -188,13 +189,12 @@ export function MapLoadScreen() {
         />
       )}
 
-      <button
-        className="btn"
-        style={{ position: 'absolute', top: 16, right: 16 }}
-        onClick={() => setScreen('settings')}
-      >
-        Settings
-      </button>
+      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 10, alignItems: 'center' }}>
+        <AuthButton />
+        <button className="btn" onClick={() => setScreen('settings')}>
+          Settings
+        </button>
+      </div>
     </div>
   );
 }

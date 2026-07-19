@@ -433,3 +433,109 @@ h3 {
     transform: none;
   }
 }
+
+/* ── airosu online: navbar + auth ─────────────────────────────── */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 24px;
+  background: var(--panel-solid);
+  border-bottom: 1px solid var(--line);
+}
+
+.navbar__brand {
+  font-size: 22px;
+  font-weight: 800;
+  font-style: italic;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.navbar__links {
+  display: flex;
+  gap: 18px;
+  flex: 1;
+}
+
+.navbar__links a {
+  color: var(--ink-dim);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.navbar__links a:hover {
+  color: var(--ink);
+}
+
+.btn--osu {
+  border: 1px solid var(--line);
+  background: linear-gradient(135deg, var(--pink), var(--pink-hot));
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn--osu:hover {
+  background: linear-gradient(135deg, #ff7ab6, var(--pink-hot));
+}
+
+.auth-chip {
+  position: relative;
+}
+
+.auth-chip__face {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 999px;
+  padding: 4px 14px 4px 4px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.auth-chip__face:hover {
+  border-color: var(--pink);
+}
+
+.auth-chip__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  background: var(--panel-solid);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.auth-chip__menu a,
+.auth-chip__menu button {
+  padding: 10px 16px;
+  text-align: left;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.auth-chip__menu a:hover,
+.auth-chip__menu button:hover {
+  background: var(--panel);
+  color: var(--pink);
+}
