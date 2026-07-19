@@ -4,7 +4,7 @@ import { listDifficulties } from './load';
 import { starRating } from './stars';
 
 const osz = new Uint8Array(
-  readFileSync('game-assets/maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
+  readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
 );
 
 describe('star rating', () => {

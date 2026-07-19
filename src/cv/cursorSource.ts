@@ -1,7 +1,7 @@
 import type { Vec2 } from '../beatmap/model';
 import type { Settings } from '../ui/appState';
 import { OneEuroFilter2D } from './filters';
-import { palmCenter } from './palm';
+import { cursorPoint, type CursorAnchor } from './cursorPoint';
 import { defaultBox, mapToPlayfield } from './calibration';
 import type { CalibrationBox } from './calibration';
 import { createHandTracker } from './handTracker';
@@ -10,7 +10,7 @@ import type { HandTracker } from './handTracker';
 export interface CursorSample {
   /** null = tracking lost */
   playfield: Vec2 | null;
-  /** raw camera-space palm position (0–1), null when lost */
+  /** selected raw cursor point in camera space (0–1), null when lost */
   camera: Vec2 | null;
   tMs: number;
 }
@@ -19,7 +19,7 @@ export interface CursorSource {
   start(video: HTMLVideoElement): Promise<void>;
   onSample(cb: (s: CursorSample) => void): () => void;
   setCalibration(box: CalibrationBox): void;
-  setSettings(s: Pick<Settings, 'sensitivity' | 'smoothing' | 'mirror'>): void;
+  setSettings(s: Pick<Settings, 'sensitivity' | 'smoothing' | 'mirror' | 'cursorAnchor'>): void;
   /** true once started and the GPU delegate failed */
   usingCpuFallback(): boolean;
   stop(): void;
@@ -37,6 +37,7 @@ export function createHandCursorSource(): CursorSource {
   let box = defaultBox();
   let sensitivity = 1;
   let mirror = true;
+  let cursorAnchor: CursorAnchor = 'palm';
   let filter = makeFilter(0.5);
   let rafId = 0;
   let running = false;
@@ -78,7 +79,7 @@ export function createHandCursorSource(): CursorSource {
           return;
         }
         lostSince = null;
-        const raw = palmCenter(result.landmarks);
+        const raw = cursorPoint(result.landmarks, cursorAnchor);
         const mapped = mapToPlayfield(raw, box, sensitivity, mirror);
         const smoothed = filter.filter(mapped, now / 1000);
         emit({ playfield: smoothed, camera: raw, tMs: now });
@@ -99,6 +100,7 @@ export function createHandCursorSource(): CursorSource {
     setSettings(s) {
       sensitivity = s.sensitivity;
       mirror = s.mirror;
+      cursorAnchor = s.cursorAnchor;
       filter = makeFilter(s.smoothing);
     },
 

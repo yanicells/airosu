@@ -85,6 +85,18 @@ export function MapCard({
             </select>
           </label>
           <label style={{ fontSize: 14 }}>
+            Cursor{' '}
+            <select
+              value={settings.cursorAnchor}
+              onChange={(e) =>
+                setSettings({ ...settings, cursorAnchor: e.target.value as 'palm' | 'index' })
+              }
+            >
+              <option value="palm">Palm</option>
+              <option value="index">Index fingertip</option>
+            </select>
+          </label>
+          <label style={{ fontSize: 14 }}>
             Visuals{' '}
             <select
               value={settings.visualMode}

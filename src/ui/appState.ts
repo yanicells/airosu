@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react';
 import type { MapsetPreview } from '../beatmap/load';
 import type { LoadedBeatmap } from '../beatmap/model';
 import type { CalibrationBox } from '../cv/calibration';
+import type { CursorAnchor } from '../cv/cursorPoint';
 
 /** A parsed .osz the player is browsing; survives screen changes. */
 export interface Mapset {
@@ -28,6 +29,8 @@ export interface Settings {
   volume: number;
   /** manual-mode tap keys */
   tapKeys: string[];
+  /** which hand landmark drives the cursor */
+  cursorAnchor: CursorAnchor;
 }
 
 export const defaultSettings: Settings = {
@@ -40,6 +43,7 @@ export const defaultSettings: Settings = {
   inputMode: 'relax',
   volume: 0.8,
   tapKeys: ['z', 'x', ' '],
+  cursorAnchor: 'palm',
 };
 
 export interface LastResult {

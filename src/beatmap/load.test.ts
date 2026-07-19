@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { listDifficulties, loadFromOsz, oszBackground, previewOsz } from './load';
 
 const osz = new Uint8Array(
-  readFileSync('game-assets/maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
+  readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
 );
 
 describe('osz loading', () => {

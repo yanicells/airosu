@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "maps": [
+    {
+      "id": "kira-kira-days",
+      "artist": "HO-KAGO TEA TIME",
+      "title": "Kira Kira Days",
+      "file": "kira-kira-days.osz",
+      "sha256": "bfd2d6dea310884ee1f5bdd23818a8ba617630d36affd639841674975e978d79",
+      "byteLength": 4864709,
+      "license": "PENDING — repo owner to document redistribution permission",
+      "sourceUrl": "https://osu.ppy.sh/beatmapsets/444335",
+      "attribution": "HO-KAGO TEA TIME — Kira Kira Days, mapped for osu! (beatmapset 444335)",
+      "evidence": "LICENSES/kira-kira-days.md"
+    },
+    {
+      "id": "inferno",
+      "artist": "Mrs. GREEN APPLE",
+      "title": "Inferno (TV Size)",
+      "file": "inferno.osz",
+      "sha256": "aafab19b68c6020b55fa3603b210e1fa059475e83918cdfb511fd4d97283cd08",
+      "byteLength": 2975845,
+      "license": "PENDING — repo owner to document redistribution permission",
+      "sourceUrl": "https://osu.ppy.sh/beatmapsets/999645",
+      "attribution": "Mrs. GREEN APPLE — Inferno (TV Size), mapped for osu! (beatmapset 999645)",
+      "evidence": "LICENSES/inferno.md"
+    },
+    {
+      "id": "quaver",
+      "artist": "dj TAKA",
+      "title": "quaver",
+      "file": "quaver.osz",
+      "sha256": "e51e20a8cf14a81bed640ce53d3e8c3ba2df6f4a226e1bde769554113a5a942b",
+      "byteLength": 2839053,
+      "license": "PENDING — repo owner to document redistribution permission",
+      "sourceUrl": "https://osu.ppy.sh/beatmapsets/873811",
+      "attribution": "dj TAKA — quaver, mapped for osu! (beatmapset 873811)",
+      "evidence": "LICENSES/quaver.md"
+    }
+  ]
+}

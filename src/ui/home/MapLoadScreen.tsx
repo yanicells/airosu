@@ -152,7 +152,7 @@ export function MapLoadScreen() {
             selectedUrl={selected?.url}
           />
           <label className="panel" style={{ padding: '14px 32px', cursor: 'pointer', borderStyle: 'dashed' }}>
-            …or drop your own .osz / .osu file
+            {maps.length === 0 ? 'Drop your own .osz / .osu file to play' : '…or drop your own .osz / .osu file'}
             <input type="file" accept=".osz,.osu" style={{ display: 'none' }} onChange={onChange} />
           </label>
         </>
