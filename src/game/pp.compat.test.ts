@@ -81,15 +81,15 @@ describe('airosu PP v2 fixtures', () => {
     const easy = diffs.find((d) => d.difficultyName.includes("Rocket's Easy"))!;
     const insane = diffs.find((d) => d.difficultyName.includes("Mamayu's Insane"))!;
     expect(new PpCounter(easy.osuText).final(perfectStats(kira, easy.difficultyName)))
-      .toBeCloseTo(8.683961465411011, 8);
+      .toBeCloseTo(11.165093312671301, 8);
     expect(new PpCounter(insane.osuText).final(perfectStats(kira, insane.difficultyName)))
-      .toBeCloseTo(272.9150253212727, 8);
+      .toBeCloseTo(350.89074684163637, 8);
   });
 
   it('pins the real hand-tracked quaver sample', () => {
     const beginner = listDifficulties(quaver)
       .find((d) => d.difficultyName.includes("Akitoshi's Beginner"))!;
     const play = { count300: 47, count100: 6, count50: 0, countMiss: 5, maxCombo: 19 };
-    expect(new PpCounter(beginner.osuText).final(play)).toBeCloseTo(0.31954977766027975, 8);
+    expect(new PpCounter(beginner.osuText).final(play)).toBeCloseTo(0.4108497141346454, 8);
   });
 });

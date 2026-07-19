@@ -17,7 +17,7 @@ import { StandardRuleset, type StandardDifficultyAttributes } from 'osu-standard
 export const PP_VERSION = 2;
 
 /** Flat hand-tracking adjustment applied on top of lazer's play pp. */
-export const AIROSU_PP_MULTIPLIER = 1.75;
+export const AIROSU_PP_MULTIPLIER = 2.25;
 
 const ruleset = new StandardRuleset();
 
