@@ -4,6 +4,7 @@ import {
   judgedCount,
   playPp,
   type HitStats,
+  type MapDifficulty,
 } from '../../src/game/ppFormula';
 import { grade, type Grade } from '../../src/game/grade';
 
@@ -17,11 +18,14 @@ export function validateSubmission(map: { judgmentCount: number }, s: HitStats):
 }
 
 export function scoreDerived(
-  map: { ssPp: number; starRating: number },
+  map: { difficulty?: MapDifficulty },
   s: HitStats,
 ): { accuracy: number; grade: Grade; pp: number; ppVersion: number } {
+  if (!map.difficulty) {
+    throw new Error('map difficulty attributes are stale; run mapsNode:refreshAttributes');
+  }
   const accuracy = accuracyOf(s);
-  return { accuracy, grade: grade(accuracy), pp: playPp(map, s), ppVersion: PP_VERSION };
+  return { accuracy, grade: grade(accuracy), pp: playPp(map.difficulty, s), ppVersion: PP_VERSION };
 }
 
 /** osu!-style weighting: i-th best play counts 0.95^i; top 100 plays. */

@@ -2,7 +2,24 @@ import { describe, expect, it } from 'vitest';
 import { PP_VERSION } from './ppFormula';
 import { scoreDerived, validateSubmission, weightedTotals } from '../../convex/lib/scoring';
 
-const map = { judgmentCount: 100, ssPp: 100, starRating: 3 };
+const map = {
+  judgmentCount: 100,
+  difficulty: {
+    starRating: 3,
+    aimDifficulty: 1.5,
+    speedDifficulty: 1.2,
+    speedNoteCount: 60,
+    flashlightDifficulty: 0,
+    sliderFactor: 0.98,
+    approachRate: 8,
+    overallDifficulty: 7,
+    drainRate: 5,
+    hitCircleCount: 60,
+    sliderCount: 20,
+    spinnerCount: 0,
+    maxCombo: 120,
+  },
+};
 const ss = { count300: 100, count100: 0, count50: 0, countMiss: 0, maxCombo: 100 };
 
 describe('validateSubmission', () => {

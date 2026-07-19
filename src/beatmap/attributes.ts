@@ -1,13 +1,14 @@
 import { ScoreInfo } from 'osu-classes';
 import { BeatmapDecoder } from 'osu-parsers';
 import { StandardRuleset } from 'osu-standard-stable';
+import { toMapDifficulty, type MapDifficulty } from '../game/ppFormula';
 import { toInternal } from './adapter';
 
 const decoder = new BeatmapDecoder();
 const ruleset = new StandardRuleset();
 
 /** Bump when parser/ruleset upgrades can change stored map attributes. */
-export const ATTRIBUTES_VERSION = 1;
+export const ATTRIBUTES_VERSION = 2;
 
 export interface MapAttributes {
   title: string;
@@ -25,6 +26,8 @@ export interface MapAttributes {
   objectCount: number;
   judgmentCount: number;
   ssPp: number;
+  /** serialized lazer difficulty attributes; feeds the pp formula server-side */
+  difficulty: MapDifficulty;
   attributesVersion: number;
   beatmapId?: number;
   beatmapSetId?: number;
@@ -67,6 +70,7 @@ export function computeMapAttributes(osuText: string): MapAttributes {
     objectCount: internal.objects.length,
     judgmentCount,
     ssPp: Number.isFinite(ssPp) ? ssPp : 0,
+    difficulty: toMapDifficulty(attributes),
     attributesVersion: ATTRIBUTES_VERSION,
     beatmapId: parsed.metadata.beatmapId || undefined,
     beatmapSetId: parsed.metadata.beatmapSetId || undefined,

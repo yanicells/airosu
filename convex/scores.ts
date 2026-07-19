@@ -55,6 +55,9 @@ export const submit = mutation({
     }
     const map = await ctx.db.get(args.mapId);
     if (!map) throw new ConvexError('unknown map');
+    if (!map.difficulty) {
+      throw new ConvexError('map attributes are being refreshed, try again shortly');
+    }
     if (!Number.isSafeInteger(args.score) || args.score < 0) {
       throw new ConvexError('score could not be verified: invalid score');
     }

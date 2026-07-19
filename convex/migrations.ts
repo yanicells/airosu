@@ -15,7 +15,9 @@ export const recalcScores = migrations.define({
   migrateOne: async (ctx, score) => {
     if (score.ppVersion === PP_VERSION) return;
     const map = await ctx.db.get(score.mapId);
-    if (!map) return;
+    // maps without stored difficulty attributes are pending refreshAttributes;
+    // leaving ppVersion stale keeps the run resumable
+    if (!map?.difficulty) return;
     const d = scoreDerived(map, score);
     return { pp: d.pp, accuracy: d.accuracy, grade: d.grade, ppVersion: PP_VERSION };
   },

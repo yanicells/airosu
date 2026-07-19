@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as leaderboard from "../leaderboard.js";
 import type * as lib_scoring from "../lib/scoring.js";
+import type * as lib_validators from "../lib/validators.js";
 import type * as maps from "../maps.js";
 import type * as mapsNode from "../mapsNode.js";
 import type * as migrations from "../migrations.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   leaderboard: typeof leaderboard;
   "lib/scoring": typeof lib_scoring;
+  "lib/validators": typeof lib_validators;
   maps: typeof maps;
   mapsNode: typeof mapsNode;
   migrations: typeof migrations;

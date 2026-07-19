@@ -1,6 +1,7 @@
 import { paginationOptsValidator } from 'convex/server';
 import { v } from 'convex/values';
 import { internalMutation, internalQuery, query } from './_generated/server';
+import { mapDifficultyValidator } from './lib/validators';
 
 export const byMd5 = internalQuery({
   args: { md5: v.string() },
@@ -32,6 +33,7 @@ export const insert = internalMutation({
     objectCount: v.number(),
     judgmentCount: v.number(),
     ssPp: v.number(),
+    difficulty: mapDifficultyValidator,
     attributesVersion: v.number(),
     osuBeatmapId: v.optional(v.number()),
     osuBeatmapSetId: v.optional(v.number()),
@@ -88,6 +90,7 @@ export const patchAttributes = internalMutation({
     objectCount: v.number(),
     judgmentCount: v.number(),
     ssPp: v.number(),
+    difficulty: mapDifficultyValidator,
     osuBeatmapId: v.optional(v.number()),
     osuBeatmapSetId: v.optional(v.number()),
   },

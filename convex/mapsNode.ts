@@ -44,6 +44,7 @@ export const registerMap = action({
         objectCount: a.objectCount,
         judgmentCount: a.judgmentCount,
         ssPp: a.ssPp,
+        difficulty: a.difficulty,
         attributesVersion: a.attributesVersion,
         osuBeatmapId: a.beatmapId,
         osuBeatmapSetId: a.beatmapSetId,
@@ -92,6 +93,7 @@ export const refreshAttributes = internalAction({
         objectCount: a.objectCount,
         judgmentCount: a.judgmentCount,
         ssPp: a.ssPp,
+        difficulty: a.difficulty,
         osuBeatmapId: a.beatmapId,
         osuBeatmapSetId: a.beatmapSetId,
       });
