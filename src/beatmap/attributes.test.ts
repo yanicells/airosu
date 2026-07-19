@@ -34,6 +34,6 @@ describe('computeMapAttributes', () => {
       countMiss: 0,
       maxCombo: a.judgmentCount,
     };
-    expect(playPp(a, ss)).toBeCloseTo(new PpCounter(easy.osuText).final(ss), 6);
+    expect(playPp(a.difficulty, ss)).toBeCloseTo(new PpCounter(easy.osuText).final(ss), 6);
   });
 });

@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 import { authTables } from '@convex-dev/auth/server';
+import { mapDifficultyValidator } from './lib/validators';
 
 export default defineSchema({
   ...authTables,
@@ -52,6 +53,9 @@ export default defineSchema({
     objectCount: v.number(),
     judgmentCount: v.number(),
     ssPp: v.number(),
+    // serialized lazer difficulty attributes (absent until refreshAttributes
+    // has replayed maps registered before ATTRIBUTES_VERSION 2)
+    difficulty: v.optional(mapDifficultyValidator),
     attributesVersion: v.number(),
     osuFileId: v.id('_storage'),
     // osu! website enrichment (best effort)
