@@ -16,6 +16,7 @@ import type * as maps from "../maps.js";
 import type * as mapsNode from "../mapsNode.js";
 import type * as migrations from "../migrations.js";
 import type * as osuApi from "../osuApi.js";
+import type * as profile from "../profile.js";
 import type * as scores from "../scores.js";
 import type * as users from "../users.js";
 
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   mapsNode: typeof mapsNode;
   migrations: typeof migrations;
   osuApi: typeof osuApi;
+  profile: typeof profile;
   scores: typeof scores;
   users: typeof users;
 }>;

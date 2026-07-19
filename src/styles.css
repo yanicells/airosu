@@ -715,3 +715,157 @@ h3 {
   text-align: center;
   padding: 48px 0;
 }
+
+/* ── web pages: profile ──────────────────────────────────────── */
+.profile-head {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.profile-head__id {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.profile-head__id img {
+  border-radius: 16px;
+}
+
+.profile-head__compare {
+  margin: 6px 0 0;
+  color: var(--ink-dim);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.profile-head__stats {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.profile-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-tile__value {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.play-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.play-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+}
+
+.play-row__grade {
+  width: 34px;
+  font-size: 22px;
+  font-weight: 800;
+  font-style: italic;
+  text-align: center;
+}
+
+.play-row__map {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.play-row__title {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.play-row__title a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.play-row__title a:hover {
+  color: var(--pink);
+}
+
+.play-row__version {
+  color: var(--pink);
+  font-size: 13px;
+}
+
+.play-row__artist {
+  color: var(--ink-dim);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.play-row__stars {
+  font-weight: 700;
+}
+
+.play-row__status {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  font-weight: 800;
+}
+
+.play-row__badge {
+  font-size: 11px;
+  color: var(--ink-dim);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
+.play-row__stat {
+  width: 64px;
+  text-align: right;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.play-row__pp {
+  width: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.play-row__pp > span:first-child {
+  font-weight: 800;
+  color: var(--pink);
+}
+
+.play-row__weighted {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+@media (max-width: 640px) {
+  .play-row__stat {
+    display: none;
+  }
+  .play-row__pp {
+    width: auto;
+  }
+}
