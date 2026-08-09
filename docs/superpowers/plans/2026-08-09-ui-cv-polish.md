@@ -148,11 +148,11 @@ Commit: `feat: style leaderboard country dropdown`
 **Interfaces:**
 - Produces: `KeyBindingEditor({ value: string[], onChange })` with unique key chips and explicit capture mode.
 
-- [ ] **Step 1: Center settings canvas**
+- [x] **Step 1: Center settings canvas**
 
 Wrap panel in `.settings-screen` using `min-height: 100%`, grid centering, safe padding, and inner scrolling for short viewports.
 
-- [ ] **Step 2: Replace default-looking ranges and checkbox**
+- [x] **Step 2: Replace default-looking ranges and checkbox**
 
 Apply branded range track/thumb classes. Render mirror camera as a switch with checked state, pink fill, visible focus, and text label.
 
@@ -160,7 +160,7 @@ Apply branded range track/thumb classes. Render mirror camera as a switch with c
 
 Render each binding as a `<kbd>` chip with a remove button. “Add key” enters capture mode; next non-modifier key is normalized (`' '` displays as `Space`), added once, then capture ends. Escape cancels; Backspace removes the last binding when capture is idle. Never allow an empty binding set.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run: `pnpm run lint && pnpm run build`
 
