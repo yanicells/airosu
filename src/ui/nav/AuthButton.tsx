@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
@@ -9,28 +9,74 @@ export function AuthButton() {
   const { signIn, signOut } = useAuthActions();
   const me = useQuery(api.users.me);
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const faceRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const closeOutside = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeWithEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      faceRef.current?.focus();
+    };
+
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeWithEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeWithEscape);
+    };
+  }, [open]);
 
   if (me === undefined) return null; // loading — render nothing, no layout shift
   if (me === null) {
     return (
-      <button className="btn btn--osu" onClick={() => void signIn('osu')}>
-        sign in with osu!
+      <button type="button" className="btn btn--osu" onClick={() => void signIn('osu')}>
+        Sign in with osu!
       </button>
     );
   }
   return (
-    <div className="auth-chip">
-      <button className="auth-chip__face" onClick={() => setOpen((o) => !o)}>
+    <div className="auth-chip" ref={rootRef}>
+      <button
+        ref={faceRef}
+        type="button"
+        className="auth-chip__face"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls="profile-menu"
+        onClick={() => setOpen((current) => !current)}
+      >
         {me.image && (
           <img src={me.image} alt="" width={28} height={28} style={{ borderRadius: '50%' }} />
         )}
         <span>{me.name}</span>
+        <span className="auth-chip__chevron" aria-hidden="true">
+          ▾
+        </span>
       </button>
       {open && (
-        <div className="auth-chip__menu" onClick={() => setOpen(false)}>
-          <Link to={`/u/${me.osuId}`}>profile</Link>
-          <Link to="/leaderboard">leaderboard</Link>
-          <button onClick={() => void signOut()}>sign out</button>
+        <div id="profile-menu" className="auth-chip__menu" role="menu">
+          <Link role="menuitem" to={`/u/${me.osuId}`} onClick={() => setOpen(false)}>
+            Profile
+          </Link>
+          <Link role="menuitem" to="/leaderboard" onClick={() => setOpen(false)}>
+            Leaderboard
+          </Link>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              void signOut();
+            }}
+          >
+            Sign out
+          </button>
         </div>
       )}
     </div>

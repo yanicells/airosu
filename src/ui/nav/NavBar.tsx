@@ -9,7 +9,7 @@ export function NavBar() {
         airosu<span style={{ color: 'var(--pink)' }}>!</span>
       </Link>
       <nav className="navbar__links">
-        <Link to="/leaderboard">leaderboard</Link>
+        <Link to="/leaderboard">Leaderboard</Link>
       </nav>
       <AuthButton />
     </header>

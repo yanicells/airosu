@@ -1,10 +1,19 @@
+import type { CursorAnchor } from '../../cv/cursorPoint';
+
 /** Pulsing target over the camera preview showing where to hold the hand. */
-export function CornerGuide({ corner }: { corner: 'top-left' | 'bottom-right' }) {
+export function CornerGuide({
+  corner,
+  anchor,
+}: {
+  corner: 'top-left' | 'bottom-right';
+  anchor: CursorAnchor;
+}) {
   const tl = corner === 'top-left';
   const pos = tl ? { left: '18%', top: '18%' } : { left: '82%', top: '82%' };
+  const label = anchor === 'index' ? 'Point your fingertip here' : 'Center your palm here';
   return (
     <>
-      <div className="corner-target" style={pos}>
+      <div className={`corner-target corner-target--${anchor}`} style={pos}>
         <div className="corner-target__dot" />
       </div>
       <div
@@ -22,7 +31,7 @@ export function CornerGuide({ corner }: { corner: 'top-left' | 'bottom-right' })
           pointerEvents: 'none',
         }}
       >
-        Hold your hand here
+        {label}
       </div>
     </>
   );

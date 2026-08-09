@@ -41,7 +41,9 @@ export function PlayScreen() {
         />
         <div ref={stageHostRef} style={{ position: 'absolute', inset: 0 }} />
         <button
-          style={{ position: 'absolute', top: 12, left: 12, opacity: 0.6, zIndex: 5 }}
+          type="button"
+          className="game-exit"
+          aria-label="Quit to song select"
           onClick={() => setScreen('home')}
         >
           ✕
@@ -80,7 +82,9 @@ function GameLoopRunner({
           }}
         >
           <p style={{ maxWidth: 420, textAlign: 'center' }}>{fatal}</p>
-          <button onClick={quit}>Back to home</button>
+          <button className="btn" onClick={quit}>
+            Back to home
+          </button>
         </div>
       )}
       {phase === 'countdown' && (

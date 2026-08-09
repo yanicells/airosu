@@ -1,9 +1,5 @@
-const rowStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: 12,
-};
+import { SelectMenu } from '../shared/SelectMenu';
+import type { SelectMenuOption } from '../shared/SelectMenu';
 
 export function SliderRow({
   label,
@@ -22,23 +18,28 @@ export function SliderRow({
   onChange: (v: number) => void;
   hint?: string;
 }) {
+  const progress = ((value - min) / (max - min)) * 100;
   return (
-    <div>
-      <label style={rowStyle}>
-        <span>{label}</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div className="setting-block">
+      <label className="setting-row">
+        <span className="setting-label">{label}</span>
+        <span className="range-control">
           <input
             type="range"
+            aria-label={label}
             min={min}
             max={max}
             step={step}
             value={value}
             onChange={(e) => onChange(Number(e.target.value))}
+            style={{
+              background: `linear-gradient(90deg, var(--pink) ${progress}%, rgba(255,255,255,0.13) ${progress}%)`,
+            }}
           />
-          <code style={{ width: 48, textAlign: 'right' }}>{value}</code>
+          <output>{value}</output>
         </span>
       </label>
-      {hint && <div style={{ fontSize: 12, opacity: 0.5 }}>{hint}</div>}
+      {hint && <span className="setting-hint">{hint}</span>}
     </div>
   );
 }
@@ -53,9 +54,20 @@ export function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label style={rowStyle}>
-      <span>{label}</span>
-      <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
+    <label className="setting-row">
+      <span className="setting-label">{label}</span>
+      <span className="toggle-control">
+        <input
+          type="checkbox"
+          aria-label={label}
+          checked={value}
+          onChange={(e) => onChange(e.target.checked)}
+        />
+        <span className="toggle-control__track" aria-hidden="true">
+          <span />
+        </span>
+        <span className="toggle-control__state">{value ? 'On' : 'Off'}</span>
+      </span>
     </label>
   );
 }
@@ -68,19 +80,19 @@ export function SelectRow({
 }: {
   label: string;
   value: string;
-  options: { value: string; label: string }[];
+  options: SelectMenuOption[];
   onChange: (v: string) => void;
 }) {
   return (
-    <label style={rowStyle}>
-      <span>{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="setting-row">
+      <span className="setting-label">{label}</span>
+      <SelectMenu
+        ariaLabel={label}
+        value={value}
+        options={options}
+        onChange={onChange}
+        align="end"
+      />
+    </div>
   );
 }
