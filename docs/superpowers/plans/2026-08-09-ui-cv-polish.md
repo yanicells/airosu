@@ -314,7 +314,7 @@ At desktop and mobile widths verify custom dropdown click/keyboard behavior, cen
 
 Desktop checks passed for the centered settings layout, custom dropdown click/Escape/keyboard behavior, title-cased signed-out navigation, and leaderboard region control. Camera permission blocked the live calibration-to-pause path, and T3 preview mobile resizing timed out; keep those two manual checks open in the PR.
 
-- [ ] **Step 3: Push and open stacked PR**
+- [x] **Step 3: Push and open stacked PR**
 
 ```bash
 git push -u origin v2.6-ui-cv-polish
@@ -323,6 +323,6 @@ gh pr create --base v2.5-pp-rework --head v2.6-ui-cv-polish \
   --body-file /tmp/airosu-v2.6-pr.md
 ```
 
-- [ ] **Step 4: Verify live topology and checks**
+- [x] **Step 4: Verify live topology and checks**
 
 Run: `gh pr view --json number,url,headRefName,baseRefName,statusCheckRollup`.
