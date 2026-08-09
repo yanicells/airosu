@@ -37,35 +37,34 @@
 - `src/ui/play/PlayScreen.tsx`: designed exit and fatal fallback actions.
 - `src/ui/nav/AuthButton.tsx`, `src/ui/nav/NavBar.tsx`: capitalized copy and accessible profile menu state.
 - `src/styles.css`: shared control, calibration, settings, auth, and pause styles.
-- `package.json`: allow required `esbuild` install script under pnpm 11.
+- `pnpm-workspace.yaml`: allow required `esbuild` install script under pnpm 11.
 
 ---
 
 ### Task 1: Restore reproducible CI installation
 
 **Files:**
-- Modify: `package.json`
+- Create: `pnpm-workspace.yaml`
 
 **Interfaces:**
 - Produces: `pnpm install --frozen-lockfile` succeeds under pnpm 11 while allowing only `esbuild` to run its required install script.
 
-- [ ] **Step 1: Reproduce failure evidence**
+- [x] **Step 1: Reproduce failure evidence**
 
 Run: `gh run view 29685661742 --job 88189360271 --log-failed`
 
 Expected decisive error: `[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.0`.
 
-- [ ] **Step 2: Add narrow build approval**
+- [x] **Step 2: Add narrow build approval**
 
-Add to `package.json`:
+Create `pnpm-workspace.yaml`:
 
-```json
-"pnpm": {
-  "onlyBuiltDependencies": ["esbuild"]
-}
+```yaml
+allowBuilds:
+  esbuild: true
 ```
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 Run: `pnpm install --frozen-lockfile && pnpm run build`
 
@@ -301,7 +300,7 @@ Commit: `fix: polish profile menu copy`
 
 Run: `pnpm test && pnpm run lint && pnpm run verify:starter-maps && pnpm run build`
 
-Expected: all commands pass; `dist` contains no `.osz`, `.mp3`, or `.ogg`.
+Expected: all commands pass; starter-map manifest, size, hash, and approved production asset checks pass.
 
 - [ ] **Step 2: Run browser verification**
 
