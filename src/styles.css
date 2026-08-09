@@ -819,6 +819,10 @@ h3 {
   flex-wrap: wrap;
 }
 
+.board__country {
+  min-width: 230px;
+}
+
 .board {
   border-collapse: collapse;
   width: 100%;

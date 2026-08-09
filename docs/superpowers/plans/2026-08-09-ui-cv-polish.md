@@ -125,11 +125,11 @@ Run: `pnpm run lint && pnpm run build`
 
 Commit: `feat: style game option dropdowns`
 
-- [ ] **Step 3: Migrate country filter**
+- [x] **Step 3: Migrate country filter**
 
 Map `undefined` to value `""`; reset pagination offset after selection.
 
-- [ ] **Step 4: Verify no native selects and commit**
+- [x] **Step 4: Verify no native selects and commit**
 
 Run: `! rg -n "<select" src && pnpm run lint && pnpm run build`
 

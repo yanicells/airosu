@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { NavBar } from '../nav';
 import { flagEmoji } from '../shared/flag';
+import { SelectMenu } from '../shared/SelectMenu';
 import { LeaderboardRow } from './LeaderboardRow';
 
 const PAGE = 50;
@@ -12,7 +13,17 @@ export function LeaderboardPage() {
   const [countryCode, setCountryCode] = useState<string>();
   const [offset, setOffset] = useState(0);
   const page = useQuery(api.leaderboard.page, { countryCode, offset });
-  const countries = useQuery(api.leaderboard.countries) ?? [];
+  const countries = useQuery(api.leaderboard.countries);
+  const countryOptions = useMemo(
+    () => [
+      { value: '', label: 'Global', description: 'All ranked players' },
+      ...(countries ?? []).map((country) => ({
+        value: country.code,
+        label: `${flagEmoji(country.code)} ${country.name}`,
+      })),
+    ],
+    [countries],
+  );
 
   return (
     <div className="webpage">
@@ -20,20 +31,17 @@ export function LeaderboardPage() {
       <main className="webpage__body">
         <header className="board__head">
           <h1 style={{ margin: 0 }}>performance ranking</h1>
-          <select
+          <SelectMenu
+            ariaLabel="Ranking region"
             value={countryCode ?? ''}
-            onChange={(e) => {
-              setCountryCode(e.target.value || undefined);
+            options={countryOptions}
+            align="end"
+            className="board__country"
+            onChange={(value) => {
+              setCountryCode(value || undefined);
               setOffset(0);
             }}
-          >
-            <option value="">Global</option>
-            {countries.map((c) => (
-              <option key={c.code} value={c.code}>
-                {flagEmoji(c.code)} {c.name}
-              </option>
-            ))}
-          </select>
+          />
         </header>
 
         {page && page.rows.length === 0 && (
