@@ -403,6 +403,101 @@ h3 {
   min-width: 170px;
 }
 
+.key-editor {
+  width: min(330px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.key-editor__chips {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 6px;
+  background: rgba(17, 12, 24, 0.5);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.2);
+}
+
+.key-chip {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(81, 61, 103, 0.95), rgba(48, 35, 65, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 8px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.key-chip kbd {
+  min-width: 32px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.key-chip button {
+  align-self: stretch;
+  padding: 0 7px;
+  color: var(--ink-dim);
+  background: rgba(0, 0, 0, 0.18);
+  border: 0;
+  border-left: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.key-chip button:hover:enabled,
+.key-chip button:focus-visible {
+  color: #fff;
+  background: rgba(255, 45, 135, 0.35);
+  outline: none;
+}
+
+.key-chip button:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.key-editor__capture {
+  min-height: 30px;
+  padding: 5px 11px;
+  color: var(--pink);
+  background: rgba(255, 102, 170, 0.08);
+  border: 1px dashed rgba(255, 102, 170, 0.5);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease;
+}
+
+.key-editor__capture:hover,
+.key-editor__capture:focus-visible,
+.key-editor__capture[data-capturing='true'] {
+  color: #fff;
+  background: rgba(255, 45, 135, 0.3);
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  transform: scale(1.03);
+}
+
+.setting-hint {
+  color: var(--ink-dim);
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .fade-up {
   animation: fade-up 0.35s ease both;
 }

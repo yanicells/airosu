@@ -24,6 +24,8 @@
 - `src/ui/shared/selectMenuNavigation.ts`: pure wrapped keyboard navigation helper.
 - `src/ui/shared/selectMenu.test.ts`: pure option-navigation coverage.
 - `src/ui/shared/KeyBindingEditor.tsx`: key chips plus explicit next-key capture.
+- `src/ui/shared/keyBindings.ts`: pure key normalization and non-empty binding updates.
+- `src/ui/shared/keyBindings.test.ts`: key binding regression coverage.
 - `src/ui/home/MapCard.tsx`: custom play option dropdowns.
 - `src/ui/home/YourMaps.tsx`: inline designed delete confirmation instead of browser `confirm()`.
 - `src/ui/settings/rows.tsx`: styled setting rows, custom dropdown, switch, and range classes.
@@ -154,7 +156,7 @@ Wrap panel in `.settings-screen` using `min-height: 100%`, grid centering, safe 
 
 Apply branded range track/thumb classes. Render mirror camera as a switch with checked state, pink fill, visible focus, and text label.
 
-- [ ] **Step 3: Replace raw comma input**
+- [x] **Step 3: Replace raw comma input**
 
 Render each binding as a `<kbd>` chip with a remove button. “Add key” enters capture mode; next non-modifier key is normalized (`' '` displays as `Space`), added once, then capture ends. Escape cancels; Backspace removes the last binding when capture is idle. Never allow an empty binding set.
 

@@ -1,5 +1,6 @@
 import { useAppState } from '../appState';
 import { defaultSettings } from '../appState';
+import { KeyBindingEditor } from '../shared/KeyBindingEditor';
 import { SliderRow, ToggleRow, SelectRow } from './rows';
 
 const INPUT_MODE_OPTIONS = [
@@ -102,22 +103,10 @@ export function SettingsScreen() {
         options={VISUAL_MODE_OPTIONS}
         onChange={(v) => set('visualMode', v as 'arcade' | 'focus')}
       />
-      <label style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
         <span>Tap keys (manual mode)</span>
-        <input
-          value={settings.tapKeys.join(',')}
-          onChange={(e) =>
-            set(
-              'tapKeys',
-              e.target.value
-                .split(',')
-                .map((k) => (k === 'space' ? ' ' : k.trim().toLowerCase()))
-                .filter(Boolean),
-            )
-          }
-          style={{ width: 120 }}
-        />
-      </label>
+        <KeyBindingEditor value={settings.tapKeys} onChange={(keys) => set('tapKeys', keys)} />
+      </div>
       <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
         <button className="btn btn--primary" style={{ fontSize: 16 }} onClick={() => setScreen('home')}>
           Done
