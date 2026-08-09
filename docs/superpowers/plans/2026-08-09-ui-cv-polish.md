@@ -115,11 +115,11 @@ Commit: `feat: add custom dropdown control`
 - Consumes: `SelectMenu` from Task 2.
 - Produces: no `<select>` elements under `src/`.
 
-- [ ] **Step 1: Migrate home and settings controls**
+- [x] **Step 1: Migrate home and settings controls**
 
 Keep existing setting values and labels. Use compact dropdown triggers on the map card and full-width triggers in settings.
 
-- [ ] **Step 2: Verify and commit home/settings migration**
+- [x] **Step 2: Verify and commit home/settings migration**
 
 Run: `pnpm run lint && pnpm run build`
 

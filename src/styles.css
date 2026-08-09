@@ -381,6 +381,28 @@ h3 {
   background: var(--blue);
 }
 
+.map-options {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.map-option {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.map-option .eyebrow {
+  padding-left: 8px;
+}
+
+.map-option .select-menu {
+  min-width: 170px;
+}
+
 .fade-up {
   animation: fade-up 0.35s ease both;
 }

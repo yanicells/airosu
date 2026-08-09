@@ -1,5 +1,6 @@
 import type { LoadedBeatmap } from '../../beatmap/model';
 import type { Settings } from '../appState';
+import { SelectMenu } from '../shared/SelectMenu';
 
 function fmtLength(ms: number): string {
   const s = Math.round(ms / 1000);
@@ -7,6 +8,21 @@ function fmtLength(ms: number): string {
 }
 
 const STAT_KEYS = ['ar', 'cs', 'od', 'hp'] as const;
+
+const INPUT_MODE_OPTIONS = [
+  { value: 'relax', label: 'Relax', description: 'Aim only — taps happen automatically' },
+  { value: 'manual', label: 'Manual', description: 'Aim with your hand, tap with Z / X' },
+];
+
+const CURSOR_OPTIONS = [
+  { value: 'palm', label: 'Palm', description: 'Stable whole-hand aiming' },
+  { value: 'index', label: 'Index fingertip', description: 'Precise pointing control' },
+];
+
+const VISUAL_OPTIONS = [
+  { value: 'arcade', label: 'Arcade', description: 'Camera behind the playfield' },
+  { value: 'focus', label: 'Focus', description: 'Dark, distraction-free background' },
+];
 
 /** Song-select style card: map background, stats and the Play action. */
 export function MapCard({
@@ -71,43 +87,40 @@ export function MapCard({
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <label style={{ fontSize: 14 }}>
-            Mode{' '}
-            <select
+        <div className="map-options">
+          <div className="map-option">
+            <span className="eyebrow">Mode</span>
+            <SelectMenu
+              ariaLabel="Input mode"
               value={settings.inputMode}
-              onChange={(e) =>
-                setSettings({ ...settings, inputMode: e.target.value as 'relax' | 'manual' })
+              options={INPUT_MODE_OPTIONS}
+              onChange={(inputMode) =>
+                setSettings({ ...settings, inputMode: inputMode as 'relax' | 'manual' })
               }
-            >
-              <option value="relax">Relax (auto-tap)</option>
-              <option value="manual">Manual (Z/X to tap)</option>
-            </select>
-          </label>
-          <label style={{ fontSize: 14 }}>
-            Cursor{' '}
-            <select
+            />
+          </div>
+          <div className="map-option">
+            <span className="eyebrow">Cursor</span>
+            <SelectMenu
+              ariaLabel="Cursor anchor"
               value={settings.cursorAnchor}
-              onChange={(e) =>
-                setSettings({ ...settings, cursorAnchor: e.target.value as 'palm' | 'index' })
+              options={CURSOR_OPTIONS}
+              onChange={(cursorAnchor) =>
+                setSettings({ ...settings, cursorAnchor: cursorAnchor as 'palm' | 'index' })
               }
-            >
-              <option value="palm">Palm</option>
-              <option value="index">Index fingertip</option>
-            </select>
-          </label>
-          <label style={{ fontSize: 14 }}>
-            Visuals{' '}
-            <select
+            />
+          </div>
+          <div className="map-option">
+            <span className="eyebrow">Visuals</span>
+            <SelectMenu
+              ariaLabel="Visual mode"
               value={settings.visualMode}
-              onChange={(e) =>
-                setSettings({ ...settings, visualMode: e.target.value as 'arcade' | 'focus' })
+              options={VISUAL_OPTIONS}
+              onChange={(visualMode) =>
+                setSettings({ ...settings, visualMode: visualMode as 'arcade' | 'focus' })
               }
-            >
-              <option value="arcade">Arcade (camera bg)</option>
-              <option value="focus">Focus (dark bg)</option>
-            </select>
-          </label>
+            />
+          </div>
         </div>
 
         <button className="btn btn--primary" style={{ alignSelf: 'center' }} onClick={onPlay}>

@@ -1,3 +1,5 @@
+import { SelectMenu } from '../shared/SelectMenu';
+
 const rowStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
@@ -72,15 +74,9 @@ export function SelectRow({
   onChange: (v: string) => void;
 }) {
   return (
-    <label style={rowStyle}>
+    <div style={rowStyle}>
       <span>{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)}>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
+      <SelectMenu ariaLabel={label} value={value} options={options} onChange={onChange} align="end" />
+    </div>
   );
 }

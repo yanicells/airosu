@@ -2,6 +2,21 @@ import { useAppState } from '../appState';
 import { defaultSettings } from '../appState';
 import { SliderRow, ToggleRow, SelectRow } from './rows';
 
+const INPUT_MODE_OPTIONS = [
+  { value: 'relax', label: 'Relax', description: 'Automatic taps while you aim' },
+  { value: 'manual', label: 'Manual', description: 'Keyboard taps while you aim' },
+];
+
+const CURSOR_OPTIONS = [
+  { value: 'palm', label: 'Palm', description: 'Stable whole-hand aiming' },
+  { value: 'index', label: 'Index fingertip', description: 'Precise pointing control' },
+];
+
+const VISUAL_MODE_OPTIONS = [
+  { value: 'arcade', label: 'Arcade', description: 'Camera background' },
+  { value: 'focus', label: 'Focus', description: 'Dark background' },
+];
+
 export function SettingsScreen() {
   const { settings, setSettings, setScreen } = useAppState();
   const set = <K extends keyof typeof settings>(key: K, value: (typeof settings)[K]) =>
@@ -72,28 +87,19 @@ export function SettingsScreen() {
       <SelectRow
         label="Input mode"
         value={settings.inputMode}
-        options={[
-          { value: 'relax', label: 'Relax (auto-tap)' },
-          { value: 'manual', label: 'Manual (keyboard taps)' },
-        ]}
+        options={INPUT_MODE_OPTIONS}
         onChange={(v) => set('inputMode', v as 'relax' | 'manual')}
       />
       <SelectRow
         label="Cursor anchor"
         value={settings.cursorAnchor}
-        options={[
-          { value: 'palm', label: 'Palm (stable)' },
-          { value: 'index', label: 'Index fingertip (precise)' },
-        ]}
+        options={CURSOR_OPTIONS}
         onChange={(v) => set('cursorAnchor', v as 'palm' | 'index')}
       />
       <SelectRow
         label="Visual mode"
         value={settings.visualMode}
-        options={[
-          { value: 'arcade', label: 'Arcade (camera background)' },
-          { value: 'focus', label: 'Focus (dark background)' },
-        ]}
+        options={VISUAL_MODE_OPTIONS}
         onChange={(v) => set('visualMode', v as 'arcade' | 'focus')}
       />
       <label style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
