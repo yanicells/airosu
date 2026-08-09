@@ -302,7 +302,7 @@ Commit: `fix: polish profile menu copy`
 **Files:**
 - Modify: this plan, checking completed steps.
 
-- [ ] **Step 1: Run automated verification**
+- [x] **Step 1: Run automated verification**
 
 Run: `pnpm test && pnpm run lint && pnpm run verify:starter-maps && pnpm run build`
 
@@ -311,6 +311,8 @@ Expected: all commands pass; starter-map manifest, size, hash, and approved prod
 - [ ] **Step 2: Run browser verification**
 
 At desktop and mobile widths verify custom dropdown click/keyboard behavior, centered settings, key capture, anchor-specific calibration copy, pause button scale states, title-cased profile/nav copy, visible focus, and clean console.
+
+Desktop checks passed for the centered settings layout, custom dropdown click/Escape/keyboard behavior, title-cased signed-out navigation, and leaderboard region control. Camera permission blocked the live calibration-to-pause path, and T3 preview mobile resizing timed out; keep those two manual checks open in the PR.
 
 - [ ] **Step 3: Push and open stacked PR**
 
