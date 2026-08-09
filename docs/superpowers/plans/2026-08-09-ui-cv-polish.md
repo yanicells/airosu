@@ -234,15 +234,15 @@ Commit: `fix: stabilize fingertip cursor tracking`
 - Consumes: `settings.cursorAnchor`.
 - Produces: palm copy and a broad ring; fingertip copy and a smaller crosshair/point target.
 
-- [ ] **Step 1: Add mode-specific language**
+- [x] **Step 1: Add mode-specific language**
 
 Palm: ask for an open, camera-facing hand and center of palm. Fingertip: ask for an extended index finger and exact fingertip placement. Make intro, both corners, test copy, target label, and recenter tip consistent.
 
-- [ ] **Step 2: Add mode-specific visuals**
+- [x] **Step 2: Add mode-specific visuals**
 
 Pass `anchor` into `CornerGuide`; use `.corner-target--palm` and `.corner-target--index`. Test cursor uses a 24px round palm marker or 16px fingertip crosshair.
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 Run: `pnpm run lint && pnpm run build`
 

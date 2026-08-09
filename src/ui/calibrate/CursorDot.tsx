@@ -35,15 +35,9 @@ export function CursorDot({
   return (
     <div
       ref={dotRef}
+      className={`calibration-cursor calibration-cursor--${settings.cursorAnchor}`}
       style={{
         position: 'absolute',
-        width: 24,
-        height: 24,
-        marginLeft: -12,
-        marginTop: -12,
-        borderRadius: '50%',
-        background: '#ff66aa',
-        border: '3px solid #fff',
         pointerEvents: 'none',
         transition: 'opacity 0.2s',
       }}

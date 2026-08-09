@@ -722,13 +722,14 @@ h3 {
 
 /* calibration corner target */
 .corner-target {
+  --target-color: var(--pink);
   position: absolute;
   width: 72px;
   height: 72px;
-  margin: -36px 0 0 -36px;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
-  border: 3px solid var(--pink);
-  box-shadow: 0 0 24px rgba(255, 102, 170, 0.7);
+  border: 3px solid var(--target-color);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--target-color) 70%, transparent);
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -740,15 +741,141 @@ h3 {
   position: absolute;
   inset: -3px;
   border-radius: 50%;
-  border: 3px solid var(--pink);
+  border: 3px solid var(--target-color);
   animation: pulse-ring 1.2s ease-out infinite;
 }
 
 .corner-target__dot {
+  position: relative;
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  background: var(--target-color);
+}
+
+.corner-target--palm {
+  width: 86px;
+  height: 86px;
+}
+
+.corner-target--palm .corner-target__dot {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  box-shadow: 0 0 14px rgba(255, 102, 170, 0.8);
+}
+
+.corner-target--index {
+  --target-color: var(--blue);
+  width: 54px;
+  height: 54px;
+  border-width: 2px;
+}
+
+.corner-target--index .corner-target__dot {
+  width: 9px;
+  height: 9px;
+  background: #fff;
+  box-shadow: 0 0 14px var(--blue);
+}
+
+.corner-target--index .corner-target__dot::before,
+.corner-target--index .corner-target__dot::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: var(--blue);
+  transform: translate(-50%, -50%);
+}
+
+.corner-target--index .corner-target__dot::before {
+  width: 27px;
+  height: 2px;
+}
+
+.corner-target--index .corner-target__dot::after {
+  width: 2px;
+  height: 27px;
+}
+
+.calibration-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.calibration-title h2 {
+  margin: 0;
+}
+
+.calibration-anchor {
+  padding: 4px 10px;
+  color: var(--pink);
+  background: rgba(255, 102, 170, 0.1);
+  border: 1px solid rgba(255, 102, 170, 0.38);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.calibration-anchor--index {
+  color: var(--blue);
+  background: rgba(102, 204, 255, 0.1);
+  border-color: rgba(102, 204, 255, 0.4);
+}
+
+.calibration-instruction {
+  max-width: 620px;
+  margin: 0;
+  color: var(--ink-dim);
+  font-weight: 600;
+  text-align: center;
+}
+
+.calibration-cursor {
+  transform: translate(-50%, -50%);
+}
+
+.calibration-cursor--palm {
+  width: 28px;
+  height: 28px;
   background: var(--pink);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(255, 102, 170, 0.7);
+}
+
+.calibration-cursor--index {
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border: 3px solid var(--blue);
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(102, 204, 255, 0.8);
+}
+
+.calibration-cursor--index::before,
+.calibration-cursor--index::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: var(--blue);
+  transform: translate(-50%, -50%);
+}
+
+.calibration-cursor--index::before {
+  width: 28px;
+  height: 2px;
+}
+
+.calibration-cursor--index::after {
+  width: 2px;
+  height: 28px;
 }
 
 @keyframes pulse-ring {

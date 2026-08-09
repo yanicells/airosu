@@ -46,15 +46,22 @@ export function CalibrationScreen() {
       </div>
     );
 
-  const anchorName = settings.cursorAnchor === 'index' ? 'index finger' : 'palm';
-  const instruction =
-    step === 'intro'
-      ? `We will map a small ${anchorName}-movement box to the whole playfield.`
+  const isIndex = settings.cursorAnchor === 'index';
+  const instruction = isIndex
+    ? step === 'intro'
+      ? 'Point with the tip of your index finger. Keep it extended while you calibrate.'
       : step === 'corner1'
-        ? `Hold your ${anchorName} on the target… ${countdown}`
+        ? `Place your fingertip on the blue target and hold… ${countdown}`
         : step === 'corner2'
-          ? `Now the opposite corner… ${countdown}`
-          : `Move your ${anchorName} — the dot should reach every edge comfortably.`;
+          ? `Point the same fingertip at the opposite blue target… ${countdown}`
+          : 'Trace with your fingertip — the crosshair should reach every edge comfortably.'
+    : step === 'intro'
+      ? 'Aim with the center of an open palm. Keep your palm facing the camera.'
+      : step === 'corner1'
+        ? `Center your palm inside the pink ring and hold… ${countdown}`
+        : step === 'corner2'
+          ? `Move the center of your palm into the opposite pink ring… ${countdown}`
+          : 'Move your open palm — the round cursor should reach every edge comfortably.';
 
   return (
     <div style={panel}>
@@ -65,11 +72,20 @@ export function CalibrationScreen() {
       >
         ‹ Songs
       </button>
-      <h2 style={{ margin: 0 }}>Calibration</h2>
-      <p style={{ margin: 0 }}>{instruction}</p>
+      <div className="calibration-title">
+        <h2>Calibration</h2>
+        <span className={`calibration-anchor calibration-anchor--${settings.cursorAnchor}`}>
+          {isIndex ? 'Fingertip control' : 'Palm control'}
+        </span>
+      </div>
+      <p className="calibration-instruction">{instruction}</p>
       <CameraPreview video={session.video} mirror={settings.mirror}>
-        {step === 'corner1' && <CornerGuide corner="top-left" />}
-        {step === 'corner2' && <CornerGuide corner="bottom-right" />}
+        {step === 'corner1' && (
+          <CornerGuide corner="top-left" anchor={settings.cursorAnchor} />
+        )}
+        {step === 'corner2' && (
+          <CornerGuide corner="bottom-right" anchor={settings.cursorAnchor} />
+        )}
         {step === 'test' && <CursorDot session={session} box={box} settings={settings} />}
       </CameraPreview>
       <div style={{ display: 'flex', gap: 12 }}>
@@ -113,7 +129,9 @@ export function CalibrationScreen() {
           GPU acceleration unavailable — tracking runs on CPU and may feel laggier.
         </p>
       )}
-      <p style={{ opacity: 0.5, fontSize: 13 }}>Tip: press R in game to recenter on your hand.</p>
+      <p style={{ opacity: 0.5, fontSize: 13 }}>
+        Tip: press R in game to recenter on your {isIndex ? 'fingertip' : 'palm'}.
+      </p>
     </div>
   );
 }
