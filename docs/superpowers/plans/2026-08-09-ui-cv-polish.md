@@ -283,15 +283,15 @@ Commit: `feat: redesign pause menu actions`
 **Interfaces:**
 - Produces: “Profile”, “Leaderboard”, “Sign out”, “Sign in with osu!”, “Performance ranking”, and title-cased table/pager actions.
 
-- [ ] **Step 1: Normalize user-facing copy**
+- [x] **Step 1: Normalize user-facing copy**
 
 Use sentence/title case consistently for navigation and actions while retaining official `osu!` styling.
 
-- [ ] **Step 2: Harden profile menu**
+- [x] **Step 2: Harden profile menu**
 
 Add `aria-expanded`, `aria-haspopup="menu"`, Escape close, outside-click close, and a rotating chevron. Keep route and sign-out behavior unchanged.
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 Run: `pnpm run lint && pnpm run build`
 

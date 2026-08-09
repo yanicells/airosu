@@ -14,7 +14,7 @@ export function MapLeaderboard({ mapId }: { mapId?: Id<'maps'> }) {
   return (
     <div className="map-board">
       <p className="eyebrow" style={{ margin: '0 0 6px' }}>
-        map leaderboard
+        Map leaderboard
       </p>
       {rows.slice(0, 10).map((r, i) => {
         const badges = [

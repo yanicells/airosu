@@ -19,7 +19,7 @@ export function YourMaps({
 
   if (library.unavailable) {
     return (
-      <p className="yourmaps__warning">browser storage unavailable — uploads won't persist</p>
+      <p className="yourmaps__warning">Browser storage unavailable — uploads won't persist</p>
     );
   }
   if (library.entries.length === 0) return null;

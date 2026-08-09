@@ -12,7 +12,7 @@ export function SubmitPanel({
   if (status === 'signedOut') {
     return (
       <div className="submit-panel">
-        <span className="eyebrow">sign in with osu! to submit scores</span>
+        <span className="eyebrow">Sign in with osu! to submit scores</span>
         <AuthButton />
       </div>
     );
@@ -20,7 +20,7 @@ export function SubmitPanel({
   if (status === 'submitting') {
     return (
       <div className="submit-panel">
-        <span className="eyebrow">submitting…</span>
+        <span className="eyebrow">Submitting…</span>
       </div>
     );
   }
@@ -28,8 +28,8 @@ export function SubmitPanel({
     return (
       <div className="submit-panel">
         <span className="submit-panel__ok">
-          score submitted · +{Math.round(result.pp)}pp
-          {result.isBest ? ' · personal best!' : ''}
+          Score submitted · +{Math.round(result.pp)}pp
+          {result.isBest ? ' · Personal best!' : ''}
         </span>
       </div>
     );
@@ -37,9 +37,9 @@ export function SubmitPanel({
   if (status === 'error') {
     return (
       <div className="submit-panel">
-        <span className="submit-panel__error">{error ?? 'submission failed'}</span>
+        <span className="submit-panel__error">{error ?? 'Submission failed'}</span>
         <button className="btn" onClick={submit}>
-          retry
+          Retry
         </button>
       </div>
     );

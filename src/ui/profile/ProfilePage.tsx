@@ -28,7 +28,7 @@ export function ProfilePage() {
       <div className="webpage">
         <NavBar />
         <main className="webpage__body">
-          <p className="board__empty">player not found</p>
+          <p className="board__empty">Player not found</p>
         </main>
       </div>
     );
@@ -38,7 +38,7 @@ export function ProfilePage() {
       <div className="webpage">
         <NavBar />
         <main className="webpage__body">
-          <p className="board__empty">loading…</p>
+          <p className="board__empty">Loading…</p>
         </main>
       </div>
     );
@@ -56,9 +56,9 @@ export function ProfilePage() {
 
         <section>
           <p className="eyebrow" style={{ margin: '0 0 8px' }}>
-            best performance
+            Best performance
           </p>
-          {profile.topPlays.length === 0 && <p className="board__empty">no plays yet</p>}
+          {profile.topPlays.length === 0 && <p className="board__empty">No plays yet</p>}
           <div className="play-list">
             {profile.topPlays.map((play) => (
               <PlayRow key={play.scoreId} play={play} />
@@ -68,9 +68,9 @@ export function ProfilePage() {
 
         <section>
           <p className="eyebrow" style={{ margin: '0 0 8px' }}>
-            recent plays
+            Recent plays
           </p>
-          {profile.recentPlays.length === 0 && <p className="board__empty">no plays yet</p>}
+          {profile.recentPlays.length === 0 && <p className="board__empty">No plays yet</p>}
           <div className="play-list">
             {profile.recentPlays.map((play) => (
               <PlayRow key={play.scoreId} play={play} />

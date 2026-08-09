@@ -30,7 +30,7 @@ export function LeaderboardPage() {
       <NavBar />
       <main className="webpage__body">
         <header className="board__head">
-          <h1 style={{ margin: 0 }}>performance ranking</h1>
+          <h1 style={{ margin: 0 }}>Performance ranking</h1>
           <SelectMenu
             ariaLabel="Ranking region"
             value={countryCode ?? ''}
@@ -45,7 +45,7 @@ export function LeaderboardPage() {
         </header>
 
         {page && page.rows.length === 0 && (
-          <p className="board__empty">no scores yet — go set one!</p>
+          <p className="board__empty">No scores yet — go set one!</p>
         )}
 
         {page && page.rows.length > 0 && (
@@ -53,10 +53,10 @@ export function LeaderboardPage() {
             <thead>
               <tr>
                 <th></th>
-                <th style={{ textAlign: 'left' }}>player</th>
-                <th className="board__num">accuracy</th>
-                <th className="board__num">play count</th>
-                <th className="board__num">pp</th>
+                <th style={{ textAlign: 'left' }}>Player</th>
+                <th className="board__num">Accuracy</th>
+                <th className="board__num">Play count</th>
+                <th className="board__num">PP</th>
               </tr>
             </thead>
             <tbody>
@@ -74,7 +74,7 @@ export function LeaderboardPage() {
               disabled={offset === 0}
               onClick={() => setOffset((o) => Math.max(0, o - PAGE))}
             >
-              ‹ prev
+              ‹ Previous
             </button>
             <span className="eyebrow">
               {offset + 1}–{Math.min(offset + PAGE, page.total)} of {page.total}
@@ -84,7 +84,7 @@ export function LeaderboardPage() {
               disabled={offset + PAGE >= page.total}
               onClick={() => setOffset((o) => o + PAGE)}
             >
-              next ›
+              Next ›
             </button>
           </div>
         )}
