@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { useLibrary } from './useLibrary';
 
 function fmtSize(bytes: number): string {
@@ -14,6 +15,8 @@ export function YourMaps({
   library: ReturnType<typeof useLibrary>;
   onOpen: (bytes: Uint8Array, label: string) => void;
 }) {
+  const [pendingDelete, setPendingDelete] = useState<string>();
+
   if (library.unavailable) {
     return (
       <p className="yourmaps__warning">browser storage unavailable — uploads won't persist</p>
@@ -30,6 +33,7 @@ export function YourMaps({
         <div key={entry.id} className="panel yourmaps__row">
           <button
             className="yourmaps__open"
+            disabled={pendingDelete === entry.id}
             onClick={() => {
               void library.open(entry.id).then((bytes) => {
                 if (bytes) onOpen(bytes, entry.label);
@@ -42,17 +46,37 @@ export function YourMaps({
               {fmtSize(entry.byteLength)} · {new Date(entry.addedAt).toLocaleDateString()}
             </span>
           </button>
-          <button
-            className="yourmaps__delete"
-            title="delete from library"
-            onClick={() => {
-              if (confirm(`Delete "${entry.label}" from your maps?`)) {
-                void library.remove(entry.id);
-              }
-            }}
-          >
-            ✕
-          </button>
+          {pendingDelete === entry.id ? (
+            <div className="yourmaps__confirm" role="group" aria-label={`Remove ${entry.label}?`}>
+              <span>Remove?</span>
+              <button
+                type="button"
+                className="yourmaps__confirm-remove"
+                onClick={() => {
+                  setPendingDelete(undefined);
+                  void library.remove(entry.id);
+                }}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                className="yourmaps__confirm-cancel"
+                onClick={() => setPendingDelete(undefined)}
+              >
+                No
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="yourmaps__delete"
+              aria-label={`Remove ${entry.label} from your maps`}
+              onClick={() => setPendingDelete(entry.id)}
+            >
+              ✕
+            </button>
+          )}
         </div>
       ))}
     </div>

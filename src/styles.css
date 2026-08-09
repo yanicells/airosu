@@ -1385,6 +1385,11 @@ h3 {
   color: var(--pink);
 }
 
+.yourmaps__open:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .yourmaps__label {
   font-weight: 700;
   font-size: 14px;
@@ -1412,9 +1417,86 @@ h3 {
   color: #ff6b81;
 }
 
+.yourmaps__confirm {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  background: rgba(255, 45, 87, 0.08);
+  border-left: 1px solid rgba(255, 107, 129, 0.24);
+}
+
+.yourmaps__confirm > span {
+  color: #ff9aac;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.yourmaps__confirm button {
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.yourmaps__confirm-remove {
+  color: #fff;
+  background: #c93658;
+  border: 1px solid #f26480;
+}
+
+.yourmaps__confirm-cancel {
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+.yourmaps__confirm button:hover,
+.yourmaps__confirm button:focus-visible {
+  color: #fff;
+  filter: brightness(1.16);
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
 .yourmaps__warning {
   margin: 0;
   color: var(--gold);
   font-size: 13px;
   opacity: 0.85;
+}
+
+.game-exit {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 5;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-dim);
+  background: rgba(23, 17, 31, 0.64);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  transform: scale(0.94);
+  transition:
+    transform 0.12s ease,
+    color 0.12s ease,
+    background 0.12s ease;
+}
+
+.game-exit:hover,
+.game-exit:focus-visible {
+  color: #fff;
+  background: rgba(255, 45, 135, 0.75);
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  transform: scale(1.06);
 }

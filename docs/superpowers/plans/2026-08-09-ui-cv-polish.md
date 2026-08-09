@@ -177,15 +177,15 @@ Commit: `feat: redesign settings input controls`
 - Produces: inline Remove/Cancel confirmation keyed by map ID; no browser `confirm()` call.
 - Produces: styled gameplay exit and fatal fallback actions with accessible labels.
 
-- [ ] **Step 1: Replace native delete confirmation**
+- [x] **Step 1: Replace native delete confirmation**
 
 First delete click marks one row pending and reveals “Remove” plus “Cancel” inside that row. “Remove” calls `library.remove(entry.id)`; “Cancel” clears pending state. Add a clear `aria-label` using the map label.
 
-- [ ] **Step 2: Style gameplay fallback actions**
+- [x] **Step 2: Style gameplay fallback actions**
 
 Give the top-left exit button a dedicated circular ghost class and `aria-label="Quit to song select"`. Give fatal “Back to home” the shared `.btn` class.
 
-- [ ] **Step 3: Audit and verify**
+- [x] **Step 3: Audit and verify**
 
 Run: `! rg -n "\\b(alert|confirm|prompt)\\s*\\(" src && pnpm run lint && pnpm run build`
 
