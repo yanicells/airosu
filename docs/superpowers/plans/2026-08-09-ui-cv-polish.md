@@ -258,15 +258,15 @@ Commit: `feat: tailor calibration to cursor anchor`
 **Interfaces:**
 - Keeps callbacks `onResume`, `onRestart`, and `onQuit` unchanged.
 
-- [ ] **Step 1: Build menu hierarchy**
+- [x] **Step 1: Build menu hierarchy**
 
 Add blurred backdrop, compact “Game paused” eyebrow, large title, keyboard hint, and a 320px vertical action stack. Resume stays pink-primary; Restart and Quit remain quieter.
 
-- [ ] **Step 2: Add selection pulse**
+- [x] **Step 2: Add selection pulse**
 
 Idle actions render at `scale(0.96)`. Hovered or keyboard-focused action renders at `scale(1.04)`, brightens, and shifts its text slightly. Preserve reduced-motion behavior.
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 Run: `pnpm run lint && pnpm run build`
 
