@@ -17,8 +17,18 @@ const panel: React.CSSProperties = {
 
 export function CalibrationScreen() {
   const { settings, setCalibration, setScreen } = useAppState();
-  const { step, error, session, countdown, box, connect, startCorner1, startCorner2, skip } =
-    useCalibrationFlow();
+  const {
+    step,
+    error,
+    captureError,
+    session,
+    countdown,
+    box,
+    connect,
+    startCorner1,
+    startCorner2,
+    skip,
+  } = useCalibrationFlow();
 
   if (step === 'loading') return <div style={panel}>Starting camera + hand tracker…</div>;
 
@@ -96,6 +106,7 @@ export function CalibrationScreen() {
           </>
         )}
       </div>
+      {captureError && <p className="calibration-capture-error">{captureError}</p>}
       {step === 'corner2' && countdown > 0 && <p style={{ opacity: 0.6 }}>Collecting…</p>}
       {session.cursor.usingCpuFallback() && (
         <p style={{ color: '#ffaa55', fontSize: 13 }}>

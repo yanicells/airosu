@@ -33,6 +33,8 @@
 - `src/ui/leaderboard/LeaderboardPage.tsx`: custom country dropdown.
 - `src/cv/cursorSource.ts`: anchor-aware filter profile.
 - `src/cv/cursorSource.test.ts`: filter-profile regression coverage.
+- `src/cv/calibrationSampling.ts`: minimum reliable tracked-sample gate.
+- `src/cv/calibrationSampling.test.ts`: missing/partial sample rejection coverage.
 - `src/ui/calibrate/CalibrationScreen.tsx`: anchor-specific instructions.
 - `src/ui/calibrate/CornerGuide.tsx`: palm ring versus fingertip target and copy.
 - `src/ui/calibrate/CursorDot.tsx`: anchor-specific test cursor shape.

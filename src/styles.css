@@ -762,6 +762,15 @@ h3 {
   }
 }
 
+.calibration-capture-error {
+  margin: 0;
+  max-width: 520px;
+  color: #ff9aac;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
 /* results screen */
 .results-panel {
   display: flex;
