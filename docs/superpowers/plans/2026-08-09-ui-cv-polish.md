@@ -21,6 +21,7 @@
 ## File Map
 
 - `src/ui/shared/SelectMenu.tsx`: reusable custom dropdown with keyboard selection, outside-click close, and listbox semantics.
+- `src/ui/shared/selectMenuNavigation.ts`: pure wrapped keyboard navigation helper.
 - `src/ui/shared/selectMenu.test.ts`: pure option-navigation coverage.
 - `src/ui/shared/KeyBindingEditor.tsx`: key chips plus explicit next-key capture.
 - `src/ui/home/MapCard.tsx`: custom play option dropdowns.
@@ -74,6 +75,7 @@ Commit: `ci: allow esbuild install script`
 
 **Files:**
 - Create: `src/ui/shared/SelectMenu.tsx`
+- Create: `src/ui/shared/selectMenuNavigation.ts`
 - Create: `src/ui/shared/selectMenu.test.ts`
 - Modify: `src/styles.css`
 
@@ -81,21 +83,21 @@ Commit: `ci: allow esbuild install script`
 - Produces: `SelectMenu({ ariaLabel, value, options, onChange, align? })` where options are `{ value: string; label: string; description?: string }[]`.
 - Produces: `moveOptionIndex(current, direction, count)` for tested wrapping navigation.
 
-- [ ] **Step 1: Write failing navigation tests**
+- [x] **Step 1: Write failing navigation tests**
 
 Cover next/previous wrap, Home, End, and starting from `-1`.
 
-- [ ] **Step 2: Run focused test and confirm failure**
+- [x] **Step 2: Run focused test and confirm failure**
 
 Run: `pnpm test src/ui/shared/selectMenu.test.ts`
 
 Expected: module/export missing.
 
-- [ ] **Step 3: Implement dropdown**
+- [x] **Step 3: Implement dropdown**
 
 Use a styled trigger button with `aria-haspopup="listbox"`, `aria-expanded`, and `aria-controls`. Open on click, Enter, Space, ArrowDown, or ArrowUp. Move active option with arrows/Home/End, choose with Enter/Space, close with Escape/Tab/outside pointer. Render labels and optional descriptions in a floating listbox. Add pink selected rail, checkmark, chevron rotation, and small-to-large hover/focus scale.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run: `pnpm test src/ui/shared/selectMenu.test.ts && pnpm run lint && pnpm run build`
 
