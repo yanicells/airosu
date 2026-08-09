@@ -202,19 +202,19 @@ Commit: `fix: replace browser-default actions`
 - Palm keeps current curve: `minCutoff = max(1.5 - smoothing, 0.1)`, `beta = 0.007`.
 - Index uses slightly more low-speed stabilization without deadening fast motion: `minCutoff = max(1.25 - smoothing, 0.1)`, `beta = 0.012`.
 
-- [ ] **Step 1: Write failing profile tests**
+- [x] **Step 1: Write failing profile tests**
 
 Assert default palm `{ minCutoff: 1, beta: 0.007 }`; default index `{ minCutoff: 0.75, beta: 0.012 }`; both clamp at `0.1`.
 
-- [ ] **Step 2: Confirm failure**
+- [x] **Step 2: Confirm failure**
 
 Run: `pnpm test src/cv/cursorSource.test.ts`
 
-- [ ] **Step 3: Implement and use helper**
+- [x] **Step 3: Implement and use helper**
 
 Build filters from both smoothing and current anchor. Rebuild only when settings are applied; existing filter reset behavior remains unchanged.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run: `pnpm test src/cv/cursorSource.test.ts src/cv/cursorPoint.test.ts src/cv/filters.test.ts`
 

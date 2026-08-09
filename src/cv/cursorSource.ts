@@ -27,9 +27,17 @@ export interface CursorSource {
 
 const LOST_RESET_MS = 500;
 
-function makeFilter(smoothing: number): OneEuroFilter2D {
-  const minCutoff = Math.max(1.5 - smoothing, 0.1);
-  return new OneEuroFilter2D({ minCutoff, beta: 0.007 });
+export function cursorFilterOptions(
+  smoothing: number,
+  anchor: CursorAnchor,
+): { minCutoff: number; beta: number } {
+  return anchor === 'index'
+    ? { minCutoff: Math.max(1.25 - smoothing, 0.1), beta: 0.012 }
+    : { minCutoff: Math.max(1.5 - smoothing, 0.1), beta: 0.007 };
+}
+
+function makeFilter(smoothing: number, anchor: CursorAnchor): OneEuroFilter2D {
+  return new OneEuroFilter2D(cursorFilterOptions(smoothing, anchor));
 }
 
 export function createHandCursorSource(): CursorSource {
@@ -38,7 +46,7 @@ export function createHandCursorSource(): CursorSource {
   let sensitivity = 1;
   let mirror = true;
   let cursorAnchor: CursorAnchor = 'palm';
-  let filter = makeFilter(0.5);
+  let filter = makeFilter(0.5, cursorAnchor);
   let rafId = 0;
   let running = false;
   let lastVideoTime = -1;
@@ -101,7 +109,7 @@ export function createHandCursorSource(): CursorSource {
       sensitivity = s.sensitivity;
       mirror = s.mirror;
       cursorAnchor = s.cursorAnchor;
-      filter = makeFilter(s.smoothing);
+      filter = makeFilter(s.smoothing, cursorAnchor);
     },
 
     usingCpuFallback() {
