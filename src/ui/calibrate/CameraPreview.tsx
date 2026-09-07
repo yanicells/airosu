@@ -19,6 +19,7 @@ export function CameraPreview({
     video.style.width = '100%';
     video.style.height = '100%';
     video.style.objectFit = 'cover';
+    video.style.opacity = '1';
     holder.prepend(video);
     return () => {
       video.remove();

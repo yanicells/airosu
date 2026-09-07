@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAppState } from '../appState';
 import { CameraPreview } from './CameraPreview';
 import { CornerGuide } from './CornerGuide';
@@ -29,6 +30,10 @@ export function CalibrationScreen() {
     startCorner2,
     skip,
   } = useCalibrationFlow();
+
+  useEffect(() => {
+    session?.cursor.setSettings(settings);
+  }, [session, settings]);
 
   if (step === 'loading') return <div style={panel}>Starting camera + hand tracker…</div>;
 
