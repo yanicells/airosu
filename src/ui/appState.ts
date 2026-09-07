@@ -10,9 +10,10 @@ export interface Mapset {
   bytes: Uint8Array;
   preview: MapsetPreview;
   pickedName?: string;
+  sourceUrl?: string;
 }
 
-export type Screen = 'home' | 'calibrate' | 'play' | 'results' | 'settings';
+export type Screen = 'home' | 'songs' | 'calibrate' | 'play' | 'results' | 'settings';
 
 export interface Settings {
   /** 0.5–2, default 1 (scales calibration box) */

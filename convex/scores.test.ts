@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { convexTest } from 'convex-test';
 import aggregate from '@convex-dev/aggregate/test';
@@ -20,7 +21,7 @@ describe('scores.submit', () => {
       const userId = await ctx.db.insert('users', { osuId: 7, name: 'player' });
       const osuFileId = await ctx.storage.store(new Blob(['osu file format v14']));
       const mapId = await ctx.db.insert('maps', {
-        md5: 'a'.repeat(32),
+        md5: createHash('md5').update('osu file format v14').digest('hex'),
         title: 'T',
         artist: 'A',
         version: 'Hard',
@@ -80,6 +81,17 @@ describe('scores.submit', () => {
     }));
     expect(state.scores).toHaveLength(1);
     expect(state.user?.playCount).toBe(1);
+    const history = await authed.query(api.scores.personalHistory, { mapId });
+    expect(history?.best?.playId).toBe(args.playId);
+    expect(history?.recent).toHaveLength(1);
+    expect(await authed.action(api.mapsNode.findRegistered, { osuText: 'osu file format v14' })).toBe(mapId);
+    expect(await authed.action(api.mapsNode.findRegistered, { osuText: 'unknown map' })).toBeNull();
+    expect(await t.action(api.mapsNode.findRegistered, { osuText: 'osu file format v14' })).toBeNull();
+    expect(await t.query(api.scores.personalHistory, { mapId })).toBeNull();
+    const otherId = await t.run((ctx) => ctx.db.insert('users', { osuId: 99, name: 'other' }));
+    const other = t.withIdentity({ subject: `${otherId}|other-session` });
+    expect((await other.query(api.scores.personalHistory, { mapId }))?.recent).toEqual([]);
+
   });
 
   it('marks a better replay as best and flips the old flag', async () => {
@@ -160,5 +172,11 @@ describe('scores.submit', () => {
     expect(state.best[0].pp).toBeCloseTo(strong.pp, 10);
     expect(state.user?.totalPp).toBeCloseTo(strong.pp, 10);
     expect(state.user?.playCount).toBe(2);
+    const history = await authed.query(api.scores.personalHistory, { mapId });
+    expect(history?.best?.pp).toBeCloseTo(strong.pp, 10);
+    expect(history?.recent.map((play) => play.playId)).toEqual([
+      '33333333-3333-4333-8333-333333333333',
+      '22222222-2222-4222-8222-222222222222',
+    ]);
   });
 });

@@ -11,11 +11,13 @@ export function useMapLoader(
   const [busyUrl, setBusyUrl] = useState<string | null>(null);
 
   const openMapset = useCallback(
-    (bytes: Uint8Array, label: string) => {
+    (bytes: Uint8Array, label: string, sourceUrl?: string) => {
       const preview = previewOsz(bytes);
       if (preview.difficulties.length === 0) throw new Error('No difficulties found in .osz');
-      setMap(undefined);
-      setMapset({ label, bytes, preview });
+      const pickedName = preview.difficulties[0].name;
+      const loaded = loadFromOsz(bytes, pickedName);
+      setMap(loaded);
+      setMapset({ label, bytes, preview, pickedName, sourceUrl });
       return preview.difficulties.length;
     },
     [setMap, setMapset],
@@ -48,7 +50,7 @@ export function useMapLoader(
       setBusyUrl(m.url);
       try {
         const bytes = new Uint8Array(await (await fetch(m.url)).arrayBuffer());
-        openMapset(bytes, `${m.artist} — ${m.title}`);
+        openMapset(bytes, `${m.artist} — ${m.title}`, m.url);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load map');
       } finally {

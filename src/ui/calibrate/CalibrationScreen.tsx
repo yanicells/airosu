@@ -45,7 +45,7 @@ export function CalibrationScreen() {
         <button className="btn" onClick={connect}>
           Retry
         </button>
-        <button className="btn" onClick={() => setScreen('home')}>
+        <button className="btn" onClick={() => setScreen('songs')}>
           Back
         </button>
       </div>
@@ -73,7 +73,7 @@ export function CalibrationScreen() {
       <button
         className="btn btn--back"
         style={{ position: 'absolute', top: 16, left: 16 }}
-        onClick={() => setScreen('home')}
+        onClick={() => setScreen('songs')}
       >
         ‹ Songs
       </button>

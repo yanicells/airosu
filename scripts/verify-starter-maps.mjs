@@ -18,6 +18,10 @@ const diskFiles = (await readdir(dir)).filter((name) => name.endsWith('.osz')).s
 const listedFiles = manifest.maps.map((entry) => entry.file).sort();
 if (JSON.stringify(diskFiles) !== JSON.stringify(listedFiles)) fail('manifest/file mismatch');
 
+// Explicit temporary test pack requested by the owner on 2026-09-07.
+// Integrity checks still apply; this is not a claim of redistribution rights.
+if (manifest.temporaryTestPack) console.log('Temporary test pack enabled; rights review pending before production release.');
+
 let total = 0;
 const ids = new Set();
 for (const entry of manifest.maps) {
@@ -29,9 +33,9 @@ for (const entry of manifest.maps) {
   for (const field of ['artist', 'title', 'license', 'attribution', 'evidence']) {
     if (typeof entry[field] !== 'string' || !entry[field].trim()) fail(`${entry.id}: ${field}`);
   }
-  if (/pending|provisional|unknown|tbd/i.test(entry.license)) fail(`${entry.id}: permission not documented`);
+  if (!manifest.temporaryTestPack && /pending|provisional|unknown|tbd/i.test(entry.license)) fail(`${entry.id}: permission not documented`);
   const evidence = await readFile(join(dir, entry.evidence), 'utf8');
-  if (!evidence.trim() || /pending|provisionally bundled/i.test(evidence)) {
+  if (!evidence.trim() || (!manifest.temporaryTestPack && /pending|provisionally bundled/i.test(evidence))) {
     fail(`${entry.id}: permission evidence incomplete`);
   }
   const bytes = await readFile(join(dir, entry.file));
