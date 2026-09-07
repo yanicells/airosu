@@ -12,21 +12,31 @@ export function usePersonalScores(osuText?: string, registeredMapId?: Id<'maps'>
     if (!isAuthenticated || !osuText || registeredMapId) return;
     let active = true;
     setLookup(undefined);
-    findRegistered({ osuText }).then((id) => {
-      if (active) setLookup({ text: osuText, id });
-    }).catch(() => {
-      if (active) setLookup({ text: osuText, id: null, error: 'Could not load your scores.' });
-    });
-    return () => { active = false; };
+    findRegistered({ osuText })
+      .then((id) => {
+        if (active) setLookup({ text: osuText, id });
+      })
+      .catch(() => {
+        if (active) setLookup({ text: osuText, id: null, error: 'Could not load your scores.' });
+      });
+    return () => {
+      active = false;
+    };
   }, [isAuthenticated, osuText, registeredMapId, findRegistered, retry]);
   const current = lookup?.text === osuText ? lookup : undefined;
   const mapId = registeredMapId ?? current?.id;
-  const history = useQuery(api.scores.personalHistory,
-    isAuthenticated && mapId ? { mapId } : 'skip');
+  const history = useQuery(
+    api.scores.personalHistory,
+    isAuthenticated && mapId ? { mapId } : 'skip',
+  );
   return {
-    history, mapId, isAuthenticated,
-    loading: isLoading || (isAuthenticated && !!osuText && !current && !registeredMapId)
-      || (!!mapId && isAuthenticated && history === undefined),
+    history,
+    mapId,
+    isAuthenticated,
+    loading:
+      isLoading ||
+      (isAuthenticated && !!osuText && !current && !registeredMapId) ||
+      (!!mapId && isAuthenticated && history === undefined),
     error: current?.error,
     retry: () => setRetry((value) => value + 1),
   };

@@ -74,9 +74,10 @@ pp recalculation procedure: `docs/pp-rework-runbook.md`.
   [osu-classes](https://github.com/kionell/osu-classes) (MIT, by kionell). Gameplay
   rules (hit windows, approach timing, relax behavior) adapted from
   [osu!lazer](https://github.com/ppy/osu) (MIT, ppy).
-- Bundled starter maps ship only with documented redistribution permission, listed
-  in `game-assets/starter-maps/manifest.json` and verified in CI
-  (`scripts/verify-starter-maps.mjs`). Other `.osz` files under `game-assets/test-maps/`
-  are test fixtures only and never enter the production build. If you own bundled
-  content and want it removed, open an issue.
+- The owner-requested temporary test pack includes three existing maps for UI
+  verification without importing. `game-assets/starter-maps/manifest.json` records
+  this explicit temporary mode; redistribution review remains pending. CI still
+  verifies archive hashes, sizes, and bundle contents. Other `.osz` files under
+  `game-assets/test-maps/` remain test-only and never enter the deployed bundle.
+  Disable `temporaryTestPack` and resolve pending rights records before release.
 - This project is not affiliated with osu! or ppy.
