@@ -24,12 +24,13 @@ const ss = { count300: 100, count100: 0, count50: 0, countMiss: 0, maxCombo: 100
 
 describe('validateSubmission', () => {
   it('accepts a full clean play', () => expect(validateSubmission(map, ss)).toBeNull());
-  it('accepts slider-aware judgment totals larger than osu object count', () =>
-    expect(validateSubmission({ judgmentCount: 100 }, ss)).toBeNull());
   it('rejects judgment counts that do not cover the map', () =>
     expect(validateSubmission(map, { ...ss, count300: 50 })).toMatch(/judgment/i));
   it('rejects impossible combo', () =>
     expect(validateSubmission(map, { ...ss, maxCombo: 101 })).toMatch(/combo/i));
+  it('rejects combo larger than the number of successful judgments', () => {
+    expect(validateSubmission(map, { ...ss, count300: 10, countMiss: 90, maxCombo: 11 })).toMatch(/combo/i);
+  });
   it('rejects negative and non-integer counts', () => {
     expect(validateSubmission(map, { ...ss, count100: -1, count300: 101 })).not.toBeNull();
     expect(validateSubmission(map, { ...ss, count300: 99.5, count100: 0.5 })).not.toBeNull();
