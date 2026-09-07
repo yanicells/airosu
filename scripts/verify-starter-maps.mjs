@@ -29,10 +29,14 @@ for (const entry of manifest.maps) {
   for (const field of ['artist', 'title', 'license', 'attribution', 'evidence']) {
     if (typeof entry[field] !== 'string' || !entry[field].trim()) fail(`${entry.id}: ${field}`);
   }
+  if (/pending|provisional|unknown|tbd/i.test(entry.license)) fail(`${entry.id}: permission not documented`);
+  const evidence = await readFile(join(dir, entry.evidence), 'utf8');
+  if (!evidence.trim() || /pending|provisionally bundled/i.test(evidence)) {
+    fail(`${entry.id}: permission evidence incomplete`);
+  }
   const bytes = await readFile(join(dir, entry.file));
   const hash = createHash('sha256').update(bytes).digest('hex');
   if (hash !== entry.sha256 || bytes.byteLength !== entry.byteLength) fail(`${entry.id}: hash/size`);
-  await readFile(join(dir, entry.evidence), 'utf8');
   const names = Object.keys(unzipSync(bytes)).map((name) => name.toLowerCase());
   if (!names.some((name) => name.endsWith('.osu'))) fail(`${entry.id}: no .osu`);
   if (names.some((name) => /\.(mp4|avi|flv|mov|webm)$/.test(name))) fail(`${entry.id}: video`);
