@@ -38,21 +38,24 @@ export const byOsuId = query({
       };
     };
 
-    const best = await ctx.db
-      .query('scores')
-      .withIndex('by_user_best', (q) => q.eq('userId', user._id).eq('isBest', true))
-      .order('desc')
-      .take(50);
-    const topPlays = await Promise.all(best.map((s, i) => joinMap(s, Math.pow(0.95, i))));
+    const [best, recent, ranks] = await Promise.all([
+      ctx.db
+        .query('scores')
+        .withIndex('by_user_best', (q) => q.eq('userId', user._id).eq('isBest', true))
+        .order('desc')
+        .take(50),
+      ctx.db
+        .query('scores')
+        .withIndex('by_user', (q) => q.eq('userId', user._id))
+        .order('desc')
+        .take(20),
+      userRanks(ctx, user),
+    ]);
+    const [topPlays, recentPlays] = await Promise.all([
+      Promise.all(best.map((s, i) => joinMap(s, Math.pow(0.95, i)))),
+      Promise.all(recent.map((s) => joinMap(s))),
+    ]);
 
-    const recent = await ctx.db
-      .query('scores')
-      .withIndex('by_user', (q) => q.eq('userId', user._id))
-      .order('desc')
-      .take(20);
-    const recentPlays = await Promise.all(recent.map((s) => joinMap(s)));
-
-    const ranks = await userRanks(ctx, user);
     return {
       user: {
         osuId: user.osuId,
