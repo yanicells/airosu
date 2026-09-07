@@ -3,8 +3,6 @@ import type { KeyboardEvent } from 'react';
 import { moveOptionIndex } from './selectMenuNavigation';
 import type { SelectMenuMove } from './selectMenuNavigation';
 
-export { moveOptionIndex } from './selectMenuNavigation';
-
 export interface SelectMenuOption {
   value: string;
   label: string;

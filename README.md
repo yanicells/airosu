@@ -4,11 +4,9 @@ Play osu! beatmaps with your hand. A webcam-controlled rhythm game: move your pa
 (or index fingertip) in front of the camera to aim the cursor at circles and sliders —
 a Wii/Kinect-style way to experience osu! maps in the browser.
 
-![demo](docs/demo.gif) <!-- TODO: record a demo GIF -->
-
 The game runs entirely client-side; camera frames and audio never leave your device.
 Signing in with osu! adds online scores, pp, leaderboards, and profiles ("airosu
-online") — all optional, the game is fully playable signed out and offline.
+online") — all optional, gameplay requires no sign-in. Initial startup needs network access for the hand-tracking model and runtime.
 
 ## How to play
 

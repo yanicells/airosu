@@ -1,4 +1,4 @@
-import type { BundledMap } from '../../beatmap/bundled';
+import type { StarterMap } from '../../beatmap/starterMaps';
 
 /** osu! song-select style list of the maps shipped with the app. */
 export function SongList({
@@ -7,8 +7,8 @@ export function SongList({
   busyUrl,
   selectedUrl,
 }: {
-  maps: BundledMap[];
-  onPick: (m: BundledMap) => void;
+  maps: StarterMap[];
+  onPick: (m: StarterMap) => void;
   busyUrl: string | null;
   selectedUrl?: string;
 }) {

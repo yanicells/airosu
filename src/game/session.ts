@@ -164,6 +164,7 @@ export class GameSession {
       if (
         relax &&
         timeMs >= obj.time &&
+        timeMs <= obj.time + this.w50 &&
         cursor &&
         inRadius(cursor, obj.pos, cs, this.settings.forgiveness)
       ) {

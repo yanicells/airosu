@@ -13,7 +13,7 @@ export function validateSubmission(map: { judgmentCount: number }, s: HitStats):
   const counts = [s.count300, s.count100, s.count50, s.countMiss, s.maxCombo];
   if (counts.some((c) => !Number.isInteger(c) || c < 0)) return 'invalid counts';
   if (judgedCount(s) !== map.judgmentCount) return 'judgment counts do not match the map';
-  if (s.maxCombo > map.judgmentCount) return 'combo exceeds map maximum';
+  if (s.maxCombo > map.judgmentCount - s.countMiss) return 'combo exceeds successful judgments';
   return null;
 }
 

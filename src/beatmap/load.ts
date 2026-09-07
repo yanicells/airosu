@@ -12,7 +12,10 @@ export interface OszEntry {
 const textDecoder = new TextDecoder();
 
 export function listDifficulties(oszBytes: Uint8Array): OszEntry[] {
-  const files = unzipSync(oszBytes);
+  return difficultiesIn(unzipSync(oszBytes));
+}
+
+function difficultiesIn(files: Record<string, Uint8Array>): OszEntry[] {
   const entries: OszEntry[] = [];
   for (const [name, bytes] of Object.entries(files)) {
     if (!name.toLowerCase().endsWith('.osu')) continue;
@@ -39,13 +42,13 @@ function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
 }
 
 export function loadFromOsz(oszBytes: Uint8Array, difficultyName: string): LoadedBeatmap {
-  const entry = listDifficulties(oszBytes).find((e) => e.difficultyName === difficultyName);
+  const files = unzipSync(oszBytes);
+  const entry = difficultiesIn(files).find((e) => e.difficultyName === difficultyName);
   if (!entry) throw new Error(`Difficulty not found: ${difficultyName}`);
 
   const decoder = new BeatmapDecoder();
   const decoded = decoder.decodeFromString(entry.osuText, { parseStoryboard: false });
 
-  const files = unzipSync(oszBytes);
   const audioBytes = findEntry(files, decoded.general.audioFilename);
   if (!audioBytes) throw new Error(`Audio file not found: ${decoded.general.audioFilename}`);
 
@@ -67,18 +70,23 @@ export interface MapsetPreview {
 
 /** Difficulty names + star ratings + a background, without decoding audio. */
 export function previewOsz(oszBytes: Uint8Array): MapsetPreview {
-  const entries = listDifficulties(oszBytes);
+  const files = unzipSync(oszBytes);
+  const entries = difficultiesIn(files);
   const difficulties = entries
     .map((e) => ({ name: e.difficultyName, stars: starRating(e.osuText) }))
     .sort((a, b) => a.stars - b.stars);
-  return { background: oszBackground(oszBytes, entries), difficulties };
+  return { background: backgroundIn(files, entries), difficulties };
 }
 
 /** Just the mapset background image, no star ratings — cheap enough for list previews. */
-export function oszBackground(oszBytes: Uint8Array, entries?: OszEntry[]): Blob | undefined {
+export function oszBackground(oszBytes: Uint8Array): Blob | undefined {
   const files = unzipSync(oszBytes);
+  return backgroundIn(files, difficultiesIn(files));
+}
+
+function backgroundIn(files: Record<string, Uint8Array>, entries: OszEntry[]): Blob | undefined {
   const decoder = new BeatmapDecoder();
-  for (const e of entries ?? listDifficulties(oszBytes)) {
+  for (const e of entries) {
     const bgPath = decoder.decodeFromString(e.osuText, { parseStoryboard: false }).events
       .backgroundPath;
     const bgBytes = bgPath ? findEntry(files, bgPath) : undefined;

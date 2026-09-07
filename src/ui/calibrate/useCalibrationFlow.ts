@@ -19,7 +19,6 @@ export function useCalibrationFlow() {
   const [box, setBox] = useState<CalibrationBox>(defaultBox());
   const samplesRef = useRef<Vec2[]>([]);
   const corner1SamplesRef = useRef<Vec2[]>([]);
-  const cameraRef = useRef<Vec2 | null>(null);
   const collectingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
@@ -42,7 +41,6 @@ export function useCalibrationFlow() {
   useEffect(() => {
     if (!session) return;
     return session.cursor.onSample((s) => {
-      cameraRef.current = s.camera;
       if (collectingRef.current && s.camera) samplesRef.current.push(s.camera);
     });
   }, [session]);

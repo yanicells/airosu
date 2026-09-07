@@ -37,6 +37,11 @@ describe('GameSession relax', () => {
     expect(events[0].judgment).toBe(300);
   });
 
+  it('misses expired objects even when the cursor arrives on target', () => {
+    const s = new GameSession(twoCircles(), relax);
+    expect(s.tick(1200, { x: 100, y: 100 })[0].judgment).toBe(0);
+  });
+
   it('misses when cursor far past window', () => {
     const s = new GameSession(twoCircles(), relax);
     const events = s.tick(1200, { x: 500, y: 50 });

@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DragEvent, ChangeEvent } from 'react';
-import { listDifficulties, loadFromOsz, loadFromOsu, previewOsz } from '../../beatmap/load';
-import { bundledMaps } from '../../beatmap/bundled';
-import type { BundledMap } from '../../beatmap/bundled';
+import { starterMaps } from '../../beatmap/starterMaps';
 import { useAppState } from '../appState';
 import { useObjectUrl } from '../useObjectUrl';
 import { AuthButton } from '../nav';
@@ -11,84 +9,25 @@ import { MapCard } from './MapCard';
 import { SongList } from './SongList';
 import { YourMaps } from './YourMaps';
 import { useLibrary } from './useLibrary';
+import { useMapLoader } from './useMapLoader';
 import { useSongBackground } from './useSongBackground';
 
 export function MapLoadScreen() {
   const { map, mapset, settings, setSettings, setMap, setMapset, setScreen } = useAppState();
-  const [error, setError] = useState<string | null>(null);
-  const [busyUrl, setBusyUrl] = useState<string | null>(null);
   const library = useLibrary();
+  const { error, setError, busyUrl, openMapset, handleFile, pickBundled, pickDifficulty } =
+    useMapLoader(library.save);
 
   const bgUrl = useObjectUrl(mapset?.preview.background);
 
   // song list: a random map starts selected, arrow keys move, Enter opens
-  const maps = useMemo(bundledMaps, []);
+  const maps = useMemo(starterMaps, []);
   const [selectedIdx, setSelectedIdx] = useState(() =>
     maps.length ? Math.floor(Math.random() * maps.length) : 0,
   );
   const onSongList = !mapset && !map;
   const selected = onSongList && maps.length ? maps[selectedIdx] : undefined;
   const previewBgUrl = useObjectUrl(useSongBackground(selected));
-
-  const openMapset = useCallback(
-    (bytes: Uint8Array, label: string) => {
-      if (listDifficulties(bytes).length === 0) throw new Error('No difficulties found in .osz');
-      setMap(undefined);
-      setMapset({ label, bytes, preview: previewOsz(bytes) });
-    },
-    [setMap, setMapset],
-  );
-
-  const handleFile = useCallback(
-    async (file: File) => {
-      setError(null);
-      try {
-        const bytes = new Uint8Array(await file.arrayBuffer());
-        if (file.name.toLowerCase().endsWith('.osu')) {
-          setMapset(undefined);
-          setMap(loadFromOsu(new TextDecoder().decode(bytes), new ArrayBuffer(0)));
-          return;
-        }
-        const label = file.name.replace(/\.osz$/i, '');
-        openMapset(bytes, label);
-        // fire-and-forget: persistence failures never block the upload
-        void library.save(bytes, label, listDifficulties(bytes).length);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load map');
-      }
-    },
-    [openMapset, setMap, setMapset, library],
-  );
-
-  const pickBundled = useCallback(
-    async (m: BundledMap) => {
-      setError(null);
-      setBusyUrl(m.url);
-      try {
-        const bytes = new Uint8Array(await (await fetch(m.url)).arrayBuffer());
-        openMapset(bytes, `${m.artist} — ${m.title}`);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load map');
-      } finally {
-        setBusyUrl(null);
-      }
-    },
-    [openMapset],
-  );
-
-  const pickDifficulty = useCallback(
-    (name: string) => {
-      if (!mapset) return;
-      try {
-        setMap(loadFromOsz(mapset.bytes, name));
-        setMapset({ ...mapset, pickedName: name });
-        setError(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to parse difficulty');
-      }
-    },
-    [mapset, setMap],
-  );
 
   useEffect(() => {
     if (!onSongList || maps.length === 0) return;

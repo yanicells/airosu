@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import type { BundledMap } from '../../beatmap/bundled';
+import type { StarterMap } from '../../beatmap/starterMaps';
 import { oszBackground } from '../../beatmap/load';
 
 // per-URL background cache; null marks "fetched, has no background"
 const cache = new Map<string, Blob | null>();
 
 /** Background image of a bundled map's .osz, fetched lazily and cached. */
-export function useSongBackground(map: BundledMap | undefined): Blob | undefined {
+export function useSongBackground(map: StarterMap | undefined): Blob | undefined {
   const [bg, setBg] = useState<Blob>();
 
   useEffect(() => {

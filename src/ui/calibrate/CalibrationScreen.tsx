@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAppState } from '../appState';
 import { CameraPreview } from './CameraPreview';
 import { CornerGuide } from './CornerGuide';
@@ -29,6 +30,10 @@ export function CalibrationScreen() {
     startCorner2,
     skip,
   } = useCalibrationFlow();
+
+  useEffect(() => {
+    session?.cursor.setSettings(settings);
+  }, [session, settings]);
 
   if (step === 'loading') return <div style={panel}>Starting camera + hand tracker…</div>;
 
@@ -129,9 +134,6 @@ export function CalibrationScreen() {
           GPU acceleration unavailable — tracking runs on CPU and may feel laggier.
         </p>
       )}
-      <p style={{ opacity: 0.5, fontSize: 13 }}>
-        Tip: press R in game to recenter on your {isIndex ? 'fingertip' : 'palm'}.
-      </p>
     </div>
   );
 }
