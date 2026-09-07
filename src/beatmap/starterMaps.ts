@@ -15,8 +15,8 @@ export interface StarterMapEntry {
 
 export type StarterMap = StarterMapEntry & { url: string };
 
-// Only manifest-approved starter maps enter the production graph; everything
-// under game-assets/test-maps/ is read by vitest through node:fs only.
+// Only the explicit manifest pack enters the app. The owner has temporarily
+// enabled three test maps for UI verification; other test fixtures stay excluded.
 const starterUrls = import.meta.glob('/game-assets/starter-maps/*.osz', {
   query: '?url',
   import: 'default',

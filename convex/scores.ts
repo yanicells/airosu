@@ -141,3 +141,21 @@ export const mapLeaderboard = query({
     );
   },
 });
+
+/** Only the signed-in player's history for this exact difficulty. */
+export const personalHistory = query({
+  args: { mapId: v.id('maps') },
+  handler: async (ctx, { mapId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const [best, recent] = await Promise.all([
+      ctx.db.query('scores')
+        .withIndex('by_user_map_pp', (q) => q.eq('userId', userId).eq('mapId', mapId))
+        .order('desc').first(),
+      ctx.db.query('scores')
+        .withIndex('by_user_map', (q) => q.eq('userId', userId).eq('mapId', mapId))
+        .order('desc').take(10),
+    ]);
+    return { best, recent };
+  },
+});

@@ -80,6 +80,14 @@ describe('scores.submit', () => {
     }));
     expect(state.scores).toHaveLength(1);
     expect(state.user?.playCount).toBe(1);
+    const history = await authed.query(api.scores.personalHistory, { mapId });
+    expect(history?.best?.playId).toBe(args.playId);
+    expect(history?.recent).toHaveLength(1);
+    expect(await t.query(api.scores.personalHistory, { mapId })).toBeNull();
+    const otherId = await t.run((ctx) => ctx.db.insert('users', { osuId: 99, name: 'other' }));
+    const other = t.withIdentity({ subject: `${otherId}|other-session` });
+    expect((await other.query(api.scores.personalHistory, { mapId }))?.recent).toEqual([]);
+
   });
 
   it('marks a better replay as best and flips the old flag', async () => {

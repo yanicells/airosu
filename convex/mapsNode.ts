@@ -107,3 +107,16 @@ export const refreshAttributes = internalAction({
     return { updated, isDone: batch.isDone, continueCursor: batch.continueCursor };
   },
 });
+
+/** Read-only lookup: browsing a song must not register it or upload a stored file. */
+export const findRegistered = action({
+  args: { osuText: v.string() },
+  handler: async (ctx, { osuText }): Promise<Id<'maps'> | null> => {
+    if (!(await getAuthUserId(ctx))) return null;
+    if (new TextEncoder().encode(osuText).byteLength > 1_000_000) {
+      throw new Error('.osu file is too large');
+    }
+    const md5 = createHash('md5').update(osuText, 'utf8').digest('hex');
+    return (await ctx.runQuery(internal.maps.byMd5, { md5 }))?._id ?? null;
+  },
+});
