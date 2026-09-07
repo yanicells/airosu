@@ -1,5 +1,4 @@
 import { openCamera } from './camera';
-import { createHandCursorSource } from './cursorSource';
 import type { CursorSource } from './cursorSource';
 
 /**
@@ -21,6 +20,7 @@ export function getCvSession(): Promise<CvSession> {
   if (pending) return pending;
   const current = generation;
   pending = (async () => {
+    const { createHandCursorSource } = await import('./cursorSource');
     const stream = await openCamera();
     const video = document.createElement('video');
     const cursor = createHandCursorSource();

@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { LoadedBeatmap } from '../beatmap/model';
 import { stopCvSession } from '../cv/cvSession';
 import type { CalibrationBox } from '../cv/calibration';
 import { AppStateContext, loadSettings, saveSettings } from './appState';
 import type { AppState, LastResult, Mapset, Screen, Settings } from './appState';
 import { MapLoadScreen } from './home';
-import { CalibrationScreen } from './calibrate';
-import { PlayScreen } from './play';
+const CalibrationScreen = lazy(() => import('./calibrate').then((m) => ({ default: m.CalibrationScreen })));
+const PlayScreen = lazy(() => import('./play').then((m) => ({ default: m.PlayScreen })));
 import { ResultsScreen } from './results';
 import { SettingsScreen } from './settings';
 
@@ -47,8 +47,10 @@ export function App() {
   return (
     <AppStateContext.Provider value={state}>
       {screen === 'home' && <MapLoadScreen />}
-      {screen === 'calibrate' && <CalibrationScreen />}
-      {screen === 'play' && <PlayScreen />}
+      <Suspense fallback={<div className="screen-center">Loading…</div>}>
+        {screen === 'calibrate' && <CalibrationScreen />}
+        {screen === 'play' && <PlayScreen />}
+      </Suspense>
       {screen === 'results' && <ResultsScreen />}
       {screen === 'settings' && <SettingsScreen />}
     </AppStateContext.Provider>

@@ -6,6 +6,7 @@ export class DigitRow {
   readonly container = new Container();
   private sprites: Sprite[] = [];
   private lastWidth = 0;
+  private lastText: string | undefined;
 
   /** laid-out width of the last set() call */
   get width(): number {
@@ -25,6 +26,8 @@ export class DigitRow {
   }
 
   set(text: string): void {
+    if (text === this.lastText) return;
+    this.lastText = text;
     while (this.sprites.length < text.length) {
       const s = new Sprite();
       s.anchor.set(0, 0);

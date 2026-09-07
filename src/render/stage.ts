@@ -8,7 +8,6 @@ import type { RenderView } from './types';
 
 export interface Stage {
   render(view: RenderView): void;
-  resize(): void;
   destroy(): void;
 }
 
@@ -27,6 +26,7 @@ export async function createStage(
 ): Promise<Stage> {
   const app = new Application();
   await app.init({
+    autoStart: false,
     backgroundAlpha: focusMode ? 1 : 0,
     background: '#111111',
     resizeTo: host,
@@ -45,8 +45,6 @@ export async function createStage(
   playfieldRoot.addChild(playfield.container, cursor.container);
   app.stage.addChild(playfieldRoot, hud.container);
 
-  let cursorLost = false;
-
   const layout = () => {
     // logical (CSS) size — renderer.width is physical pixels on HiDPI screens
     const w = app.screen.width;
@@ -61,17 +59,18 @@ export async function createStage(
     hud.layout(w, h);
   };
   layout();
+  app.renderer.on('resize', layout);
 
   return {
     render(view: RenderView) {
       playfield.addHits(view);
       playfield.render(view);
-      cursorLost = view.cursor === null;
       cursor.render(view.cursor);
-      hud.render(view.score, view.combo, view.accuracy, view.pp, cursorLost, view.timeMs);
+      hud.render(view.score, view.combo, view.accuracy, view.pp, view.cursor === null, view.timeMs);
+      app.render();
     },
-    resize: layout,
     destroy() {
+      app.renderer.off('resize', layout);
       app.destroy({ removeView: true }, { children: true });
     },
   };
