@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { LoadedBeatmap } from '../beatmap/model';
+import { stopCvSession } from '../cv/cvSession';
 import type { CalibrationBox } from '../cv/calibration';
 import { AppStateContext, loadSettings, saveSettings } from './appState';
 import type { AppState, LastResult, Mapset, Screen, Settings } from './appState';
@@ -16,6 +17,11 @@ export function App() {
   const [settings, setSettingsState] = useState<Settings>(loadSettings);
   const [calibration, setCalibration] = useState<CalibrationBox | undefined>();
   const [lastResult, setLastResult] = useState<LastResult | undefined>();
+
+  useEffect(() => {
+    if (screen !== 'calibrate' && screen !== 'play') stopCvSession();
+  }, [screen]);
+  useEffect(() => stopCvSession, []);
 
   const state = useMemo<AppState>(
     () => ({

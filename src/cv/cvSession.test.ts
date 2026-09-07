@@ -1,0 +1,48 @@
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { openCamera } from './camera';
+import { createHandCursorSource } from './cursorSource';
+
+vi.mock('./camera', () => ({ openCamera: vi.fn() }));
+vi.mock('./cursorSource', () => ({ createHandCursorSource: vi.fn() }));
+
+const stopTrack = vi.fn();
+const cursor = { start: vi.fn(), stop: vi.fn() };
+
+beforeEach(() => {
+  vi.resetModules();
+  vi.clearAllMocks();
+  vi.mocked(openCamera).mockResolvedValue({ getTracks: () => [{ stop: stopTrack }] } as unknown as MediaStream);
+  vi.mocked(createHandCursorSource).mockReturnValue(cursor as unknown as ReturnType<typeof createHandCursorSource>);
+  cursor.start.mockResolvedValue(undefined);
+  vi.stubGlobal('document', { createElement: () => ({ play: vi.fn().mockResolvedValue(undefined) }) });
+});
+
+afterEach(() => vi.unstubAllGlobals());
+
+it('shares concurrent initialization, including StrictMode mounts', async () => {
+  const { getCvSession, stopCvSession } = await import('./cvSession');
+  const [first, second] = await Promise.all([getCvSession(), getCvSession()]);
+  expect(first).toBe(second);
+  expect(openCamera).toHaveBeenCalledTimes(1);
+  expect(cursor.start).toHaveBeenCalledTimes(1);
+  stopCvSession();
+});
+
+it('releases the camera after tracker failure and permits retry', async () => {
+  const { getCvSession, stopCvSession } = await import('./cvSession');
+  cursor.start.mockRejectedValueOnce(new Error('tracker failed'));
+  await expect(getCvSession()).rejects.toThrow('tracker failed');
+  expect(stopTrack).toHaveBeenCalledOnce();
+  expect(cursor.stop).toHaveBeenCalledOnce();
+  await expect(getCvSession()).resolves.toHaveProperty('cursor', cursor);
+  stopCvSession();
+});
+
+it('does not revive a session stopped while the camera was opening', async () => {
+  const { getCvSession, stopCvSession, peekCvSession } = await import('./cvSession');
+  const pending = getCvSession();
+  stopCvSession();
+  await expect(pending).rejects.toThrow('Camera session stopped');
+  expect(peekCvSession()).toBeNull();
+  expect(stopTrack).toHaveBeenCalledOnce();
+});
