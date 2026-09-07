@@ -38,7 +38,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
   const clockRef = useRef<AudioClock | null>(null);
   const sessionRef = useRef<GameSession | null>(null);
   const cursorRef = useRef<Vec2 | null>(null);
-  const skinRef = useRef<Skin | null>(null);
+  const pendingHits = useRef<HitEvent[]>([]);
   const ppRef = useRef<PpCounter | null>(null);
 
   const finish = useCallback(() => {
@@ -72,6 +72,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
 
     let disposed = false;
     let rafId = 0;
+    let finishTimer: ReturnType<typeof setTimeout> | undefined;
     let stageDestroy = () => {};
 
     const session = new GameSession(map, settings);
@@ -87,14 +88,23 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
     });
 
     (async () => {
-      let stage;
+      let stage: Awaited<ReturnType<typeof createStage>>;
       let clock;
       let skin: Skin | null = null;
       try {
         skin = await getSkin();
+        if (disposed) return;
         stage = await createStage(host, settings.visualMode === 'focus', skin);
+        stageDestroy = () => stage.destroy();
+        if (disposed) {
+          stageDestroy();
+          return;
+        }
         clock = await AudioClock.create(map.audio, settings.volume);
       } catch (e) {
+        stageDestroy();
+        stageDestroy = () => {};
+        if (disposed) return;
         setFatal(
           e instanceof Error
             ? `Could not start renderer/audio: ${e.message}. WebGL is required.`
@@ -108,8 +118,6 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         return;
       }
       clockRef.current = clock;
-      skinRef.current = skin;
-      stageDestroy = () => stage.destroy();
 
       try {
         ppRef.current = new PpCounter(map.rawOsu);
@@ -151,7 +159,8 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         if (phaseRef.current !== 'playing') return;
         const t = clock.nowMs(settings.audioOffsetMs);
         const cursor = cursorRef.current;
-        const events = session.tick(t, cursor);
+        const events = pendingHits.current.splice(0);
+        events.push(...session.tick(t, cursor));
         playHitSounds(events, prevCombo);
         const state = session.state;
         prevCombo = state.score.combo;
@@ -176,8 +185,9 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         };
         stage.render(view);
         if (state.finished || clock.ended) {
+          phaseRef.current = 'done';
           setPhase('done');
-          setTimeout(finish, 600);
+          finishTimer = setTimeout(finish, 600);
         }
       };
       rafId = requestAnimationFrame(loop);
@@ -195,6 +205,8 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
     return () => {
       disposed = true;
       cancelAnimationFrame(rafId);
+      clearTimeout(finishTimer);
+      pendingHits.current = [];
       offSample?.();
       clockRef.current?.stop();
       clockRef.current = null;
@@ -203,7 +215,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map]);
 
-  // input: tap keys, recenter, pause
+  // input: tap keys and pause
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -216,20 +228,13 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         });
         return;
       }
-      if (phaseRef.current !== 'playing') return;
+      if (phaseRef.current !== 'playing' || e.repeat) return;
       const key = e.key.toLowerCase();
       if (settings.inputMode === 'manual' && settings.tapKeys.includes(key)) {
         e.preventDefault();
         const t = clockRef.current?.nowMs(settings.audioOffsetMs) ?? 0;
         const hit = sessionRef.current?.press(t, cursorRef.current);
-        const sounds = skinRef.current?.sounds;
-        if (hit && hit.judgment > 0 && sounds?.hitnormal)
-          playSound(sounds.hitnormal, settings.volume);
-      }
-      if (key === 'r') {
-        const cv = peekCvSession();
-        const cam = cv ? cursorRef : null;
-        void cam; // recenter handled on calibration screen in V1
+        if (hit) pendingHits.current.push(hit);
       }
     };
     window.addEventListener('keydown', onKey);

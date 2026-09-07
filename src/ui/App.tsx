@@ -19,7 +19,7 @@ export function App() {
   const [lastResult, setLastResult] = useState<LastResult | undefined>();
 
   useEffect(() => {
-    if (screen !== 'calibrate' && screen !== 'play') stopCvSession();
+    if (screen === 'home' || screen === 'settings') stopCvSession();
   }, [screen]);
   useEffect(() => stopCvSession, []);
 

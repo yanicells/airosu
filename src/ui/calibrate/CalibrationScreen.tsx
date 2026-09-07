@@ -129,9 +129,6 @@ export function CalibrationScreen() {
           GPU acceleration unavailable — tracking runs on CPU and may feel laggier.
         </p>
       )}
-      <p style={{ opacity: 0.5, fontSize: 13 }}>
-        Tip: press R in game to recenter on your {isIndex ? 'fingertip' : 'palm'}.
-      </p>
     </div>
   );
 }
