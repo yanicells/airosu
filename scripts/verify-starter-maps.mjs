@@ -25,7 +25,7 @@ for (const entry of manifest.maps) {
   ids.add(entry.id);
   if (!/^[a-z0-9-]+\.osz$/.test(entry.file)) fail(`bad file ${entry.file}`);
   if (!/^LICENSES\/[a-z0-9-]+\.md$/.test(entry.evidence)) fail(`bad evidence path ${entry.id}`);
-  if (!/^https:\/\//.test(entry.sourceUrl)) fail(`bad source for ${entry.id}`);
+  if (!entry.sourceUrl?.startsWith('https://')) fail(`bad source for ${entry.id}`);
   for (const field of ['artist', 'title', 'license', 'attribution', 'evidence']) {
     if (typeof entry[field] !== 'string' || !entry[field].trim()) fail(`${entry.id}: ${field}`);
   }
@@ -44,3 +44,17 @@ for (const entry of manifest.maps) {
 }
 if (total > 15_000_000) fail('15 MB budget exceeded');
 console.log(`verified ${manifest.maps.length} starter maps (${total} bytes)`);
+
+// Check emitted archives too: a new public/ asset or broad import glob must not
+// bypass the source manifest. Vite hashes filenames, so compare file contents.
+if (process.argv.includes('--dist')) {
+  const dist = join(root, 'dist');
+  const approved = new Set(manifest.maps.map((entry) => entry.sha256));
+  const files = await readdir(dist, { recursive: true });
+  for (const file of files.filter((name) => /\.osz$/i.test(name))) {
+    const bytes = await readFile(join(dist, file));
+    const hash = createHash('sha256').update(bytes).digest('hex');
+    if (!approved.has(hash)) fail(`unapproved production archive: ${file}`);
+  }
+  console.log('verified production archives');
+}
