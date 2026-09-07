@@ -44,7 +44,7 @@ export function PlayScreen() {
           type="button"
           className="game-exit"
           aria-label="Quit to song select"
-          onClick={() => setScreen('home')}
+          onClick={() => setScreen('songs')}
         >
           ✕
         </button>

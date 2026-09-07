@@ -1,156 +1,73 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { DragEvent, ChangeEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { starterMaps } from '../../beatmap/starterMaps';
 import { useAppState } from '../appState';
 import { useObjectUrl } from '../useObjectUrl';
-import { AuthButton } from '../nav';
-import { DifficultyPicker } from './DifficultyPicker';
-import { MapCard } from './MapCard';
+import { GameHeader } from '../shared/GameHeader';
+import { SongDetails } from './SongDetails';
 import { SongList } from './SongList';
 import { YourMaps } from './YourMaps';
 import { useLibrary } from './useLibrary';
 import { useMapLoader } from './useMapLoader';
-import { useSongBackground } from './useSongBackground';
+import { starColor } from './starColor';
+import './songSelect.css';
 
 export function MapLoadScreen() {
-  const { map, mapset, settings, setSettings, setMap, setMapset, setScreen } = useAppState();
+  const { map, mapset, setScreen } = useAppState();
   const library = useLibrary();
-  const { error, setError, busyUrl, openMapset, handleFile, pickBundled, pickDifficulty } =
-    useMapLoader(library.save);
-
-  const bgUrl = useObjectUrl(mapset?.preview.background);
-
-  // song list: a random map starts selected, arrow keys move, Enter opens
+  const loader = useMapLoader(library.save);
   const maps = useMemo(starterMaps, []);
-  const [selectedIdx, setSelectedIdx] = useState(() =>
-    maps.length ? Math.floor(Math.random() * maps.length) : 0,
-  );
-  const onSongList = !mapset && !map;
-  const selected = onSongList && maps.length ? maps[selectedIdx] : undefined;
-  const previewBgUrl = useObjectUrl(useSongBackground(selected));
-
-  useEffect(() => {
-    if (!onSongList || maps.length === 0) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (busyUrl) return;
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const step = e.key === 'ArrowDown' ? 1 : -1;
-        setSelectedIdx((i) => (i + step + maps.length) % maps.length);
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        void pickBundled(maps[selectedIdx]);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onSongList, maps, busyUrl, selectedIdx, pickBundled]);
-
-  const backToList = useCallback(() => {
-    setMapset(undefined);
-    setMap(undefined);
-    setError(null);
-  }, [setMap, setMapset]);
-
-  const onDrop = useCallback(
-    (e: DragEvent) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file) void handleFile(file);
-    },
-    [handleFile],
-  );
-
-  const onChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) void handleFile(file);
-    },
-    [handleFile],
-  );
-
+  const [search, setSearch] = useState('');
+  const [selectedUrl, setSelectedUrl] = useState<string>();
+  const bgUrl = useObjectUrl(mapset?.preview.background ?? map?.background);
+  const visible = maps.filter((song) => `${song.title} ${song.artist}`.toLowerCase().includes(search.toLowerCase()));
+  const open = (bytes: Uint8Array, label: string) => {
+    try { loader.openMapset(bytes, label); loader.setError(null); setSelectedUrl(undefined); }
+    catch (error) { loader.setError(error instanceof Error ? error.message : 'Could not open map'); }
+  };
   return (
-    <div
-      className="screen-center"
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={onDrop}
-      style={{ gap: 18 }}
-    >
-      {(onSongList ? previewBgUrl : bgUrl) && (
-        <div
-          className="bg-blur"
-          style={{ backgroundImage: `url(${onSongList ? previewBgUrl : bgUrl})` }}
-        />
-      )}
-
-      {!mapset && (
-        <>
-          <h1 style={{ margin: 0, fontSize: 48 }}>
-            airosu<span style={{ color: 'var(--pink)' }}>!</span>
-          </h1>
-          <p className="eyebrow" style={{ margin: 0 }}>
-            Play osu! beatmaps with your hand
-          </p>
-          <SongList
-            maps={maps}
-            onPick={(m) => void pickBundled(m)}
-            busyUrl={busyUrl}
-            selectedUrl={selected?.url}
-          />
-          <label className="panel" style={{ padding: '14px 32px', cursor: 'pointer', borderStyle: 'dashed' }}>
-            {maps.length === 0 ? 'Drop your own .osz / .osu file to play' : '…or drop your own .osz / .osu file'}
-            <input type="file" accept=".osz,.osu" style={{ display: 'none' }} onChange={onChange} />
+    <div className="lazer-shell song-select" onDragOver={(event) => event.preventDefault()} onDrop={(event) => {
+      event.preventDefault(); const file = event.dataTransfer.files[0];
+      if (file) { setSelectedUrl(undefined); void loader.handleFile(file); }
+    }}>
+      {bgUrl && <div className="song-backdrop" style={{backgroundImage:`url("${bgUrl}")`}} />}
+      <GameHeader title="Song select" />
+      <main className="song-select-grid">
+        <div className="song-left"><SongDetails /></div>
+        <aside className="song-right" aria-label="Song selection">
+          <div className="song-search"><label htmlFor="song-search">Find a song</label><input id="song-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search title or artist…" /><span>⌕</span></div>
+          <div className="song-library-heading"><span>Your beatmaps</span><small>{visible.length} songs</small></div>
+          <SongList maps={visible} busyUrl={loader.busyUrl} selectedUrl={selectedUrl}
+            onPick={(song) => { setSelectedUrl(song.url); void loader.pickBundled(song); }} />
+          {visible.length === 0 && <p className="score-empty">No songs match “{search}”. Try another title.</p>}
+          {loader.busyUrl && <p role="status" className="score-empty">Loading difficulties…</p>}
+          {mapset && <div className="lazer-difficulties" aria-label="Difficulties">
+            <p>{mapset.label}</p>
+            {mapset.preview.difficulties.map((difficulty) => <button key={difficulty.name}
+              className={mapset.pickedName === difficulty.name ? 'is-active' : ''}
+              style={{'--difficulty-color': starColor(difficulty.stars)} as React.CSSProperties}
+              aria-pressed={mapset.pickedName === difficulty.name} onClick={() => loader.pickDifficulty(difficulty.name)}>
+              <span>◉</span><div><strong>{difficulty.name}</strong><small>★ {difficulty.stars.toFixed(2)}</small></div>
+              <span className="difficulty-chevron">›</span>
+            </button>)}
+          </div>}
+          <label className="song-import">＋ Import a beatmap <small>.osz or .osu · or drop it anywhere</small>
+            <input type="file" accept=".osz,.osu" onChange={(event) => {
+              const file = event.target.files?.[0]; if (file) { setSelectedUrl(undefined); void loader.handleFile(file); }
+              event.target.value = '';
+            }} />
           </label>
-          <YourMaps
-            library={library}
-            onOpen={(bytes, label) => {
-              try {
-                openMapset(bytes, label);
-                setError(null);
-              } catch (e) {
-                setError(e instanceof Error ? e.message : 'Failed to load map');
-              }
-            }}
-          />
-        </>
-      )}
-
-      {mapset && (
-        <>
-          <button
-            className="btn btn--back"
-            style={{ position: 'absolute', top: 16, left: 16 }}
-            onClick={backToList}
-          >
-            ‹ Songs
-          </button>
-          <h2 style={{ margin: 0, fontSize: 30, textAlign: 'center' }}>{mapset.label}</h2>
-          <DifficultyPicker
-            difficulties={mapset.preview.difficulties}
-            active={mapset.pickedName}
-            onPick={pickDifficulty}
-          />
-        </>
-      )}
-
-      {error && <p style={{ color: '#ff6b81', margin: 0 }}>{error}</p>}
-
-      {map && (
-        <MapCard
-          map={map}
-          bgUrl={bgUrl}
-          settings={settings}
-          setSettings={setSettings}
-          onPlay={() => setScreen('calibrate')}
-        />
-      )}
-
-      <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 10, alignItems: 'center' }}>
-        <AuthButton />
-        <button className="btn" onClick={() => setScreen('settings')}>
-          Settings
-        </button>
-      </div>
+          <YourMaps library={library} onOpen={open} />
+          {loader.error && <p role="alert" className="song-error">{loader.error}</p>}
+        </aside>
+      </main>
+      <footer className="song-footer">
+        <button className="lazer-back" onClick={() => setScreen('home')}>‹ <span>Back</span></button>
+        <span className="song-footer-hint">{map ? `${map.meta.title} / ${map.meta.version}` : 'Choose a song to get started'}</span>
+        <button className="song-random" disabled={!maps.length || !!loader.busyUrl} onClick={() => {
+          const song = maps[Math.floor(Math.random() * maps.length)]; setSelectedUrl(song.url); void loader.pickBundled(song);
+        }}>⇄ <span>Random</span></button>
+        <button className="song-start" disabled={!map?.audio.byteLength || !!loader.busyUrl} onClick={() => setScreen('calibrate')}><strong>airosu!</strong><span>Play ▷</span></button>
+      </footer>
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { stopCvSession } from '../cv/cvSession';
 import type { CalibrationBox } from '../cv/calibration';
 import { AppStateContext, loadSettings, saveSettings } from './appState';
 import type { AppState, LastResult, Mapset, Screen, Settings } from './appState';
+import { HomeScreen } from './menu';
+import './shared/lazer.css';
 import { MapLoadScreen } from './home';
 const CalibrationScreen = lazy(() => import('./calibrate').then((m) => ({ default: m.CalibrationScreen })));
 const PlayScreen = lazy(() => import('./play').then((m) => ({ default: m.PlayScreen })));
@@ -19,7 +21,7 @@ export function App() {
   const [lastResult, setLastResult] = useState<LastResult | undefined>();
 
   useEffect(() => {
-    if (screen === 'home' || screen === 'settings') stopCvSession();
+    if (screen === 'home' || screen === 'songs' || screen === 'settings') stopCvSession();
   }, [screen]);
   useEffect(() => stopCvSession, []);
 
@@ -46,7 +48,8 @@ export function App() {
 
   return (
     <AppStateContext.Provider value={state}>
-      {screen === 'home' && <MapLoadScreen />}
+      {screen === 'home' && <HomeScreen />}
+      {screen === 'songs' && <MapLoadScreen />}
       <Suspense fallback={<div className="screen-center">Loading…</div>}>
         {screen === 'calibrate' && <CalibrationScreen />}
         {screen === 'play' && <PlayScreen />}

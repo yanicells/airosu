@@ -1,46 +1,21 @@
 import type { StarterMap } from '../../beatmap/starterMaps';
+import { useObjectUrl } from '../useObjectUrl';
+import { useSongBackground } from './useSongBackground';
 
-/** osu! song-select style list of the maps shipped with the app. */
-export function SongList({
-  maps,
-  onPick,
-  busyUrl,
-  selectedUrl,
-}: {
-  maps: StarterMap[];
-  onPick: (m: StarterMap) => void;
-  busyUrl: string | null;
-  selectedUrl?: string;
+function SongRow({ map, selected, busy, onPick }: {
+  map: StarterMap; selected: boolean; busy: boolean; onPick: () => void;
 }) {
-  if (maps.length === 0) return null;
+  const background = useObjectUrl(useSongBackground(map));
+  return <button className={`lazer-song${selected ? ' is-selected' : ''}`} onClick={onPick}
+    disabled={busy} aria-pressed={selected}
+    style={background ? {backgroundImage:`linear-gradient(90deg,rgba(20,36,39,.98),rgba(20,36,39,.35)),url("${background}")`} : undefined}>
+    <span className="song-row-icon">◉</span><span className="song-row-copy"><strong>{map.title}</strong><small>{map.artist}</small><span className="song-row-tag">osu! standard</span></span><span className="song-row-arrow">›</span>
+  </button>;
+}
 
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        width: 520,
-        maxWidth: '92vw',
-      }}
-    >
-      <p className="eyebrow" style={{ margin: '0 0 2px' }}>
-        Song select <span style={{ opacity: 0.6 }}>— ↑↓ + Enter</span>
-      </p>
-      {maps.map((m) => (
-        <button
-          key={m.url}
-          className={`panel song-row fade-up${m.url === selectedUrl ? ' song-row--active' : ''}`}
-          disabled={busyUrl !== null}
-          onClick={() => onPick(m)}
-        >
-          <span className="song-row__title">
-            {m.title}
-            {busyUrl === m.url && <span style={{ opacity: 0.6 }}> — loading…</span>}
-          </span>
-          <span className="song-row__artist">{m.artist}</span>
-        </button>
-      ))}
-    </div>
-  );
+export function SongList({ maps, onPick, busyUrl, selectedUrl }: {
+  maps: StarterMap[]; onPick: (map: StarterMap) => void; busyUrl: string | null; selectedUrl?: string;
+}) {
+  return <div className="lazer-song-list" aria-label="Songs">{maps.map((map) => <SongRow
+    key={map.id} map={map} selected={selectedUrl === map.url} busy={busyUrl !== null} onPick={() => onPick(map)} />)}</div>;
 }

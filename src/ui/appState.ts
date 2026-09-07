@@ -12,7 +12,7 @@ export interface Mapset {
   pickedName?: string;
 }
 
-export type Screen = 'home' | 'calibrate' | 'play' | 'results' | 'settings';
+export type Screen = 'home' | 'songs' | 'calibrate' | 'play' | 'results' | 'settings';
 
 export interface Settings {
   /** 0.5–2, default 1 (scales calibration box) */

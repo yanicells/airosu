@@ -66,7 +66,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
     const host = stageHostRef.current;
     const cv = peekCvSession();
     if (!map || !host) {
-      setScreen('home');
+      setScreen('songs');
       return;
     }
 
@@ -262,7 +262,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
 
   const quit = useCallback(() => {
     clockRef.current?.stop();
-    setScreen('home');
+    setScreen('songs');
   }, [setScreen]);
 
   return { phase, count, fatal, resume, quit };

@@ -1,0 +1,32 @@
+.home-scene { display: flex; flex-direction: column; overflow: hidden; background: radial-gradient(ellipse at 55% 35%,#235c55 0%,#133b3b 36%,#0c222a 72%,#08181f 100%); }
+.home-triangles { position: absolute; inset: 62px 0 0; z-index: -1; overflow: hidden; opacity: .5; background-image: linear-gradient(60deg,transparent 45%,#65edcd08 45.2%,transparent 45.5%),linear-gradient(120deg,transparent 55%,#65edcd09 55.2%,transparent 55.5%); background-size: 230px 400px; }
+.home-triangles i { position: absolute; width: 220px; height: 190px; border: 1px solid #65edcd55; clip-path: polygon(50% 0,100% 100%,0 100%); background: linear-gradient(150deg,#65edcd18,#ee4f9c0e); transform: rotate(15deg); }
+.home-triangles i:nth-child(1) { top: 8%; left: 12%; width: 320px; height: 280px; }
+.home-triangles i:nth-child(2) { top: 50%; left: 66%; transform: rotate(170deg); }
+.home-triangles i:nth-child(3) { top: 8%; left: 72%; transform: rotate(80deg); }
+.home-triangles i:nth-child(4) { top: 68%; left: 24%; width: 140px; height: 120px; }
+.home-triangles i:nth-child(5) { top: 0; left: 42%; width: 80px; height: 70px; }
+.home-center { margin: auto 0; padding: 70px 0; text-align: center; }
+.home-kicker { text-transform: uppercase; letter-spacing: .35em; font-size: 11px; color: #b5d8d1; margin-bottom: 65px; }
+.home-menu-band { position: relative; display: flex; align-items: center; justify-content: center; gap: 0; min-height: 310px; }
+.home-menu-band::before { content: ''; position: absolute; height: 120px; left: 0; right: 0; background: #1b242bc9; transform: scaleY(0); transition: transform .3s ease; z-index: -1; }
+.is-open .home-menu-band::before { transform: scaleY(1); }
+.home-disc { flex-shrink: 0; height: 310px; width: 310px; border-radius: 50%; border: 12px solid white; background: repeating-conic-gradient(from 30deg,#ffffff05 0 60deg,transparent 60deg 120deg),linear-gradient(145deg,#f566b3,#cc478a); box-shadow: 0 0 0 2px #ffffff18,0 20px 70px #0005,inset 0 0 0 3px #b6367444; display: flex; align-items: center; justify-content: center; flex-direction: column; cursor: pointer; position: relative; z-index: 2; transition: transform .25s,box-shadow .25s; }
+.home-disc:hover { transform: scale(1.04); box-shadow: 0 0 0 12px #ffffff10,0 20px 80px #ed55a044; }
+.home-disc > span { font-size: 66px; font-weight: 800; letter-spacing: -5px; text-shadow: 0 4px 0 #a4347133; }
+.home-disc small { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; margin-top: 6px; }
+.home-actions { display: flex; align-items: stretch; height: 120px; margin-left: -20px; animation: menu-reveal .3s ease-out; }
+.home-action { width: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border: 0; text-decoration: none; color: white; transform: skew(-12deg); cursor: pointer; transition: filter .2s,translate .2s; padding: 12px; }
+.home-action > * { transform: skew(12deg); }
+.home-action > span { font-size: 26px; margin-bottom: 3px; }
+.home-action strong { font-size: 18px; }.home-action small { font-size: 10px; opacity: .8; }
+.home-action:hover { filter: brightness(1.16); translate: 0 -5px; }
+.home-action--play { background: #7654cc; padding-left: 25px; }
+.home-action--settings { background: #c38c2d; }.home-action--rankings { background: #419f83; }
+.home-hint { color: #a1bebb; font-size: 12px; margin: 42px 0 0; letter-spacing: .04em; }
+.home-footer { display: flex; justify-content: space-between; gap: 20px; padding: 25px 35px; border-top: 1px solid #ffffff09; color: #83aaa9; font-size: 11px; }
+.home-footer > :first-child { letter-spacing: .16em; }
+@keyframes menu-reveal { from {opacity:0;transform:translateX(-30px)} to {opacity:1;transform:translateX(0)} }
+@media(max-width:850px) { .home-disc { width: 240px; height: 240px; border-width: 9px; }.home-disc > span {font-size:52px}.home-action {width:130px}.home-menu-band {min-height:260px}.home-kicker{letter-spacing:.2em} }
+@media(max-width:620px) { .home-menu-band{flex-direction:column;gap:25px}.home-actions{margin:0;height:105px}.home-action{width:105px;padding:8px}.home-action small{display:none}.home-center{padding:45px 12px}.home-kicker{margin-bottom:35px;font-size:9px}.home-footer{padding:18px;justify-content:center}.home-footer>:first-child,.home-footer>:last-child{display:none}.home-menu-band::before{display:none} }
+@media(prefers-reduced-motion:reduce){.home-actions{animation:none}.home-disc,.home-action,.home-menu-band::before{transition:none}}

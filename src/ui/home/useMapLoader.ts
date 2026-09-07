@@ -14,8 +14,10 @@ export function useMapLoader(
     (bytes: Uint8Array, label: string) => {
       const preview = previewOsz(bytes);
       if (preview.difficulties.length === 0) throw new Error('No difficulties found in .osz');
-      setMap(undefined);
-      setMapset({ label, bytes, preview });
+      const pickedName = preview.difficulties[0].name;
+      const loaded = loadFromOsz(bytes, pickedName);
+      setMap(loaded);
+      setMapset({ label, bytes, preview, pickedName });
       return preview.difficulties.length;
     },
     [setMap, setMapset],
