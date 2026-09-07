@@ -95,7 +95,10 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         skin = await getSkin();
         if (disposed) return;
         stage = await createStage(host, settings.visualMode === 'focus', skin);
-        stageDestroy = () => stage.destroy();
+        stageDestroy = () => {
+          stageDestroy = () => {};
+          stage.destroy();
+        };
         if (disposed) {
           stageDestroy();
           return;
@@ -103,7 +106,6 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         clock = await AudioClock.create(map.audio, settings.volume);
       } catch (e) {
         stageDestroy();
-        stageDestroy = () => {};
         if (disposed) return;
         setFatal(
           e instanceof Error
@@ -113,7 +115,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         return;
       }
       if (disposed) {
-        stage.destroy();
+        stageDestroy();
         clock.stop();
         return;
       }

@@ -23,8 +23,8 @@ const ids = new Set();
 for (const entry of manifest.maps) {
   if (!/^[a-z0-9-]+$/.test(entry.id) || ids.has(entry.id)) fail(`bad id ${entry.id}`);
   ids.add(entry.id);
-  if (!/^[a-z0-9-]+\.osz$/.test(entry.file)) fail(`bad file ${entry.file}`);
-  if (!/^LICENSES\/[a-z0-9-]+\.md$/.test(entry.evidence)) fail(`bad evidence path ${entry.id}`);
+  if (entry.file !== `${entry.id}.osz`) fail(`bad file ${entry.file}`);
+  if (entry.evidence !== `LICENSES/${entry.id}.md`) fail(`bad evidence path ${entry.id}`);
   if (!entry.sourceUrl?.startsWith('https://')) fail(`bad source for ${entry.id}`);
   for (const field of ['artist', 'title', 'license', 'attribution', 'evidence']) {
     if (typeof entry[field] !== 'string' || !entry[field].trim()) fail(`${entry.id}: ${field}`);
