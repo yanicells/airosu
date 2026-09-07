@@ -1,6 +1,7 @@
 import type { LoadedBeatmap } from '../../beatmap/model';
 import type { Settings } from '../appState';
 import { SelectMenu } from '../shared/SelectMenu';
+import { AudioPicker } from './AudioPicker';
 
 function fmtLength(ms: number): string {
   const s = Math.round(ms / 1000);
@@ -123,7 +124,8 @@ export function MapCard({
           </div>
         </div>
 
-        <button className="btn btn--primary" style={{ alignSelf: 'center' }} onClick={onPlay}>
+        {map.audio.byteLength === 0 && <AudioPicker map={map} />}
+        <button disabled={map.audio.byteLength === 0} className="btn btn--primary" style={{ alignSelf: 'center' }} onClick={onPlay}>
           Play!
         </button>
       </div>

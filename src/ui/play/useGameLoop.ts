@@ -184,7 +184,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
           recentHits: events,
         };
         stage.render(view);
-        if (state.finished || clock.ended) {
+        if (state.finished) {
           phaseRef.current = 'done';
           setPhase('done');
           finishTimer = setTimeout(finish, 600);

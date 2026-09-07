@@ -3,15 +3,11 @@ export class AudioClock {
   private ctx: AudioContext;
   private source: AudioBufferSourceNode;
   private startTime = 0;
-  private _ended = false;
   private stopped = false;
 
   private constructor(ctx: AudioContext, source: AudioBufferSourceNode) {
     this.ctx = ctx;
     this.source = source;
-    source.onended = () => {
-      this._ended = true;
-    };
   }
 
   static async create(audio: ArrayBuffer, volume: number): Promise<AudioClock> {
@@ -59,7 +55,4 @@ export class AudioClock {
     void this.ctx.close();
   }
 
-  get ended(): boolean {
-    return this._ended;
-  }
 }
