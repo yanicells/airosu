@@ -1,12 +1,27 @@
 import { readFileSync } from 'node:fs';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { listDifficulties, loadFromOsz, oszBackground, previewOsz } from './load';
+
+vi.mock('fflate', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fflate')>();
+  return { ...actual, unzipSync: vi.fn(actual.unzipSync) };
+});
+import { unzipSync } from 'fflate';
 
 const osz = new Uint8Array(
   readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
 );
 
 describe('osz loading', () => {
+  it.each(['load', 'preview', 'background'])('extracts the archive once for %s', (operation) => {
+    const name = listDifficulties(osz)[0].difficultyName;
+    vi.mocked(unzipSync).mockClear();
+    if (operation === 'load') loadFromOsz(osz, name);
+    else if (operation === 'preview') previewOsz(osz);
+    else oszBackground(osz);
+    expect(unzipSync).toHaveBeenCalledTimes(1);
+  });
+
   it('lists difficulties', () => {
     const diffs = listDifficulties(osz);
     expect(diffs.length).toBeGreaterThan(0);
@@ -81,7 +96,8 @@ describe('osz loading', () => {
   it('sliders have endTime > time and a path', () => {
     const name = listDifficulties(osz)[0].difficultyName;
     const s = loadFromOsz(osz, name).objects.find((o) => o.kind === 'slider');
-    if (s && s.kind === 'slider') {
+    expect(s).toBeDefined();
+    if (s?.kind === 'slider') {
       expect(s.endTime).toBeGreaterThan(s.time);
       expect(s.path.length).toBeGreaterThan(1);
     }
