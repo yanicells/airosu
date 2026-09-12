@@ -1,5 +1,5 @@
 import { TableAggregate } from '@convex-dev/aggregate';
-import { v } from 'convex/values';
+import { ConvexError, v } from 'convex/values';
 import { components } from './_generated/api';
 import { query, type MutationCtx, type QueryCtx } from './_generated/server';
 import type { DataModel, Doc } from './_generated/dataModel';
@@ -66,6 +66,9 @@ const PAGE = 50;
 export const page = query({
   args: { countryCode: v.optional(v.string()), offset: v.number() },
   handler: async (ctx, { countryCode, offset }) => {
+    if (!Number.isSafeInteger(offset) || offset < 0) {
+      throw new ConvexError('offset must be a non-negative safe integer');
+    }
     const total = countryCode
       ? await countryBoard.count(ctx, { namespace: countryCode, bounds: {} })
       : await globalBoard.count(ctx);
