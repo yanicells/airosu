@@ -56,7 +56,13 @@ describe('PpCounter', () => {
     const beginner = quaverDiffs.find((d) => d.difficultyName.includes('Beginner'));
     if (!beginner) throw new Error('fixture difficulties changed');
     const counter = new PpCounter(beginner.osuText);
-    const play = counter.final({ count300: 47, count100: 6, count50: 0, countMiss: 5, maxCombo: 19 });
+    const play = counter.final({
+      count300: 47,
+      count100: 6,
+      count50: 0,
+      countMiss: 5,
+      maxCombo: 19,
+    });
     const ss = counter.final(ssStats(beginner.osuText));
     expect(play).toBeGreaterThan(0);
     expect(play).toBeLessThan(1);

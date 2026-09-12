@@ -70,5 +70,10 @@ describe('custom aim area', () => {
 });
 
 it('fits a previously saved area after sensitivity changes', () => {
-  expect(adjustAimArea({ cx: 0.9, cy: 0.1, halfW: 1, halfH: 1 }, 'move', 0, 0)).toEqual({ cx: 0.5, cy: 0.5, halfW: 0.5, halfH: 0.5 });
+  expect(adjustAimArea({ cx: 0.9, cy: 0.1, halfW: 1, halfH: 1 }, 'move', 0, 0)).toEqual({
+    cx: 0.5,
+    cy: 0.5,
+    halfW: 0.5,
+    halfH: 0.5,
+  });
 });

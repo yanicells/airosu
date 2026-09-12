@@ -50,7 +50,10 @@ export function getCvSession(): Promise<CvSession> {
       throw error;
     }
   })().finally(() => {
-    if (current === generation) { pending = null; cancelPending = null; }
+    if (current === generation) {
+      pending = null;
+      cancelPending = null;
+    }
   });
   return pending;
 }

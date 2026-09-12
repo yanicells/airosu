@@ -85,7 +85,10 @@ it('zero smoothing emits the current position without filter delay', async () =>
 });
 
 it('falls back to animation frames without detecting the same video frame twice', async () => {
-  vi.mocked(requestAnimationFrame).mockImplementation((callback) => { frame = callback; return 1; });
+  vi.mocked(requestAnimationFrame).mockImplementation((callback) => {
+    frame = callback;
+    return 1;
+  });
   const fallbackVideo = { ...video, currentTime: 0, requestVideoFrameCallback: undefined };
   const source = createHandCursorSource();
   await source.start(fallbackVideo as unknown as HTMLVideoElement);

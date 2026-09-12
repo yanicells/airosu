@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { defaultBox, isAtCalibrationCorner, MIN_CALIBRATION_SAMPLES } from '../../cv/calibration';
+import {
+  adjustAimArea,
+  cameraBoxToDisplay,
+  displayBoxToCamera,
+  defaultBox,
+  isAtCalibrationCorner,
+  MIN_CALIBRATION_SAMPLES,
+} from '../../cv/calibration';
 import type { CalibrationBox } from '../../cv/calibration';
 import type { CvSession } from '../../cv/cvSession';
 import { getCvSession } from '../../cv/cvSession';
@@ -14,10 +21,18 @@ export function useCalibrationFlow(settings: Settings, initialBox?: CalibrationB
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [session, setSession] = useState<CvSession | null>(null);
   const [countdown, setCountdown] = useState(0);
-  const [box, setBox] = useState<CalibrationBox>(() => displayBoxToCamera(
-    adjustAimArea(cameraBoxToDisplay(initialBox ?? defaultBox(), settings.sensitivity, settings.mirror), 'move', 0, 0),
-    settings.sensitivity, settings.mirror,
-  ));
+  const [box, setBox] = useState<CalibrationBox>(() =>
+    displayBoxToCamera(
+      adjustAimArea(
+        cameraBoxToDisplay(initialBox ?? defaultBox(), settings.sensitivity, settings.mirror),
+        'move',
+        0,
+        0,
+      ),
+      settings.sensitivity,
+      settings.mirror,
+    ),
+  );
   const samples = useRef(0);
   const collecting = useRef(false);
   const connection = useRef(0);
