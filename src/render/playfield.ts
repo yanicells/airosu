@@ -12,7 +12,8 @@ const FALLBACK_COMBO_COLORS = [0xff66aa, 0x66aaff, 0xffcc66, 0x88ee88];
 /** Draws hit objects, approach circles and hit bursts inside the 512×384 space. */
 export class PlayfieldLayer {
   readonly container = new Container();
-  private bodies = new Graphics();
+  private bodies = new Container();
+  private bodyObjects = new Map<number, { root: Container; path?: Graphics; moving: Graphics }>();
   private circles = new Graphics();
   private skinned: SkinnedObjectLayer | null;
   private bursts: BurstLayer;
@@ -22,6 +23,7 @@ export class PlayfieldLayer {
 
   constructor(skin: Skin | null) {
     this.skin = skin;
+    this.bodies.sortableChildren = true;
     this.comboColors = skin?.comboColors ?? FALLBACK_COMBO_COLORS;
     this.skinned = skin?.hitcircle ? new SkinnedObjectLayer(skin) : null;
     this.bursts = new BurstLayer(skin);
@@ -36,26 +38,50 @@ export class PlayfieldLayer {
 
   render(view: RenderView): void {
     const r = circleRadius(view.cs);
-    this.bodies.clear();
+    const visibleBodies = new Set<number>();
     this.circles.clear();
 
-    // slider bodies and spinners are always drawn procedurally (as osu! does)
+    // Retain slider paths; only alpha, slider balls, and spinners change per frame.
     for (let k = view.objects.length - 1; k >= 0; k--) {
-      const { obj } = view.objects[k];
+      const { obj, index } = view.objects[k];
       const color = this.comboColors[obj.comboIndex % this.comboColors.length];
-      if (obj.kind === 'spinner') {
-        this.drawSpinner(this.bodies, view.timeMs, obj.time, obj.endTime);
-        continue;
-      }
       const appear = obj.time - view.preemptMs;
       const t = Math.min(Math.max((view.timeMs - appear) / view.preemptMs, 0), 1);
       const alpha = Math.min(t * 2.5, 1);
-      if (obj.kind === 'slider') {
-        this.drawSliderBody(this.bodies, obj, r, color, alpha, view.timeMs);
+      if (obj.kind !== 'circle') {
+        visibleBodies.add(index);
+        let body = this.bodyObjects.get(index);
+        if (!body) {
+          const root = new Container();
+          root.zIndex = -index;
+          let path: Graphics | undefined;
+          if (obj.kind === 'slider') {
+            path = new Graphics();
+            this.drawSliderBody(path, obj, r, color);
+            root.addChild(path);
+          }
+          const moving = new Graphics();
+          root.addChild(moving);
+          body = { root, path, moving };
+          this.bodyObjects.set(index, body);
+          this.bodies.addChild(root);
+        }
+        body.moving.clear();
+        if (obj.kind === 'spinner') {
+          this.drawSpinner(body.moving, view.timeMs, obj.time, obj.endTime);
+          continue;
+        }
+        if (body.path) body.path.alpha = alpha * (this.skin ? 0.9 : 0.35);
+        this.drawSliderBall(body.moving, obj, r, view.timeMs);
       }
       if (!this.skinned) this.drawProceduralCircle(obj.pos, r, color, alpha, t, view.timeMs, obj.time);
     }
-
+    for (const [index, body] of this.bodyObjects) {
+      if (!visibleBodies.has(index)) {
+        body.root.destroy({ children: true });
+        this.bodyObjects.delete(index);
+      }
+    }
     this.skinned?.render(view);
     this.bursts.render(view.timeMs);
   }
@@ -83,8 +109,6 @@ export class PlayfieldLayer {
     obj: SliderObj,
     r: number,
     color: number,
-    alpha: number,
-    timeMs: number,
   ): void {
     if (obj.path.length < 2) return;
     const tracePath = () => {
@@ -98,7 +122,7 @@ export class PlayfieldLayer {
       g.stroke({
         width: 2 * r,
         color: this.skin.sliderBorder,
-        alpha: alpha * 0.9,
+        alpha: 1,
         cap: 'round',
         join: 'round',
       });
@@ -106,16 +130,19 @@ export class PlayfieldLayer {
       g.stroke({
         width: 2 * r * 0.82,
         color: this.skin.sliderTrack ?? color,
-        alpha: alpha * 0.9,
+        alpha: 1,
         cap: 'round',
         join: 'round',
       });
     } else {
       tracePath();
-      g.stroke({ width: 2 * r, color, alpha: alpha * 0.35, cap: 'round', join: 'round' });
+      g.stroke({ width: 2 * r, color, alpha: 1, cap: 'round', join: 'round' });
     }
+  }
 
-    // procedural slider ball only when the skin does not provide one
+  private drawSliderBall(g: Graphics, obj: SliderObj, r: number, timeMs: number): void {
+    if (obj.path.length < 2) return;
+    // Procedural slider ball only when the skin does not provide one.
     if (!this.skin?.sliderBall && timeMs >= obj.time && timeMs <= obj.endTime) {
       const ball = sliderBallPos(obj, timeMs);
       g.circle(ball.x, ball.y, r * 0.8).fill({ color: 0xffffff, alpha: 0.9 });
