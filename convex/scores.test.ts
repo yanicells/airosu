@@ -17,6 +17,40 @@ function makeTest() {
   return t;
 }
 
+const mapAttributes = {
+  title: 'T',
+  artist: 'A',
+  version: 'Hard',
+  creator: 'M',
+  bpm: 120,
+  lengthMs: 60_000,
+  cs: 4,
+  ar: 8,
+  od: 7,
+  hp: 5,
+  starRating: 3,
+  maxCombo: 120,
+  objectCount: 80,
+  judgmentCount: 100,
+  ssPp: 100,
+  difficulty: {
+    starRating: 3,
+    aimDifficulty: 1.5,
+    speedDifficulty: 1.2,
+    speedNoteCount: 60,
+    flashlightDifficulty: 0,
+    sliderFactor: 0.98,
+    approachRate: 8,
+    overallDifficulty: 7,
+    drainRate: 5,
+    hitCircleCount: 60,
+    sliderCount: 20,
+    spinnerCount: 0,
+    maxCombo: 120,
+  },
+  attributesVersion: 2,
+};
+
 describe('scores.submit', () => {
   it('stores the same playId only once', async () => {
     const t = makeTest();
@@ -25,37 +59,7 @@ describe('scores.submit', () => {
       const osuFileId = await ctx.storage.store(new Blob(['osu file format v14']));
       const mapId = await ctx.db.insert('maps', {
         md5: createHash('md5').update('osu file format v14').digest('hex'),
-        title: 'T',
-        artist: 'A',
-        version: 'Hard',
-        creator: 'M',
-        bpm: 120,
-        lengthMs: 60_000,
-        cs: 4,
-        ar: 8,
-        od: 7,
-        hp: 5,
-        starRating: 3,
-        maxCombo: 120,
-        objectCount: 80,
-        judgmentCount: 100,
-        ssPp: 100,
-        difficulty: {
-          starRating: 3,
-          aimDifficulty: 1.5,
-          speedDifficulty: 1.2,
-          speedNoteCount: 60,
-          flashlightDifficulty: 0,
-          sliderFactor: 0.98,
-          approachRate: 8,
-          overallDifficulty: 7,
-          drainRate: 5,
-          hitCircleCount: 60,
-          sliderCount: 20,
-          spinnerCount: 0,
-          maxCombo: 120,
-        },
-        attributesVersion: 2,
+        ...mapAttributes,
         osuFileId,
       });
       return { userId, mapId };
@@ -104,37 +108,7 @@ describe('scores.submit', () => {
       const osuFileId = await ctx.storage.store(new Blob(['osu file format v14']));
       const mapId = await ctx.db.insert('maps', {
         md5: 'b'.repeat(32),
-        title: 'T',
-        artist: 'A',
-        version: 'Hard',
-        creator: 'M',
-        bpm: 120,
-        lengthMs: 60_000,
-        cs: 4,
-        ar: 8,
-        od: 7,
-        hp: 5,
-        starRating: 3,
-        maxCombo: 120,
-        objectCount: 80,
-        judgmentCount: 100,
-        ssPp: 100,
-        difficulty: {
-          starRating: 3,
-          aimDifficulty: 1.5,
-          speedDifficulty: 1.2,
-          speedNoteCount: 60,
-          flashlightDifficulty: 0,
-          sliderFactor: 0.98,
-          approachRate: 8,
-          overallDifficulty: 7,
-          drainRate: 5,
-          hitCircleCount: 60,
-          sliderCount: 20,
-          spinnerCount: 0,
-          maxCombo: 120,
-        },
-        attributesVersion: 2,
+        ...mapAttributes,
         osuFileId,
       });
       return { userId, mapId };
@@ -192,21 +166,8 @@ describe('migrations.recalcScores', () => {
       const osuFileId = await ctx.storage.store(new Blob(['pending map']));
       const mapId = await ctx.db.insert('maps', {
         md5: 'c'.repeat(32),
-        title: 'T',
-        artist: 'A',
-        version: 'Hard',
-        creator: 'M',
-        bpm: 120,
-        lengthMs: 60_000,
-        cs: 4,
-        ar: 8,
-        od: 7,
-        hp: 5,
-        starRating: 3,
-        maxCombo: 120,
-        objectCount: 80,
-        judgmentCount: 100,
-        ssPp: 100,
+        ...mapAttributes,
+        difficulty: undefined,
         attributesVersion: 1,
         osuFileId,
       });
@@ -238,21 +199,7 @@ describe('migrations.recalcScores', () => {
     await t.run(async (ctx) => {
       await ctx.db.patch(mapId, {
         attributesVersion: 2,
-        difficulty: {
-          starRating: 3,
-          aimDifficulty: 1.5,
-          speedDifficulty: 1.2,
-          speedNoteCount: 60,
-          flashlightDifficulty: 0,
-          sliderFactor: 0.98,
-          approachRate: 8,
-          overallDifficulty: 7,
-          drainRate: 5,
-          hitCircleCount: 60,
-          sliderCount: 20,
-          spinnerCount: 0,
-          maxCombo: 120,
-        },
+        difficulty: mapAttributes.difficulty,
       });
     });
     const result = await t.mutation(internal.migrations.recalcScores, migrationArgs);
