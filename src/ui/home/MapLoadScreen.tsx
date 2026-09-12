@@ -65,14 +65,25 @@ export function MapLoadScreen() {
             }}
           />
           {visible.length === 0 && (
-            <p className="score-empty">No songs match “{search}”. Try another title.</p>
+            <p className="score-empty">
+              {maps.length
+                ? `No songs match “${search}”. Try another title.`
+                : 'Import a beatmap below to start playing.'}
+            </p>
           )}
           {loader.busy && (
             <p role="status" className="score-empty">
               Loading difficulties…
             </p>
           )}
-          {mapset && <SongDifficulties mapset={mapset} onPick={(name) => { void loader.pickDifficulty(name); }} />}
+          {mapset && (
+            <SongDifficulties
+              mapset={mapset}
+              onPick={(name) => {
+                void loader.pickDifficulty(name);
+              }}
+            />
+          )}
           <label className="song-import">
             ＋ Import a beatmap <small>.osz or .osu · or drop it anywhere</small>
             <input
