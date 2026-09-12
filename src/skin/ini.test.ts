@@ -26,7 +26,6 @@ describe('parseSkinIni', () => {
   it('normalizes font prefixes to forward slashes', () => {
     const ini = parseSkinIni(SAMPLE);
     expect(ini.scorePrefix).toBe('num/berlin');
-    expect(ini.comboPrefix).toBe('num/berlin');
     expect(ini.scoreOverlap).toBe(4);
   });
 
@@ -34,7 +33,6 @@ describe('parseSkinIni', () => {
     const ini = parseSkinIni('');
     expect(ini.comboColors.length).toBeGreaterThan(0);
     expect(ini.scorePrefix).toBe('score');
-    expect(ini.comboPrefix).toBe('score');
     expect(ini.scoreOverlap).toBe(0);
   });
 

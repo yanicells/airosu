@@ -3,7 +3,7 @@ import type { HitEvent } from '../game/session';
 
 export interface RenderView {
   timeMs: number;
-  objects: { obj: HitObject; index: number; judged: boolean }[];
+  objects: { obj: HitObject; index: number }[];
   cursor: Vec2 | null;
   score: number;
   combo: number;

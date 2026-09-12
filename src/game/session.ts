@@ -21,6 +21,8 @@ export interface SessionState {
 /** osu! follow circle is 2.4× the hit circle */
 const FOLLOW_SCALE = 2.4;
 
+const pathLengths = new WeakMap<Vec2[], Float64Array>();
+
 /** slider ball position at timeMs: linear interp along path incl. repeats */
 export function sliderBallPos(s: SliderObj, timeMs: number): Vec2 {
   if (s.path.length < 2) return s.pos;
@@ -31,24 +33,28 @@ export function sliderBallPos(s: SliderObj, timeMs: number): Vec2 {
   progress -= span;
   if (span % 2 === 1) progress = 1 - progress; // odd spans travel backwards
 
-  let total = 0;
-  const segLens: number[] = [];
-  for (let i = 1; i < s.path.length; i++) {
-    const d = Math.hypot(s.path[i].x - s.path[i - 1].x, s.path[i].y - s.path[i - 1].y);
-    segLens.push(d);
-    total += d;
-  }
-  let target = progress * total;
-  for (let i = 0; i < segLens.length; i++) {
-    if (target <= segLens[i] || i === segLens.length - 1) {
-      const t = segLens[i] === 0 ? 0 : Math.min(target / segLens[i], 1);
-      const a = s.path[i];
-      const b = s.path[i + 1];
-      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+  let lengths = pathLengths.get(s.path);
+  if (!lengths) {
+    lengths = new Float64Array(s.path.length);
+    for (let i = 1; i < s.path.length; i++) {
+      lengths[i] =
+        lengths[i - 1] + Math.hypot(s.path[i].x - s.path[i - 1].x, s.path[i].y - s.path[i - 1].y);
     }
-    target -= segLens[i];
+    pathLengths.set(s.path, lengths);
   }
-  return s.path[s.path.length - 1];
+  const target = progress * lengths[lengths.length - 1];
+  let low = 1,
+    high = lengths.length - 1;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (lengths[mid] < target) low = mid + 1;
+    else high = mid;
+  }
+  const distance = lengths[low] - lengths[low - 1];
+  const t = distance === 0 ? 0 : (target - lengths[low - 1]) / distance;
+  const a = s.path[low - 1],
+    b = s.path[low];
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
 
 function objPos(obj: HitObject): Vec2 {
@@ -71,6 +77,8 @@ export class GameSession {
   private scoreState = new ScoreState();
   private w50: number;
   private lastTime = 0;
+  private nextHead = 0;
+  private firstUnjudged = 0;
 
   constructor(map: LoadedBeatmap, settings: Settings) {
     this.map = map;
@@ -92,13 +100,15 @@ export class GameSession {
   get state(): SessionState {
     const preempt = this.preemptMs();
     const active: number[] = [];
-    for (let i = 0; i < this.map.objects.length; i++) {
-      if (!this.judged[i] && this.map.objects[i].time - preempt <= this.lastTime) active.push(i);
+    while (this.judged[this.firstUnjudged]) this.firstUnjudged++;
+    for (let i = this.firstUnjudged; i < this.map.objects.length; i++) {
+      if (this.map.objects[i].time - preempt > this.lastTime) break;
+      if (!this.judged[i]) active.push(i);
     }
     return {
       score: this.scoreState,
       activeObjects: active,
-      finished: this.judged.every(Boolean),
+      finished: this.firstUnjudged === this.judged.length,
     };
   }
 
@@ -107,15 +117,13 @@ export class GameSession {
     events.push({ objectIndex: index, judgment, at: at ?? objPos(this.map.objects[index]) });
   }
 
-  private headResolved(i: number): boolean {
-    const track = this.sliders.get(i);
-    return track ? track.headDone : this.judged[i];
-  }
-
   private earliestUnresolvedHead(): number {
-    for (let i = 0; i < this.judged.length; i++)
-      if (!this.judged[i] && !this.headResolved(i)) return i;
-    return -1;
+    while (
+      this.nextHead < this.judged.length &&
+      (this.judged[this.nextHead] || this.sliders.get(this.nextHead)?.headDone)
+    )
+      this.nextHead++;
+    return this.nextHead < this.judged.length ? this.nextHead : -1;
   }
 
   /** relax is timing-perfect; quality only reduced by distance: outer 30% of radius → 100 */
@@ -182,8 +190,8 @@ export class GameSession {
     // slider follow tracking + finalization
     const followRadius = circleRadius(cs) * this.settings.forgiveness * FOLLOW_SCALE;
     for (const [i, track] of this.sliders) {
-      if (this.judged[i]) continue;
       const obj = this.map.objects[i] as SliderObj;
+      if (timeMs < obj.time) break;
       if (timeMs >= obj.time && timeMs <= obj.endTime) {
         track.totalTicks++;
         if (cursor) {
@@ -195,6 +203,7 @@ export class GameSession {
       }
       if (timeMs >= obj.endTime && track.headDone) {
         this.judged[i] = true;
+        this.sliders.delete(i);
         const ratio = track.totalTicks === 0 ? 0 : track.inTicks / track.totalTicks;
         let j: Judgment = ratio >= 0.9 ? 300 : ratio >= 0.5 ? 100 : ratio > 0 ? 50 : 0;
         if (track.headMissed && j === 300) j = 100; // missed head caps the slider at 100

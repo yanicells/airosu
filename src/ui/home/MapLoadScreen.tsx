@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { starterMaps } from '../../beatmap/starterMaps';
 import { useAppState } from '../appState';
 import { useObjectUrl } from '../useObjectUrl';
@@ -15,20 +15,12 @@ export function MapLoadScreen() {
   const { map, mapset, setScreen } = useAppState();
   const library = useLibrary();
   const loader = useMapLoader(library.save);
-  const maps = useMemo(starterMaps, []);
+  const maps = starterMaps;
   const [search, setSearch] = useState('');
   const bgUrl = useObjectUrl(mapset?.preview.background ?? map?.background);
   const visible = maps.filter((song) =>
     `${song.title} ${song.artist}`.toLowerCase().includes(search.toLowerCase()),
   );
-  const open = (bytes: Uint8Array, label: string) => {
-    try {
-      loader.openMapset(bytes, label);
-      loader.setError(null);
-    } catch (error) {
-      loader.setError(error instanceof Error ? error.message : 'Could not open map');
-    }
-  };
   return (
     <div
       className="lazer-shell song-select"
@@ -73,14 +65,25 @@ export function MapLoadScreen() {
             }}
           />
           {visible.length === 0 && (
-            <p className="score-empty">No songs match “{search}”. Try another title.</p>
+            <p className="score-empty">
+              {maps.length
+                ? `No songs match “${search}”. Try another title.`
+                : 'Import a beatmap below to start playing.'}
+            </p>
           )}
-          {loader.busyUrl && (
+          {loader.busy && (
             <p role="status" className="score-empty">
               Loading difficulties…
             </p>
           )}
-          {mapset && <SongDifficulties mapset={mapset} onPick={loader.pickDifficulty} />}
+          {mapset && (
+            <SongDifficulties
+              mapset={mapset}
+              onPick={(name) => {
+                void loader.pickDifficulty(name);
+              }}
+            />
+          )}
           <label className="song-import">
             ＋ Import a beatmap <small>.osz or .osu · or drop it anywhere</small>
             <input
@@ -95,7 +98,7 @@ export function MapLoadScreen() {
               }}
             />
           </label>
-          <YourMaps library={library} onOpen={open} />
+          <YourMaps library={library} onOpen={loader.openMapset} />
           {loader.error && (
             <p role="alert" className="song-error">
               {loader.error}
@@ -112,7 +115,7 @@ export function MapLoadScreen() {
         </span>
         <button
           className="song-random"
-          disabled={!maps.length || !!loader.busyUrl}
+          disabled={!maps.length || loader.busy}
           onClick={() => {
             const song = maps[Math.floor(Math.random() * maps.length)];
             void loader.pickBundled(song);
@@ -122,7 +125,7 @@ export function MapLoadScreen() {
         </button>
         <button
           className="song-start"
-          disabled={!map?.audio.byteLength || !!loader.busyUrl}
+          disabled={!map?.audio.byteLength || loader.busy}
           onClick={() => setScreen('calibrate')}
         >
           <strong>airosu!</strong>

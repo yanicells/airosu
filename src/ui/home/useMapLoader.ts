@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
-import { loadFromOsz, loadFromOsu, previewOsz } from '../../beatmap/load';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { openMapArchive, loadMapDifficulty, loadStandaloneMap } from '../../beatmap/mapWorker';
+import { starterBytes } from '../../beatmap/starterBytes';
 import type { StarterMap } from '../../beatmap/starterMaps';
 import { useAppState } from '../appState';
 
@@ -9,70 +10,91 @@ export function useMapLoader(
   const { mapset, setMap, setMapset } = useAppState();
   const [error, setError] = useState<string | null>(null);
   const [busyUrl, setBusyUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const latest = useRef(0);
+  useEffect(
+    () => () => {
+      latest.current++;
+    },
+    [],
+  );
 
-  const openMapset = useCallback(
-    (bytes: Uint8Array, label: string, sourceUrl?: string) => {
-      const preview = previewOsz(bytes);
-      if (preview.difficulties.length === 0) throw new Error('No difficulties found in .osz');
-      const pickedName = preview.difficulties[0].name;
-      const loaded = loadFromOsz(bytes, pickedName);
-      setMap(loaded);
-      setMapset({ label, bytes, preview, pickedName, sourceUrl });
+  const run = useCallback(async (work: (id: number) => Promise<void>, url?: string) => {
+    const id = ++latest.current;
+    setError(null);
+    setBusy(true);
+    setBusyUrl(url ?? null);
+    try {
+      await work(id);
+    } catch (e) {
+      if (id === latest.current) setError(e instanceof Error ? e.message : 'Failed to load map');
+    } finally {
+      if (id === latest.current) {
+        setBusy(false);
+        setBusyUrl(null);
+      }
+    }
+  }, []);
+
+  const loadArchive = useCallback(
+    async (bytes: Uint8Array, label: string, id: number, sourceUrl?: string) => {
+      const { preview, map } = await openMapArchive(bytes);
+      if (id !== latest.current) return;
+      setMap(map);
+      setMapset({ label, bytes, preview, pickedName: map.meta.version, sourceUrl });
       return preview.difficulties.length;
     },
     [setMap, setMapset],
   );
 
+  const openMapset = useCallback(
+    (bytes: Uint8Array, label: string) =>
+      run(async (id) => {
+        await loadArchive(bytes, label, id);
+      }),
+    [run, loadArchive],
+  );
+
   const handleFile = useCallback(
-    async (file: File) => {
-      setError(null);
-      try {
+    (file: File) =>
+      run(async (id) => {
         const bytes = new Uint8Array(await file.arrayBuffer());
+        if (id !== latest.current) return;
         if (file.name.toLowerCase().endsWith('.osu')) {
+          const map = await loadStandaloneMap(new TextDecoder().decode(bytes));
+          if (id !== latest.current) return;
           setMapset(undefined);
-          setMap(loadFromOsu(new TextDecoder().decode(bytes), new ArrayBuffer(0)));
+          setMap(map);
           return;
         }
         const label = file.name.replace(/\.osz$/i, '');
-        const difficultyCount = openMapset(bytes, label);
-        // fire-and-forget: persistence failures never block the upload
-        void save(bytes, label, difficultyCount);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load map');
-      }
-    },
-    [openMapset, setMap, setMapset, save],
+        const count = await loadArchive(bytes, label, id);
+        if (count !== undefined) void save(bytes, label, count);
+      }),
+    [run, loadArchive, setMap, setMapset, save],
   );
 
   const pickBundled = useCallback(
-    async (m: StarterMap) => {
-      setError(null);
-      setBusyUrl(m.url);
-      try {
-        const bytes = new Uint8Array(await (await fetch(m.url)).arrayBuffer());
-        openMapset(bytes, `${m.artist} — ${m.title}`, m.url);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load map');
-      } finally {
-        setBusyUrl(null);
-      }
-    },
-    [openMapset],
+    (m: StarterMap) =>
+      run(async (id) => {
+        const bytes = await starterBytes(m.url);
+        if (id === latest.current) await loadArchive(bytes, `${m.artist} — ${m.title}`, id, m.url);
+      }, m.url),
+    [run, loadArchive],
   );
 
   const pickDifficulty = useCallback(
     (name: string) => {
-      if (!mapset) return;
-      try {
-        setMap(loadFromOsz(mapset.bytes, name));
+      if (!mapset || (name === mapset.pickedName && !busy)) return;
+      return run(async (id) => {
+        const loaded = await loadMapDifficulty(mapset.bytes, name);
+        if (id !== latest.current) return;
+        setMap(loaded);
         setMapset({ ...mapset, pickedName: name });
-        setError(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to parse difficulty');
-      }
+      });
     },
-    [mapset, setMap, setMapset],
+    [mapset, busy, run, setMap, setMapset],
   );
 
-  return { error, setError, busyUrl, openMapset, handleFile, pickBundled, pickDifficulty };
+  return { error, busy, busyUrl, openMapset, handleFile, pickBundled, pickDifficulty };
 }

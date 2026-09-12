@@ -41,8 +41,7 @@ export class PlayfieldLayer {
 
     // slider bodies and spinners are always drawn procedurally (as osu! does)
     for (let k = view.objects.length - 1; k >= 0; k--) {
-      const { obj, judged } = view.objects[k];
-      if (judged) continue;
+      const { obj } = view.objects[k];
       const color = this.comboColors[obj.comboIndex % this.comboColors.length];
       if (obj.kind === 'spinner') {
         this.drawSpinner(this.bodies, view.timeMs, obj.time, obj.endTime);

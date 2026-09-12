@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { listDifficulties, loadFromOsz } from './load';
+import { OszArchive, listDifficulties } from './load';
 import { computeMapAttributes } from './attributes';
 import { PpCounter } from '../game/pp';
 import { playPp } from '../game/ppFormula';
@@ -17,7 +17,7 @@ describe('computeMapAttributes', () => {
     expect(a.objectCount).toBeGreaterThan(0);
     expect(a.judgmentCount).toBeGreaterThanOrEqual(a.objectCount);
     expect(a.judgmentCount).toBe(
-      loadFromOsz(osz, easy.difficultyName).objects.reduce(
+      new OszArchive(osz).load(easy.difficultyName).objects.reduce(
         (count, object) => count + (object.kind === 'slider' ? 2 : 1),
         0,
       ),

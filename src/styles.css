@@ -238,23 +238,6 @@ h3 {
   box-shadow: 0 6px 32px rgba(255, 45, 135, 0.6);
 }
 
-/* back-navigation pill, osu! lazer's pink back corner */
-.btn--back {
-  border: 1px solid rgba(255, 102, 170, 0.55);
-  background: rgba(255, 102, 170, 0.16);
-  color: var(--pink);
-  font-weight: 800;
-  font-style: italic;
-  box-shadow: 0 0 18px rgba(255, 45, 135, 0.25);
-}
-
-.btn--back:hover {
-  background: linear-gradient(135deg, var(--pink), var(--pink-hot));
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 4px 24px rgba(255, 45, 135, 0.5);
-}
-
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -265,9 +248,6 @@ h3 {
 /* full-screen centered column, used by menu screens */
 .screen-center {
   position: relative;
-  /* own stacking context so the z-index:-1 .bg-blur paints above the
-     opaque #root background instead of being buried under it */
-  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -277,78 +257,6 @@ h3 {
   overflow: hidden auto;
 }
 
-/* blurred beatmap background behind a whole screen */
-.bg-blur {
-  position: absolute;
-  inset: -32px;
-  background-size: cover;
-  background-position: center;
-  filter: blur(24px) brightness(0.35);
-  z-index: -1;
-  pointer-events: none;
-}
-
-/* song select row */
-.song-row {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  padding: 12px 18px;
-  border-radius: 10px;
-  cursor: pointer;
-  text-align: left;
-  font-size: 15px;
-  transition:
-    transform 0.12s ease,
-    background 0.12s ease;
-}
-
-.song-row:hover:enabled {
-  transform: translateX(4px);
-  background: rgba(60, 45, 80, 0.9);
-}
-
-/* keyboard-selected row: grows and slides out of the column, osu! style */
-.song-row--active {
-  width: calc(100% + 72px);
-  margin-left: -72px;
-  padding: 16px 22px 16px 28px;
-  background: linear-gradient(90deg, rgba(255, 45, 135, 0.22), rgba(60, 45, 80, 0.92) 65%);
-  border-left: 1px solid var(--pink-hot);
-  box-shadow:
-    0 0 28px rgba(255, 45, 135, 0.45),
-    0 6px 18px rgba(0, 0, 0, 0.35);
-  transform: none;
-  z-index: 1;
-}
-
-.song-row--active .song-row__title {
-  font-size: 21px;
-  color: #fff;
-}
-
-.song-row--active .song-row__artist {
-  color: var(--pink);
-}
-
-.song-row:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.song-row__title {
-  font-weight: 700;
-  font-style: italic;
-  font-size: 17px;
-}
-
-.song-row__artist {
-  color: var(--ink-dim);
-  font-size: 13px;
-}
-
 /* small uppercase data label */
 .eyebrow {
   font-size: 11px;
@@ -356,42 +264,6 @@ h3 {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-dim);
-}
-
-/* AR/CS/OD/HP bar, 0–10 scale like song select */
-.statbar {
-  height: 5px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.12);
-  overflow: hidden;
-}
-
-.statbar > div {
-  height: 100%;
-  border-radius: 3px;
-  background: var(--blue);
-}
-
-.map-options {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.map-option {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.map-option .eyebrow {
-  padding-left: 8px;
-}
-
-.map-option .select-menu {
-  min-width: 170px;
 }
 
 .key-editor {
@@ -1015,50 +887,6 @@ h3 {
 }
 
 /* results screen */
-.results-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  padding: 28px 48px 32px;
-  width: min(560px, 100%);
-  max-height: 100%;
-  overflow-y: auto;
-}
-
-.results-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  text-align: center;
-}
-
-.results-title {
-  font-size: 24px;
-  font-weight: 800;
-  font-style: italic;
-}
-
-.results-sub {
-  font-size: 14px;
-  color: var(--ink-dim);
-}
-
-.results-diff {
-  margin-top: 6px;
-}
-
-.results-diff__pill {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--gold);
-}
-
 .results-ring {
   position: relative;
   display: flex;
@@ -1077,32 +905,6 @@ h3 {
   font-weight: 800;
   font-style: italic;
   line-height: 1;
-}
-
-.results-score {
-  font-size: 52px;
-  font-weight: 800;
-  font-style: italic;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.results-stats {
-  display: flex;
-  gap: 44px;
-}
-
-.results-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-}
-
-.results-stat__value {
-  font-size: 24px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
 }
 
 .results-judgments {
@@ -1124,12 +926,6 @@ h3 {
   font-size: 20px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
-.results-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 6px;
 }
 
 .count-pop {

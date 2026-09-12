@@ -10,7 +10,7 @@ const manifest = JSON.parse(await readFile(join(dir, 'manifest.json'), 'utf8'));
 const fail = (message) => { throw new Error(`starter maps: ${message}`); };
 if (manifest.version !== 1 || !Array.isArray(manifest.maps)) fail('invalid manifest');
 // Empty manifest is allowed until licensed assets land (Human prerequisite 5);
-// once populated, 2–3 maps are required.
+// A populated pack must contain two or three maps.
 if (manifest.maps.length > 3) fail('expected at most 3 maps');
 if (manifest.maps.length === 1) fail('expected 2-3 maps once populated');
 
@@ -58,6 +58,7 @@ if (process.argv.includes('--dist')) {
   for (const file of files.filter((name) => /\.osz$/i.test(name))) {
     const bytes = await readFile(join(dist, file));
     const hash = createHash('sha256').update(bytes).digest('hex');
+    if (manifest.temporaryTestPack) fail(`test pack leaked into production: ${file}`);
     if (!approved.has(hash)) fail(`unapproved production archive: ${file}`);
   }
   console.log('verified production archives');

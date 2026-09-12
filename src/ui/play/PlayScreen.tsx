@@ -10,16 +10,16 @@ export function PlayScreen() {
   const videoHolderRef = useRef<HTMLDivElement>(null);
   const [restartKey, setRestartKey] = useState(0);
 
-  // arcade mode: camera video behind the canvas
+  // Keep the camera attached in both modes so video-frame callbacks keep arriving.
   useEffect(() => {
     const holder = videoHolderRef.current;
     const cv = peekCvSession();
-    if (!holder || !cv || settings.visualMode !== 'arcade') return;
+    if (!holder || !cv) return;
     const video = cv.video;
     video.style.width = '100%';
     video.style.height = '100%';
     video.style.objectFit = 'cover';
-    video.style.opacity = '0.5';
+    video.style.opacity = settings.visualMode === 'arcade' ? '0.5' : '0';
     holder.append(video);
     return () => video.remove();
   }, [settings.visualMode, restartKey]);

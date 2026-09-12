@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ScoreInfo } from 'osu-classes';
 import { BeatmapDecoder } from 'osu-parsers';
 import { StandardRuleset } from 'osu-standard-stable';
-import { listDifficulties, loadFromOsz } from '../beatmap/load';
+import { OszArchive, listDifficulties } from '../beatmap/load';
 import { PpCounter, type HitStats } from './pp';
 
 const kira = new Uint8Array(
@@ -14,7 +14,7 @@ const quaver = new Uint8Array(
 );
 
 function perfectStats(bytes: Uint8Array, difficultyName: string): HitStats {
-  const map = loadFromOsz(bytes, difficultyName);
+  const map = new OszArchive(bytes).load(difficultyName);
   const judged = map.objects.reduce((n, o) => n + (o.kind === 'slider' ? 2 : 1), 0);
   return { count300: judged, count100: 0, count50: 0, countMiss: 0, maxCombo: judged };
 }

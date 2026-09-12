@@ -11,10 +11,16 @@ const cursor = { start: vi.fn(), stop: vi.fn() };
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
-  vi.mocked(openCamera).mockResolvedValue({ getTracks: () => [{ stop: stopTrack }] } as unknown as MediaStream);
-  vi.mocked(createHandCursorSource).mockReturnValue(cursor as unknown as ReturnType<typeof createHandCursorSource>);
+  vi.mocked(openCamera).mockResolvedValue({
+    getTracks: () => [{ stop: stopTrack }],
+  } as unknown as MediaStream);
+  vi.mocked(createHandCursorSource).mockReturnValue(
+    cursor as unknown as ReturnType<typeof createHandCursorSource>,
+  );
   cursor.start.mockResolvedValue(undefined);
-  vi.stubGlobal('document', { createElement: () => ({ play: vi.fn().mockResolvedValue(undefined) }) });
+  vi.stubGlobal('document', {
+    createElement: () => ({ play: vi.fn().mockResolvedValue(undefined) }),
+  });
 });
 
 afterEach(() => vi.unstubAllGlobals());
@@ -44,5 +50,23 @@ it('does not revive a session stopped while the camera was opening', async () =>
   stopCvSession();
   await expect(pending).rejects.toThrow('Camera session stopped');
   expect(peekCvSession()).toBeNull();
+  expect(stopTrack).toHaveBeenCalledOnce();
+});
+
+it('stops camera tracks immediately while tracker initialization is pending', async () => {
+  const { getCvSession, stopCvSession } = await import('./cvSession');
+  let finishStartup!: () => void;
+  cursor.start.mockReturnValueOnce(
+    new Promise<void>((resolve) => {
+      finishStartup = resolve;
+    }),
+  );
+  const starting = getCvSession();
+  await vi.waitFor(() => expect(cursor.start).toHaveBeenCalledOnce());
+  stopCvSession();
+  expect(stopTrack).toHaveBeenCalledOnce();
+  expect(cursor.stop).toHaveBeenCalledOnce();
+  finishStartup();
+  await expect(starting).rejects.toThrow('Camera session stopped');
   expect(stopTrack).toHaveBeenCalledOnce();
 });

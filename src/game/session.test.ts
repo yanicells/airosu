@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { LoadedBeatmap } from '../beatmap/model';
 import { defaultSettings } from '../ui/appState';
 import type { Settings } from '../ui/appState';
@@ -82,10 +82,7 @@ describe('GameSession lifecycle', () => {
   });
 
   it('spinner auto-completes with 300 at endTime, no cursor', () => {
-    const s = new GameSession(
-      makeMap([{ kind: 'spinner', time: 1000, endTime: 2000 }]),
-      relax,
-    );
+    const s = new GameSession(makeMap([{ kind: 'spinner', time: 1000, endTime: 2000 }]), relax);
     expect(s.tick(1500, null)).toHaveLength(0);
     const events = s.tick(2000, null);
     expect(events[0].judgment).toBe(300);
@@ -159,4 +156,58 @@ describe('slider judgment', () => {
     expect(all[all.length - 1]).toBe(0);
     expect(s.state.finished).toBe(true);
   });
+});
+
+it('keeps an unfinished slider visible while later circles resolve', () => {
+  const map = makeMap([
+    {
+      kind: 'slider',
+      time: 1000,
+      endTime: 4000,
+      repeats: 1,
+      pos: { x: 100, y: 100 },
+      path: [
+        { x: 100, y: 100 },
+        { x: 200, y: 100 },
+      ],
+    },
+    { kind: 'circle', time: 2000, pos: { x: 100, y: 100 } },
+    { kind: 'circle', time: 10000, pos: { x: 100, y: 100 } },
+  ]);
+  const session = new GameSession(map, relax);
+  session.tick(1000, { x: 100, y: 100 });
+  session.tick(2000, { x: 100, y: 100 });
+  expect(session.state.activeObjects).toEqual([0]);
+  expect(session.state.finished).toBe(false);
+  session.tick(4500, null);
+  expect(session.state.activeObjects).toEqual([]);
+  session.tick(11000, null);
+  expect(session.state.finished).toBe(true);
+  expect(session.state.score.counts[0]).toBeGreaterThan(0);
+});
+
+it('reuses slider geometry across frames without recomputing segment lengths', () => {
+  const path = [
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
+    { x: 30, y: 0 },
+    { x: 30, y: 40 },
+  ];
+  const slider = {
+    kind: 'slider' as const,
+    time: 0,
+    endTime: 1000,
+    repeats: 1,
+    pos: path[0],
+    path,
+  };
+  const distance = vi.spyOn(Math, 'hypot');
+  try {
+    expect(sliderBallPos(slider, 500)).toEqual({ x: 30, y: 5 });
+    expect(sliderBallPos(slider, 1000)).toEqual({ x: 30, y: 40 });
+    expect(sliderBallPos(slider, 0)).toEqual({ x: 0, y: 0 });
+    expect(distance).toHaveBeenCalledTimes(3);
+  } finally {
+    distance.mockRestore();
+  }
 });
