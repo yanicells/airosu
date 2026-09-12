@@ -5,7 +5,7 @@ let tracker: Awaited<ReturnType<typeof createLandmarker>>;
 self.onmessage = async ({ data }: MessageEvent<{ frame?: ImageBitmap; timestampMs: number }>) => {
   try {
     if (!data.frame) {
-      tracker = await createLandmarker(true);
+      tracker = await createLandmarker();
       self.postMessage({
         type: 'ready',
         usingCpuFallback: tracker.usingCpuFallback,

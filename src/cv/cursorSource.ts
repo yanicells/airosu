@@ -12,6 +12,8 @@ export interface CursorSample {
   playfield: Vec2 | null;
   /** selected raw cursor point in camera space (0–1), null when lost */
   camera: Vec2 | null;
+  /** terminal tracking failure; the source stops until restarted */
+  error?: string;
   tMs: number;
 }
 
@@ -89,7 +91,7 @@ export function createHandCursorSource(): CursorSource {
         frameId = videoFrames ? video.requestVideoFrameCallback(loop) : requestAnimationFrame(loop);
       };
       const loop = async (now: number) => {
-        if (current !== generation) return;
+        if (current !== generation || !running) return;
         schedule();
         resume();
         if (busy || video.paused || video.readyState < 2) return;
@@ -109,8 +111,18 @@ export function createHandCursorSource(): CursorSource {
           const mapped = mapToPlayfield(raw, box, sensitivity, mirror);
           const smoothed = smoothing === 0 ? mapped : filter.filter(mapped, now / 1000);
           emit({ playfield: smoothed, camera: raw, tMs: now });
-        } catch {
-          if (current === generation) emit({ playfield: null, camera: null, tMs: now });
+        } catch (error) {
+          if (current !== generation) return;
+          running = false;
+          cancelFrame();
+          tracker?.close();
+          tracker = null;
+          emit({
+            playfield: null,
+            camera: null,
+            error: error instanceof Error ? error.message : 'Hand tracking failed',
+            tMs: now,
+          });
         } finally {
           busy = false;
         }

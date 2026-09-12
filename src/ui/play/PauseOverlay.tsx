@@ -13,7 +13,7 @@ export function PauseOverlay({
         <header className="pause-menu__header">
           <span className="eyebrow">Game paused</span>
           <h2 id="pause-title">Take a breath.</h2>
-          <p>Tracking and audio are frozen until you return.</p>
+          <p>Audio and gameplay are paused. Resume when you are ready.</p>
         </header>
         <div className="pause-menu__actions">
           <button

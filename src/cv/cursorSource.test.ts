@@ -103,3 +103,24 @@ it('falls back to animation frames without detecting the same video frame twice'
   source.stop();
   expect(cancelAnimationFrame).toHaveBeenCalled();
 });
+
+it('emits a terminal error and stops after inference fails', async () => {
+  const source = createHandCursorSource();
+  const receive = vi.fn();
+  tracker.detect.mockRejectedValueOnce(new Error('Tracking worker unavailable'));
+  source.onSample(receive);
+  await source.start(video as unknown as HTMLVideoElement);
+  frame(10);
+  await vi.waitFor(() => expect(receive).toHaveBeenCalledOnce());
+  expect(receive.mock.lastCall?.[0]).toMatchObject({
+    playfield: null,
+    camera: null,
+    error: 'Tracking worker unavailable',
+    tMs: 10,
+  });
+  frame(20);
+  expect(tracker.detect).toHaveBeenCalledOnce();
+  expect(video.cancelVideoFrameCallback).toHaveBeenCalled();
+  expect(tracker.close).toHaveBeenCalledOnce();
+  source.stop();
+});

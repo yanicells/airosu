@@ -72,9 +72,22 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
     }
 
     let disposed = false;
+    let failed = false;
     let rafId = 0;
     let finishTimer: ReturnType<typeof setTimeout> | undefined;
     let stageDestroy = () => {};
+
+    const fail = (message: string) => {
+      if (disposed || failed) return;
+      failed = true;
+      phaseRef.current = 'done';
+      setPhase('done');
+      setFatal(message);
+      cancelAnimationFrame(rafId);
+      clearTimeout(finishTimer);
+      clockRef.current?.stop();
+      stageDestroy();
+    };
 
     const session = new GameSession(map, settings);
     sessionRef.current = session;
@@ -86,37 +99,39 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
     }
     const offSample = cv?.cursor.onSample((s) => {
       cursorRef.current = s.playfield;
+      if (s.error) fail(s.error);
     });
+    if (!cv) fail('Hand tracking is unavailable. Return to song select and calibrate again.');
 
     (async () => {
+      if (failed) return;
       let stage: Awaited<ReturnType<typeof createStage>>;
       let clock;
       let skin: Skin | null = null;
       const preparedPp = prepareMapPerformance(map).catch(() => null);
       try {
         skin = await getSkin();
-        if (disposed) return;
+        if (disposed || failed) return;
         stage = await createStage(host, settings.visualMode === 'focus', skin);
         stageDestroy = () => {
           stageDestroy = () => {};
           stage.destroy();
         };
-        if (disposed) {
+        if (disposed || failed) {
           stageDestroy();
           return;
         }
         clock = await AudioClock.create(map.audio, settings.volume);
       } catch (e) {
         stageDestroy();
-        if (disposed) return;
-        setFatal(
+        fail(
           e instanceof Error
-            ? `Could not start renderer/audio: ${e.message}. WebGL is required.`
-            : 'Could not start renderer. WebGL is required.',
+            ? `Could not start gameplay: ${e.message}`
+            : 'Could not start gameplay. Try restarting the map.',
         );
         return;
       }
-      if (disposed) {
+      if (disposed || failed) {
         stageDestroy();
         clock.stop();
         return;
@@ -124,7 +139,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
       clockRef.current = clock;
 
       const prepared = await preparedPp;
-      if (disposed) return;
+      if (disposed || failed) return;
       ppRef.current = prepared ? new PpCounter(prepared) : null;
 
       let prevCombo = 0;
@@ -139,7 +154,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
       };
 
       const loop = () => {
-        if (disposed) return;
+        if (disposed || failed) return;
         rafId = requestAnimationFrame(loop);
         if (phaseRef.current === 'countdown') {
           // cursor-only frames so the player can find their hand pre-start
@@ -158,6 +173,12 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
           return;
         }
         if (phaseRef.current !== 'playing') return;
+        // Browsers can suspend/interrupt audio independently of tab visibility.
+        if (!clock.running) {
+          phaseRef.current = 'paused';
+          setPhase('paused');
+          return;
+        }
         const t = clock.nowMs(settings.audioOffsetMs);
         const cursor = cursorRef.current;
         const events = pendingHits.current.splice(0);
@@ -196,10 +217,13 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
       for (let c = 3; c > 0; c--) {
         setCount(c);
         await new Promise((r) => setTimeout(r, 700));
-        if (disposed) return;
+        if (disposed || failed) return;
       }
       clock.start();
-      setPhase('playing');
+      const next = clock.running && !document.hidden ? 'playing' : 'paused';
+      if (next === 'paused') clock.pause();
+      phaseRef.current = next;
+      setPhase(next);
     })();
 
     return () => {
@@ -219,13 +243,11 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setPhase((p) => {
-          if (p === 'playing') {
-            clockRef.current?.pause();
-            return 'paused';
-          }
-          return p;
-        });
+        if (phaseRef.current === 'playing') {
+          phaseRef.current = 'paused';
+          clockRef.current?.pause();
+          setPhase('paused');
+        }
         return;
       }
       if (phaseRef.current !== 'playing' || e.repeat) return;
@@ -245,6 +267,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const onVis = () => {
       if (document.hidden && phaseRef.current === 'playing') {
+        phaseRef.current = 'paused';
         clockRef.current?.pause();
         setPhase('paused');
       }
@@ -253,9 +276,25 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
 
-  const resume = useCallback(() => {
-    clockRef.current?.resume();
-    setPhase('playing');
+  const resume = useCallback(async () => {
+    const clock = clockRef.current;
+    if (!clock || phaseRef.current !== 'paused') return;
+    try {
+      await clock.resume();
+      if (clock !== clockRef.current || phaseRef.current !== 'paused') return;
+      if (document.hidden) {
+        clock.pause();
+        return;
+      }
+      phaseRef.current = 'playing';
+      setPhase('playing');
+    } catch (error) {
+      if (clock !== clockRef.current) return;
+      clock.stop();
+      phaseRef.current = 'done';
+      setPhase('done');
+      setFatal(error instanceof Error ? error.message : 'Audio could not resume.');
+    }
   }, []);
 
   const quit = useCallback(() => {
