@@ -49,6 +49,7 @@ export class OszArchive {
   readonly entries: OszEntry[];
   private files: Record<string, Uint8Array>;
   private maps = new Map<string, LoadedBeatmap>();
+  private audioBuffers = new WeakMap<Uint8Array, ArrayBuffer>();
   private cachedPreview?: MapsetPreview;
 
   constructor(bytes: Uint8Array) {
@@ -75,9 +76,14 @@ export class OszArchive {
     });
     const audioBytes = findEntry(this.files, decoded.general.audioFilename);
     if (!audioBytes) throw new Error(`Audio file not found: ${decoded.general.audioFilename}`);
+    let audio = this.audioBuffers.get(audioBytes);
+    if (!audio) {
+      audio = audioBytes.slice().buffer;
+      this.audioBuffers.set(audioBytes, audio);
+    }
     const bgBytes = findEntry(this.files, decoded.events.backgroundPath ?? '');
     const background = bgBytes ? new Blob([bgBytes.slice().buffer]) : undefined;
-    const map = toInternal(decoded, entry.osuText, audioBytes.slice().buffer, background);
+    const map = toInternal(decoded, entry.osuText, audio, background);
     this.maps.set(difficultyName, map);
     return map;
   }

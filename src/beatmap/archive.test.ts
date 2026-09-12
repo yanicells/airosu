@@ -18,7 +18,8 @@ describe('reusable map archive', () => {
     const archive = new OszArchive(bytes);
     const preview = archive.preview();
     const first = archive.load(preview.difficulties[0].name);
-    archive.load(preview.difficulties[1].name);
+    const second = archive.load(preview.difficulties[1].name);
+    expect(second.audio).toBe(first.audio);
     expect(archive.load(preview.difficulties[0].name)).toBe(first);
     expect(archive.preview()).toBe(preview);
     expect(unzipSync).toHaveBeenCalledTimes(1);

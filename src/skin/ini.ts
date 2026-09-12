@@ -20,6 +20,11 @@ function parseColor(value: string): number | null {
   return (r << 16) | (g << 8) | b;
 }
 
+function parseNumber(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 /** Minimal skin.ini parse: combo colours + digit font prefixes. */
 export function parseSkinIni(text: string): SkinIni {
   const values = new Map<string, string>();
@@ -50,8 +55,8 @@ export function parseSkinIni(text: string): SkinIni {
     sliderBorder: (sliderBorderRaw ? parseColor(sliderBorderRaw) : null) ?? 0xffffff,
     sliderTrack: sliderTrackRaw ? parseColor(sliderTrackRaw) : null,
     hitCirclePrefix: prefix('hitcircleprefix', 'default'),
-    hitCircleOverlap: Number(values.get('hitcircleoverlap') ?? -2),
+    hitCircleOverlap: parseNumber(values.get('hitcircleoverlap'), -2),
     scorePrefix: prefix('scoreprefix', 'score'),
-    scoreOverlap: Number(values.get('scoreoverlap')) || 0,
+    scoreOverlap: parseNumber(values.get('scoreoverlap'), 0),
   };
 }
