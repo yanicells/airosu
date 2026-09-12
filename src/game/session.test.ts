@@ -11,10 +11,15 @@ function makeMap(objects: LoadedBeatmap['objects']): LoadedBeatmap {
       artist: 'a',
       version: 'v',
       audioFilename: 'x.mp3',
+      creator: 'mapper',
+      hp: 5,
+      bpm: 120,
+      lengthMs: 2000,
       cs: 4,
       od: 5,
       ar: 5,
     },
+    rawOsu: '',
     objects,
     audio: new ArrayBuffer(0),
   };
@@ -22,8 +27,8 @@ function makeMap(objects: LoadedBeatmap['objects']): LoadedBeatmap {
 
 const twoCircles = () =>
   makeMap([
-    { kind: 'circle', time: 1000, pos: { x: 100, y: 100 } },
-    { kind: 'circle', time: 2000, pos: { x: 200, y: 200 } },
+    { kind: 'circle', comboIndex: 0, comboNumber: 1, time: 1000, pos: { x: 100, y: 100 } },
+    { kind: 'circle', comboIndex: 0, comboNumber: 1, time: 2000, pos: { x: 200, y: 200 } },
   ]);
 
 const relax: Settings = { ...defaultSettings, inputMode: 'relax', forgiveness: 1 };
@@ -82,7 +87,7 @@ describe('GameSession lifecycle', () => {
   });
 
   it('spinner auto-completes with 300 at endTime, no cursor', () => {
-    const s = new GameSession(makeMap([{ kind: 'spinner', time: 1000, endTime: 2000 }]), relax);
+    const s = new GameSession(makeMap([{ kind: 'spinner', comboIndex: 0, comboNumber: 1, time: 1000, endTime: 2000 }]), relax);
     expect(s.tick(1500, null)).toHaveLength(0);
     const events = s.tick(2000, null);
     expect(events[0].judgment).toBe(300);
@@ -96,7 +101,7 @@ describe('GameSession lifecycle', () => {
 
 describe('sliderBallPos', () => {
   const slider = (repeats: number): import('../beatmap/model').SliderObj => ({
-    kind: 'slider',
+    kind: 'slider', comboIndex: 0, comboNumber: 1,
     time: 1000,
     endTime: 2000,
     repeats,
@@ -123,7 +128,7 @@ describe('slider judgment', () => {
   const sliderMap = () =>
     makeMap([
       {
-        kind: 'slider',
+        kind: 'slider', comboIndex: 0, comboNumber: 1,
         time: 1000,
         endTime: 2000,
         repeats: 1,
@@ -161,7 +166,7 @@ describe('slider judgment', () => {
 it('keeps an unfinished slider visible while later circles resolve', () => {
   const map = makeMap([
     {
-      kind: 'slider',
+      kind: 'slider', comboIndex: 0, comboNumber: 1,
       time: 1000,
       endTime: 4000,
       repeats: 1,
@@ -171,8 +176,8 @@ it('keeps an unfinished slider visible while later circles resolve', () => {
         { x: 200, y: 100 },
       ],
     },
-    { kind: 'circle', time: 2000, pos: { x: 100, y: 100 } },
-    { kind: 'circle', time: 10000, pos: { x: 100, y: 100 } },
+    { kind: 'circle', comboIndex: 0, comboNumber: 1, time: 2000, pos: { x: 100, y: 100 } },
+    { kind: 'circle', comboIndex: 0, comboNumber: 1, time: 10000, pos: { x: 100, y: 100 } },
   ]);
   const session = new GameSession(map, relax);
   session.tick(1000, { x: 100, y: 100 });
@@ -194,7 +199,7 @@ it('reuses slider geometry across frames without recomputing segment lengths', (
     { x: 30, y: 40 },
   ];
   const slider = {
-    kind: 'slider' as const,
+    kind: 'slider' as const, comboIndex: 0, comboNumber: 1,
     time: 0,
     endTime: 1000,
     repeats: 1,

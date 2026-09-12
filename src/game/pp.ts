@@ -4,9 +4,6 @@ import { playPp, toMapDifficulty, type MapDifficulty, type HitStats } from './pp
 
 export type { HitStats } from './ppFormula';
 
-const ruleset = new StandardRuleset();
-const decoder = new BeatmapDecoder();
-
 export interface PreparedPp {
   timed: { time: number; attributes: MapDifficulty }[];
   full: MapDifficulty;
@@ -14,6 +11,8 @@ export interface PreparedPp {
 
 /** Run in the map worker; the resulting numbers cross the worker boundary. */
 export function preparePp(osuText: string): PreparedPp {
+  const ruleset = new StandardRuleset();
+  const decoder = new BeatmapDecoder();
   const parsed = decoder.decodeFromString(osuText, { parseStoryboard: false });
   const beatmap = ruleset.applyToBeatmap(parsed);
   const calculator = ruleset.createDifficultyCalculator(beatmap);
@@ -39,8 +38,7 @@ export class PpCounter {
   private timed: PreparedPp['timed'];
   private full: MapDifficulty;
 
-  constructor(source: string | PreparedPp) {
-    const prepared = typeof source === 'string' ? preparePp(source) : source;
+  constructor(prepared: PreparedPp) {
     this.timed = prepared.timed;
     this.full = prepared.full;
   }

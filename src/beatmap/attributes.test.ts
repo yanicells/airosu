@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { OszArchive, listDifficulties } from './load';
 import { computeMapAttributes } from './attributes';
-import { PpCounter } from '../game/pp';
+import { PpCounter, preparePp } from '../game/pp';
 import { playPp } from '../game/ppFormula';
 
 const osz = new Uint8Array(
@@ -34,6 +34,6 @@ describe('computeMapAttributes', () => {
       countMiss: 0,
       maxCombo: a.judgmentCount,
     };
-    expect(playPp(a.difficulty, ss)).toBeCloseTo(new PpCounter(easy.osuText).final(ss), 6);
+    expect(playPp(a.difficulty, ss)).toBeCloseTo(new PpCounter(preparePp(easy.osuText)).final(ss), 6);
   });
 });
