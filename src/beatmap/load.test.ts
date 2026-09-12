@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect, vi } from 'vitest';
-import { listDifficulties, loadFromOsz, oszBackground, previewOsz } from './load';
+import { OszArchive, listDifficulties, oszBackground } from './load';
 
 vi.mock('fflate', async (importOriginal) => {
   const actual = await importOriginal<typeof import('fflate')>();
@@ -16,8 +16,8 @@ describe('osz loading', () => {
   it.each(['load', 'preview', 'background'])('extracts the archive once for %s', (operation) => {
     const name = listDifficulties(osz)[0].difficultyName;
     vi.mocked(unzipSync).mockClear();
-    if (operation === 'load') loadFromOsz(osz, name);
-    else if (operation === 'preview') previewOsz(osz);
+    if (operation === 'load') new OszArchive(osz).load(name);
+    else if (operation === 'preview') new OszArchive(osz).preview();
     else oszBackground(osz);
     expect(unzipSync).toHaveBeenCalledTimes(1);
   });
@@ -29,7 +29,7 @@ describe('osz loading', () => {
 
   it('parses a difficulty into internal model', () => {
     const name = listDifficulties(osz)[0].difficultyName;
-    const map = loadFromOsz(osz, name);
+    const map = new OszArchive(osz).load(name);
     expect(map.objects.length).toBeGreaterThan(10);
     expect(map.objects[0].time).toBeGreaterThanOrEqual(0);
     expect(map.meta.audioFilename.toLowerCase()).toMatch(/\.(mp3|ogg)$/);
@@ -45,7 +45,7 @@ describe('osz loading', () => {
 
   it('assigns combo indices that only step up on new combos', () => {
     const name = listDifficulties(osz)[0].difficultyName;
-    const map = loadFromOsz(osz, name);
+    const map = new OszArchive(osz).load(name);
     let last = -1;
     for (const o of map.objects) {
       expect(o.comboIndex).toBeGreaterThanOrEqual(0);
@@ -57,7 +57,7 @@ describe('osz loading', () => {
 
   it('numbers objects within each combo starting at 1', () => {
     const name = listDifficulties(osz)[0].difficultyName;
-    const map = loadFromOsz(osz, name);
+    const map = new OszArchive(osz).load(name);
     let prev: { comboIndex: number; comboNumber: number } | null = null;
     for (const o of map.objects) {
       if (prev && o.comboIndex === prev.comboIndex)
@@ -69,7 +69,7 @@ describe('osz loading', () => {
 
   it('exposes display stats: hp, bpm, length, creator', () => {
     const name = listDifficulties(osz)[0].difficultyName;
-    const map = loadFromOsz(osz, name);
+    const map = new OszArchive(osz).load(name);
     expect(map.meta.hp).toBeGreaterThan(0);
     expect(map.meta.hp).toBeLessThanOrEqual(10);
     expect(map.meta.bpm).toBeGreaterThan(50);
@@ -79,7 +79,7 @@ describe('osz loading', () => {
   });
 
   it('previews a mapset with stars ascending and a background', () => {
-    const preview = previewOsz(osz);
+    const preview = new OszArchive(osz).preview();
     expect(preview.difficulties.length).toBeGreaterThan(3);
     const stars = preview.difficulties.map((d) => d.stars);
     expect([...stars].sort((a, b) => a - b)).toEqual(stars);
@@ -95,7 +95,7 @@ describe('osz loading', () => {
 
   it('sliders have endTime > time and a path', () => {
     const name = listDifficulties(osz)[0].difficultyName;
-    const s = loadFromOsz(osz, name).objects.find((o) => o.kind === 'slider');
+    const s = new OszArchive(osz).load(name).objects.find((o) => o.kind === 'slider');
     expect(s).toBeDefined();
     if (s?.kind === 'slider') {
       expect(s.endTime).toBeGreaterThan(s.time);

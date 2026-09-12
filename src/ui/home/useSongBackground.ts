@@ -1,39 +1,25 @@
 import { useEffect, useState } from 'react';
 import type { StarterMap } from '../../beatmap/starterMaps';
-import { oszBackground } from '../../beatmap/load';
+import { loadMapBackground } from '../../beatmap/mapWorker';
+import { starterBytes } from '../../beatmap/starterBytes';
 
-// per-URL background cache; null marks "fetched, has no background"
-const cache = new Map<string, Blob | null>();
+const cache = new Map<string, Promise<Blob | undefined>>();
 
-/** Background image of a bundled map's .osz, fetched lazily and cached. */
-export function useSongBackground(map: StarterMap | undefined): Blob | undefined {
+export function useSongBackground(map: StarterMap): Blob | undefined {
   const [bg, setBg] = useState<Blob>();
-
   useEffect(() => {
-    if (!map) {
-      setBg(undefined);
-      return;
-    }
-    const cached = cache.get(map.url);
-    if (cached !== undefined) {
-      setBg(cached ?? undefined);
-      return;
-    }
     let stale = false;
-    (async () => {
-      try {
-        const bytes = new Uint8Array(await (await fetch(map.url)).arrayBuffer());
-        const blob = oszBackground(bytes) ?? null;
-        cache.set(map.url, blob);
-        if (!stale) setBg(blob ?? undefined);
-      } catch {
-        if (!stale) setBg(undefined); // background is decorative — ignore fetch failures
-      }
-    })();
-    return () => {
-      stale = true;
-    };
-  }, [map]);
-
+    setBg(undefined);
+    let pending = cache.get(map.url);
+    if (!pending) {
+      pending = starterBytes(map.url).then(loadMapBackground).catch(() => {
+        cache.delete(map.url);
+        return undefined;
+      });
+      cache.set(map.url, pending);
+    }
+    void pending.then((blob) => { if (!stale) setBg(blob); });
+    return () => { stale = true; };
+  }, [map.url]);
   return bg;
 }
