@@ -1,49 +1,46 @@
-import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
-
-const WASM_PATH = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm';
-const MODEL_URL =
-  'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+import { createWorkerTracker } from './workerTracker';
 
 export interface HandTrackerResult {
   /** 21 normalized landmarks, or null when no hand detected */
   landmarks: { x: number; y: number }[] | null;
 }
-
 export interface HandTracker {
-  detect(video: HTMLVideoElement, timestampMs: number): HandTrackerResult;
-  /** true when the GPU delegate failed and CPU fallback is in use */
+  detect(video: HTMLVideoElement, timestampMs: number): Promise<HandTrackerResult>;
   usingCpuFallback: boolean;
   close(): void;
 }
 
-export async function createHandTracker(): Promise<HandTracker> {
-  const vision = await FilesetResolver.forVisionTasks(WASM_PATH);
-  let usingCpuFallback = false;
-  let landmarker: HandLandmarker;
-  try {
-    landmarker = await HandLandmarker.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
-      runningMode: 'VIDEO',
-      numHands: 1,
-    });
-  } catch {
-    usingCpuFallback = true;
-    landmarker = await HandLandmarker.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: MODEL_URL, delegate: 'CPU' },
-      runningMode: 'VIDEO',
-      numHands: 1,
-    });
-  }
-
+async function mainThreadTracker(): Promise<HandTracker> {
+  const { createLandmarker } = await import('./handLandmarker');
+  const { landmarker, usingCpuFallback } = await createLandmarker();
   return {
     usingCpuFallback,
-    detect(video, timestampMs) {
-      const result = landmarker.detectForVideo(video, timestampMs);
-      const landmarks = result.landmarks[0];
-      return { landmarks: landmarks ?? null };
+    async detect(video, timestampMs) {
+      return { landmarks: landmarker.detectForVideo(video, timestampMs).landmarks[0] ?? null };
     },
-    close() {
-      landmarker.close();
+    close() { landmarker.close(); },
+  };
+}
+
+export async function createHandTracker(): Promise<HandTracker> {
+  let workerActive = typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined' && typeof createImageBitmap !== 'undefined';
+  let engine = workerActive
+    ? await createWorkerTracker().catch(() => { workerActive = false; return mainThreadTracker(); })
+    : await mainThreadTracker();
+  let closed = false;
+  return {
+    get usingCpuFallback() { return engine.usingCpuFallback; },
+    async detect(video, timestampMs) {
+      try { return await engine.detect(video, timestampMs); }
+      catch (error) {
+        if (closed || !workerActive) throw error;
+        workerActive = false;
+        engine.close();
+        engine = await mainThreadTracker();
+        if (closed) { engine.close(); throw error; }
+        return engine.detect(video, performance.now());
+      }
     },
+    close() { closed = true; engine.close(); },
   };
 }

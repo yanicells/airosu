@@ -1,121 +1,76 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Vec2 } from '../../beatmap/model';
-import { boxFromSamples, defaultBox } from '../../cv/calibration';
+import { defaultBox, isAtCalibrationCorner, MIN_CALIBRATION_SAMPLES } from '../../cv/calibration';
 import type { CalibrationBox } from '../../cv/calibration';
-import { hasEnoughCalibrationSamples } from '../../cv/calibrationSampling';
 import type { CvSession } from '../../cv/cvSession';
 import { getCvSession } from '../../cv/cvSession';
+import type { Settings } from '../appState';
 
 export type CalibrationStep = 'loading' | 'error' | 'intro' | 'corner1' | 'corner2' | 'test';
-
 const SAMPLE_MS = 2000;
 
-export function useCalibrationFlow() {
+export function useCalibrationFlow(settings: Settings, initialBox?: CalibrationBox) {
   const [step, setStep] = useState<CalibrationStep>('loading');
   const [error, setError] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [session, setSession] = useState<CvSession | null>(null);
   const [countdown, setCountdown] = useState(0);
-  const [box, setBox] = useState<CalibrationBox>(defaultBox());
-  const samplesRef = useRef<Vec2[]>([]);
-  const corner1SamplesRef = useRef<Vec2[]>([]);
-  const collectingRef = useRef(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const [box, setBox] = useState<CalibrationBox>(initialBox ?? defaultBox());
+  const samples = useRef(0);
+  const collecting = useRef(false);
+  const connection = useRef(0);
+  const timer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const connect = useCallback(() => {
+    const id = ++connection.current;
     setStep('loading');
     setError(null);
-    getCvSession()
-      .then((s) => {
-        setSession(s);
-        setStep('intro');
-      })
-      .catch((e) => {
-        setError(e instanceof Error ? e.message : 'Camera unavailable');
-        setStep('error');
-      });
-  }, []);
-
-  useEffect(connect, [connect]);
-
-  useEffect(() => {
-    if (!session) return;
-    return session.cursor.onSample((s) => {
-      if (collectingRef.current && s.camera) samplesRef.current.push(s.camera);
+    void getCvSession().then((s) => {
+      if (id !== connection.current) return;
+      setSession(s);
+      setStep('intro');
+    }).catch((e) => {
+      if (id !== connection.current) return;
+      setError(e instanceof Error ? e.message : 'Camera unavailable');
+      setStep('error');
     });
-  }, [session]);
+  }, []);
+  useEffect(() => {
+    connect();
+    return () => { connection.current++; clearInterval(timer.current); collecting.current = false; };
+  }, [connect]);
 
-  useEffect(
-    () => () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      collectingRef.current = false;
-    },
-    [],
-  );
+  useEffect(() => session?.cursor.onSample((sample) => {
+    if (collecting.current && sample.camera && isAtCalibrationCorner(
+      sample.camera, box, step === 'corner1' ? 'top-left' : 'bottom-right', settings.sensitivity, settings.mirror,
+    )) samples.current++;
+  }), [session, box, step, settings.sensitivity, settings.mirror]);
 
-  const collect = useCallback((next: (sampleCount: number) => void) => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    collectingRef.current = true;
-    const initialSampleCount = samplesRef.current.length;
+  const collect = useCallback((corner: 'corner1' | 'corner2') => {
+    clearInterval(timer.current);
+    setCaptureError(null);
+    setStep(corner);
+    samples.current = 0;
+    collecting.current = true;
     const start = performance.now();
     setCountdown(SAMPLE_MS / 1000);
-    timerRef.current = setInterval(() => {
+    timer.current = setInterval(() => {
       const left = SAMPLE_MS - (performance.now() - start);
       setCountdown(Math.max(0, Math.ceil(left / 1000)));
-      if (left <= 0) {
-        clearInterval(timerRef.current);
-        timerRef.current = undefined;
-        collectingRef.current = false;
-        next(samplesRef.current.length - initialSampleCount);
-      }
+      if (left > 0) return;
+      clearInterval(timer.current);
+      collecting.current = false;
+      if (samples.current < MIN_CALIBRATION_SAMPLES) {
+        setCaptureError('Hold your hand on the target. Resize the area if it is hard to reach.');
+        setStep(corner === 'corner1' ? 'intro' : 'corner2');
+      } else setStep(corner === 'corner1' ? 'corner2' : 'test');
     }, 100);
   }, []);
 
-  const startCorner1 = useCallback(() => {
-    setCaptureError(null);
-    samplesRef.current = [];
-    corner1SamplesRef.current = [];
-    setStep('corner1');
-    collect((sampleCount) => {
-      if (!hasEnoughCalibrationSamples(sampleCount)) {
-        setCaptureError('Hand tracking dropped out. Keep your hand visible, then try again.');
-        setStep('intro');
-        return;
-      }
-      corner1SamplesRef.current = [...samplesRef.current];
-      setStep('corner2');
-    });
-  }, [collect]);
-
-  const startCorner2 = useCallback(() => {
-    setCaptureError(null);
-    samplesRef.current = [...corner1SamplesRef.current];
-    collect((sampleCount) => {
-      if (!hasEnoughCalibrationSamples(sampleCount)) {
-        setCaptureError('Tracking was interrupted. Hold the target again when ready.');
-        return;
-      }
-      setBox(boxFromSamples(samplesRef.current));
-      setStep('test');
-    });
-  }, [collect]);
-
-  const skip = useCallback(() => {
-    setCaptureError(null);
-    setBox(defaultBox());
-    setStep('test');
-  }, []);
-
   return {
-    step,
-    error,
-    captureError,
-    session,
-    countdown,
-    box,
-    connect,
-    startCorner1,
-    startCorner2,
-    skip,
+    step, error, captureError, session, countdown, box, setBox, connect,
+    startCorner1: () => collect('corner1'),
+    startCorner2: () => collect('corner2'),
+    testArea: () => { setCaptureError(null); setStep('test'); },
+    editArea: () => { clearInterval(timer.current); collecting.current = false; setCountdown(0); setCaptureError(null); setStep('intro'); },
   };
 }

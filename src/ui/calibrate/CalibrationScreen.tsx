@@ -1,139 +1,65 @@
 import { useEffect } from 'react';
+import { cameraBoxToDisplay, defaultBox, displayBoxToCamera } from '../../cv/calibration';
 import { useAppState } from '../appState';
 import { CameraPreview } from './CameraPreview';
 import { CornerGuide } from './CornerGuide';
 import { CursorDot } from './CursorDot';
+import { AimArea } from './AimArea';
 import { useCalibrationFlow } from './useCalibrationFlow';
-
-const panel: React.CSSProperties = {
-  position: 'relative',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: 16,
-  padding: 32,
-  height: '100%',
-  justifyContent: 'center',
-};
+import './calibration.css';
 
 export function CalibrationScreen() {
-  const { settings, setCalibration, setScreen } = useAppState();
-  const {
-    step,
-    error,
-    captureError,
-    session,
-    countdown,
-    box,
-    connect,
-    startCorner1,
-    startCorner2,
-    skip,
-  } = useCalibrationFlow();
+  const { settings, calibration, setCalibration, setScreen } = useAppState();
+  const flow = useCalibrationFlow(settings, calibration);
+  const { step, session, box, countdown } = flow;
+  useEffect(() => { session?.cursor.setSettings(settings); }, [session, settings]);
+  useEffect(() => { session?.cursor.setCalibration(box); }, [session, box]);
 
-  useEffect(() => {
-    session?.cursor.setSettings(settings);
-  }, [session, settings]);
+  if (step === 'loading' || step === 'error' || !session) return (
+    <div className="calibration-screen">
+      <h2>{step === 'loading' ? 'Starting camera + hand tracker…' : 'Camera unavailable'}</h2>
+      {step === 'error' && <><p>{flow.error ?? 'Camera permission is required to play.'}</p><button className="btn" onClick={flow.connect}>Retry</button></>}
+      <button className="btn" onClick={() => setScreen('songs')}>Back to songs</button>
+    </div>
+  );
 
-  if (step === 'loading') return <div style={panel}>Starting camera + hand tracker…</div>;
-
-  if (step === 'error' || !session)
-    return (
-      <div style={panel}>
-        <h2>Camera unavailable</h2>
-        <p style={{ opacity: 0.7 }}>{error ?? 'Camera permission is required to play.'}</p>
-        <button className="btn" onClick={connect}>
-          Retry
-        </button>
-        <button className="btn" onClick={() => setScreen('songs')}>
-          Back
-        </button>
-      </div>
-    );
-
-  const isIndex = settings.cursorAnchor === 'index';
-  const instruction = isIndex
-    ? step === 'intro'
-      ? 'Point with the tip of your index finger. Keep it extended while you calibrate.'
-      : step === 'corner1'
-        ? `Place your fingertip on the blue target and hold… ${countdown}`
-        : step === 'corner2'
-          ? `Point the same fingertip at the opposite blue target… ${countdown}`
-          : 'Trace with your fingertip — the crosshair should reach every edge comfortably.'
-    : step === 'intro'
-      ? 'Aim with the center of an open palm. Keep your palm facing the camera.'
-      : step === 'corner1'
-        ? `Center your palm inside the pink ring and hold… ${countdown}`
-        : step === 'corner2'
-          ? `Move the center of your palm into the opposite pink ring… ${countdown}`
-          : 'Move your open palm — the round cursor should reach every edge comfortably.';
+  const area = cameraBoxToDisplay(box, settings.sensitivity, settings.mirror);
+  const editable = step === 'intro' || step === 'test';
+  const anchor = settings.cursorAnchor === 'index' ? 'fingertip' : 'palm';
+  const instruction = step === 'intro' ? `Choose a comfortable area for your ${anchor}. Smaller area means less hand movement.`
+    : step === 'test' ? 'Move your hand inside the area. The game cursor should reach every edge of the preview.'
+    : `Hold your ${anchor} on the ${step === 'corner1' ? 'top-left' : 'bottom-right'} target${countdown ? `… ${countdown}` : ', then press Ready'}.`;
 
   return (
-    <div style={panel}>
-      <button
-        className="btn btn--back"
-        style={{ position: 'absolute', top: 16, left: 16 }}
-        onClick={() => setScreen('songs')}
-      >
-        ‹ Songs
-      </button>
+    <div className="calibration-screen">
+      <button className="btn calibration-back" onClick={() => setScreen('songs')}>‹ Songs</button>
       <div className="calibration-title">
-        <h2>Calibration</h2>
-        <span className={`calibration-anchor calibration-anchor--${settings.cursorAnchor}`}>
-          {isIndex ? 'Fingertip control' : 'Palm control'}
-        </span>
+        <h2>Your aim area</h2>
+        <span className={`calibration-anchor calibration-anchor--${settings.cursorAnchor}`}>{anchor === 'palm' ? 'Palm control' : 'Fingertip control'}</span>
       </div>
       <p className="calibration-instruction">{instruction}</p>
       <CameraPreview video={session.video} mirror={settings.mirror}>
-        {step === 'corner1' && (
-          <CornerGuide corner="top-left" anchor={settings.cursorAnchor} />
-        )}
-        {step === 'corner2' && (
-          <CornerGuide corner="bottom-right" anchor={settings.cursorAnchor} />
-        )}
-        {step === 'test' && <CursorDot session={session} box={box} settings={settings} />}
+        <AimArea area={area} disabled={!editable} onChange={(next) => flow.setBox(displayBoxToCamera(next, settings.sensitivity, settings.mirror))} />
+        <CornerGuide corner="top-left" anchor={settings.cursorAnchor} area={area} active={step === 'corner1'} />
+        <CornerGuide corner="bottom-right" anchor={settings.cursorAnchor} area={area} active={step === 'corner2'} />
+        <CursorDot session={session} settings={settings} testing={step === 'test'} />
       </CameraPreview>
-      <div style={{ display: 'flex', gap: 12 }}>
-        {step === 'intro' && (
-          <>
-            <button className="btn btn--primary" style={{ fontSize: 16 }} onClick={startCorner1}>
-              Start calibration
-            </button>
-            <button className="btn" onClick={skip}>
-              Skip (default box)
-            </button>
-          </>
-        )}
-        {step === 'corner2' && countdown === 0 && (
-          <button className="btn btn--primary" style={{ fontSize: 16 }} onClick={startCorner2}>
-            Ready — start
-          </button>
-        )}
-        {step === 'test' && (
-          <>
-            <button
-              className="btn btn--primary"
-              style={{ fontSize: 16 }}
-              onClick={() => {
-                setCalibration(box);
-                setScreen('play');
-              }}
-            >
-              Looks good — Continue
-            </button>
-            <button className="btn" onClick={startCorner1}>
-              Redo
-            </button>
-          </>
-        )}
+      <div className="aim-area-info">
+        <span>{Math.round(area.halfW * 200)}% wide · {Math.round(area.halfH * 200)}% tall</span>
+        <button className="btn" disabled={!editable} onClick={() => flow.setBox(displayBoxToCamera(defaultBox(), settings.sensitivity, settings.mirror))}>Reset area</button>
       </div>
-      {captureError && <p className="calibration-capture-error">{captureError}</p>}
-      {step === 'corner2' && countdown > 0 && <p style={{ opacity: 0.6 }}>Collecting…</p>}
-      {session.cursor.usingCpuFallback() && (
-        <p style={{ color: '#ffaa55', fontSize: 13 }}>
-          GPU acceleration unavailable — tracking runs on CPU and may feel laggier.
-        </p>
-      )}
+      <p id="aim-help">Drag inside to move; drag corners to resize. Arrow keys adjust focused control. Shift moves faster.</p>
+      <div className="calibration-actions">
+        {step === 'intro' && <>
+          <button className="btn btn--primary" onClick={flow.startCorner1}>Check corners</button>
+          <button className="btn" onClick={flow.testArea}>Use this area</button>
+        </>}
+        {step === 'corner2' && countdown === 0 && <button className="btn btn--primary" onClick={flow.startCorner2}>Ready — start</button>}
+        {step === 'test' && <button className="btn btn--primary" onClick={() => { setCalibration(box); setScreen('play'); }}>Looks good — Continue</button>}
+        {step !== 'intro' && <button className="btn" onClick={flow.editArea}>Adjust area</button>}
+      </div>
+      {flow.captureError && <p role="alert" className="calibration-capture-error">{flow.captureError}</p>}
+      {session.cursor.usingCpuFallback() && <p className="calibration-warning">GPU acceleration unavailable — tracking uses CPU.</p>}
     </div>
   );
 }

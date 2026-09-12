@@ -32,7 +32,7 @@ export function CameraPreview({
         position: 'relative',
         width: 640,
         maxWidth: '90vw',
-        aspectRatio: '4 / 3',
+        aspectRatio: `${video.videoWidth || 640} / ${video.videoHeight || 480}`,
         borderRadius: 12,
         overflow: 'hidden',
         background: '#000',

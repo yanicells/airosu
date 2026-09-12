@@ -1,0 +1,22 @@
+.calibration-screen { min-height: 100%; padding: 28px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; position: relative; }
+.calibration-back { align-self: flex-start; }
+.calibration-screen .calibration-instruction { margin: 0; }
+.calibration-actions, .aim-area-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.aim-area-info { width: min(640px, 90vw); justify-content: space-between; font-variant-numeric: tabular-nums; color: #cbb9d9; }
+#aim-help { font-size: 12px; color: #cbb9d9; margin: 0; max-width: 640px; text-align: center; }
+.aim-editor { position: absolute; inset: 0; }
+.aim-area { position: absolute; border: 2px solid #ff66aa; box-shadow: 0 0 0 100vmax rgb(10 6 18 / 48%); }
+.aim-area__move { position: absolute; inset: 0; width: 100%; height: 100%; background: rgb(255 102 170 / 5%); border: 0; color: white; cursor: move; touch-action: none; }
+.aim-area__move span { display: inline-block; padding: 4px 10px; background: rgb(23 17 31 / 78%); border-radius: 4px; font-size: 12px; pointer-events: none; }
+.aim-area__handle { position: absolute; width: 26px; height: 26px; padding: 0; border: 2px solid #fff; border-radius: 5px; background: #a3346a; transform: translate(-50%, -50%); touch-action: none; z-index: 2; }
+.aim-area__handle--top-left { left: 0; top: 0; cursor: nwse-resize; }
+.aim-area__handle--top-right { left: 100%; top: 0; cursor: nesw-resize; }
+.aim-area__handle--bottom-left { left: 0; top: 100%; cursor: nesw-resize; }
+.aim-area__handle--bottom-right { left: 100%; top: 100%; cursor: nwse-resize; }
+.aim-editor button:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+.aim-editor button:disabled { cursor: default; }
+.aim-editor button:disabled.aim-area__handle { opacity: 0; }
+.calibration-screen .corner-target.is-idle { animation: none; opacity: 0.5; }
+.calibration-screen .calibration-cursor { z-index: 3; }
+.calibration-warning { color: #ffaa55; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .calibration-screen .corner-target { animation: none; } }
