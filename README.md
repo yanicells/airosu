@@ -12,11 +12,12 @@ online") — all optional, gameplay requires no sign-in. Initial startup needs n
 
 1. Get a beatmap: download any `.osz` from [osu.ppy.sh/beatmapsets](https://osu.ppy.sh/beatmapsets)
    (a free osu! account is required to download maps).
-2. Drop the `.osz` on the home screen and pick a difficulty. Uploads persist in your
+2. Open Play and drop the `.osz` on song select and pick a difficulty. Uploads persist in your
    browser under "your maps".
-3. Calibrate: hold your hand up-left, then down-right — this maps a small hand-movement
-   box to the whole playfield. Choose the palm (stable) or index fingertip (precise)
-   cursor on the map card.
+3. Calibrate: drag the aim area to a comfortable position and resize its corners.
+   Check the top-left and bottom-right targets, or choose "Use this area" to test
+   the same cursor smoothing used in play. Arrow keys adjust focused controls;
+   Shift moves faster. Choose palm or index fingertip on the song screen.
 4. Play. **Relax mode** (default): the game auto-taps when your cursor is on the object.
    **Manual mode**: aim with your hand, tap with Z/X/Space.
 5. Optional: sign in with osu! to submit scores, earn airosu pp, and climb the
@@ -36,7 +37,8 @@ pnpm run dev                  # dev server
 pnpm test                     # vitest unit tests
 pnpm run lint                 # oxlint
 pnpm run build                # production build (dist/)
-pnpm run verify:starter-maps  # starter-map manifest/rights audit
+pnpm run verify:starter-maps   # starter-map manifest/rights audit
+pnpm run check                # lint, tests, backend types, build and bundle budget
 ```
 
 The online backend lives in `convex/`. `pnpm dlx convex dev` creates `.env.local`
@@ -50,7 +52,9 @@ Development and production use separate osu! OAuth applications.
 Five client modules with hard boundaries: `src/cv/` (camera → smoothed cursor),
 `src/beatmap/` (.osz → internal model, IndexedDB library), `src/game/` (pure-TS
 clock/judging/scoring/pp), `src/render/` (PixiJS stage), `src/ui/` (React shell +
-react-router pages). The Convex backend (`convex/`) handles osu!-only auth, map
+react-router pages). Map extraction, difficulty preparation, and supported hand
+tracking run in workers; camera frames stay on-device. Hand tracking has a main-thread
+fallback for browsers without worker graphics support. The Convex backend (`convex/`) handles osu!-only auth, map
 registration (`.osu` text only), server-validated score submission with
 authoritative pp, aggregate-backed leaderboards, and profiles. See
 `docs/superpowers/specs/2026-07-04-airosu-design.md` and
@@ -74,10 +78,9 @@ pp recalculation procedure: `docs/pp-rework-runbook.md`.
   [osu-classes](https://github.com/kionell/osu-classes) (MIT, by kionell). Gameplay
   rules (hit windows, approach timing, relax behavior) adapted from
   [osu!lazer](https://github.com/ppy/osu) (MIT, ppy).
-- The owner-requested temporary test pack includes three existing maps for UI
-  verification without importing. `game-assets/starter-maps/manifest.json` records
-  this explicit temporary mode; redistribution review remains pending. CI still
-  verifies archive hashes, sizes, and bundle contents. Other `.osz` files under
-  `game-assets/test-maps/` remain test-only and never enter the deployed bundle.
-  Disable `temporaryTestPack` and resolve pending rights records before release.
+- The temporary test pack is available with `pnpm dev` only. Production builds
+  exclude it while `temporaryTestPack` is enabled. Imported maps still work in
+  production. CI checks emitted archives and rejects any test-pack leak. Resolve
+  redistribution rights before disabling that flag to ship licensed starter maps.
+  Fixtures under `game-assets/test-maps/` remain local test data.
 - This project is not affiliated with osu! or ppy.

@@ -67,14 +67,23 @@ export function createHandCursorSource(): CursorSource {
       running = true;
       const current = ++generation;
       let started: HandTracker;
-      try { started = await createHandTracker(); }
-      catch (error) { if (current === generation) running = false; throw error; }
-      if (current !== generation) { started.close(); return; }
+      try {
+        started = await createHandTracker();
+      } catch (error) {
+        if (current === generation) running = false;
+        throw error;
+      }
+      if (current !== generation) {
+        started.close();
+        return;
+      }
       tracker = started;
       let busy = false;
       let frameId = 0;
       const videoFrames = typeof video.requestVideoFrameCallback === 'function';
-      const resume = () => { if (running && video.paused) void video.play().catch(() => {}); };
+      const resume = () => {
+        if (running && video.paused) void video.play().catch(() => {});
+      };
       video.addEventListener('pause', resume);
       const schedule = () => {
         frameId = videoFrames ? video.requestVideoFrameCallback(loop) : requestAnimationFrame(loop);
@@ -102,7 +111,9 @@ export function createHandCursorSource(): CursorSource {
           emit({ playfield: smoothed, camera: raw, tMs: now });
         } catch {
           if (current === generation) emit({ playfield: null, camera: null, tMs: now });
-        } finally { busy = false; }
+        } finally {
+          busy = false;
+        }
       };
       cancelFrame = () => {
         if (videoFrames) video.cancelVideoFrameCallback(frameId);

@@ -7,7 +7,6 @@ export interface SkinIni {
   hitCirclePrefix: string;
   hitCircleOverlap: number;
   scorePrefix: string;
-  comboPrefix: string;
   scoreOverlap: number;
 }
 
@@ -53,7 +52,6 @@ export function parseSkinIni(text: string): SkinIni {
     hitCirclePrefix: prefix('hitcircleprefix', 'default'),
     hitCircleOverlap: Number(values.get('hitcircleoverlap') ?? -2),
     scorePrefix: prefix('scoreprefix', 'score'),
-    comboPrefix: prefix('comboprefix', 'score'),
     scoreOverlap: Number(values.get('scoreoverlap')) || 0,
   };
 }

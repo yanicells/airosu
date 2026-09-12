@@ -7,9 +7,12 @@ export type TrackerResponse =
 
 export function createWorkerTracker(): Promise<HandTracker> {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('./handTracker.worker.ts', import.meta.url), { type: 'module' });
+    const worker = new Worker(new URL('./handTracker.worker.ts', import.meta.url), {
+      type: 'module',
+    });
     let closed = false;
-    let active: { resolve(result: HandTrackerResult): void; reject(error: Error): void } | undefined;
+    let active:
+      { resolve(result: HandTrackerResult): void; reject(error: Error): void } | undefined;
     const fail = (error: Error) => {
       clearTimeout(timeout);
       closed = true;
@@ -34,14 +37,23 @@ export function createWorkerTracker(): Promise<HandTracker> {
           if (closed) throw new Error('Tracker closed');
           if (active) throw new Error('A tracking frame is already in flight');
           const frame = await createImageBitmap(video);
-          if (closed) { frame.close(); throw new Error('Tracker closed'); }
+          if (closed) {
+            frame.close();
+            throw new Error('Tracker closed');
+          }
           return new Promise((resolveFrame, rejectFrame) => {
             active = { resolve: resolveFrame, reject: rejectFrame };
-            try { worker.postMessage({ frame, timestampMs }, [frame]); }
-            catch (error) { frame.close(); fail(error instanceof Error ? error : new Error('Frame transfer failed')); }
+            try {
+              worker.postMessage({ frame, timestampMs }, [frame]);
+            } catch (error) {
+              frame.close();
+              fail(error instanceof Error ? error : new Error('Frame transfer failed'));
+            }
           });
         },
-        close() { fail(new Error('Tracker closed')); },
+        close() {
+          fail(new Error('Tracker closed'));
+        },
       });
     };
     worker.postMessage({ timestampMs: 0 });

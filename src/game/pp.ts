@@ -1,12 +1,28 @@
-import { type TimedDifficultyAttributes } from 'osu-classes';
 import { BeatmapDecoder } from 'osu-parsers';
-import { StandardRuleset, type StandardDifficultyAttributes } from 'osu-standard-stable';
-import { playPp, type HitStats } from './ppFormula';
+import { StandardRuleset } from 'osu-standard-stable';
+import { playPp, toMapDifficulty, type MapDifficulty, type HitStats } from './ppFormula';
 
 export type { HitStats } from './ppFormula';
 
 const ruleset = new StandardRuleset();
 const decoder = new BeatmapDecoder();
+
+export interface PreparedPp {
+  timed: { time: number; attributes: MapDifficulty }[];
+  full: MapDifficulty;
+}
+
+/** Run in the map worker; the resulting numbers cross the worker boundary. */
+export function preparePp(osuText: string): PreparedPp {
+  const parsed = decoder.decodeFromString(osuText, { parseStoryboard: false });
+  const beatmap = ruleset.applyToBeatmap(parsed);
+  const calculator = ruleset.createDifficultyCalculator(beatmap);
+  const timed = [...calculator.calculateTimed()].map((entry) => ({
+    time: entry.time,
+    attributes: toMapDifficulty(entry.attributes),
+  }));
+  return { timed, full: timed.at(-1)?.attributes ?? toMapDifficulty(calculator.calculate()) };
+}
 
 /**
  * Performance-point calculator for one difficulty.
@@ -20,18 +36,13 @@ const decoder = new BeatmapDecoder();
  * multiplier have no pp equivalent, so values are approximate by design.
  */
 export class PpCounter {
-  private timed: TimedDifficultyAttributes<StandardDifficultyAttributes>[];
-  private full: StandardDifficultyAttributes;
+  private timed: PreparedPp['timed'];
+  private full: MapDifficulty;
 
-  constructor(osuText: string) {
-    const parsed = decoder.decodeFromString(osuText, { parseStoryboard: false });
-    const beatmap = ruleset.applyToBeatmap(parsed);
-    const calculator = ruleset.createDifficultyCalculator(beatmap);
-    this.timed = [...calculator.calculateTimed()];
-    // last timed entry covers the whole map; fall back for empty maps
-    this.full = this.timed.length
-      ? this.timed[this.timed.length - 1].attributes
-      : calculator.calculate();
+  constructor(source: string | PreparedPp) {
+    const prepared = typeof source === 'string' ? preparePp(source) : source;
+    this.timed = prepared.timed;
+    this.full = prepared.full;
   }
 
   /** pp of the full map for the given play stats. */
@@ -41,11 +52,13 @@ export class PpCounter {
 
   /** Live pp: difficulty of the map up to timeMs, with the stats so far. */
   currentAt(timeMs: number, stats: HitStats): number {
-    let attributes: StandardDifficultyAttributes | null = null;
-    for (const t of this.timed) {
-      if (t.time > timeMs) break;
-      attributes = t.attributes;
+    let low = 0,
+      high = this.timed.length;
+    while (low < high) {
+      const mid = (low + high) >>> 1;
+      if (this.timed[mid].time <= timeMs) low = mid + 1;
+      else high = mid;
     }
-    return attributes ? playPp(attributes, stats) : 0;
+    return low ? playPp(this.timed[low - 1].attributes, stats) : 0;
   }
 }

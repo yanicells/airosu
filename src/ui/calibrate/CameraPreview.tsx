@@ -30,7 +30,7 @@ export function CameraPreview({
     <div
       style={{
         position: 'relative',
-        width: 640,
+        width: `min(640px, max(280px, calc((100dvh - 310px) * ${(video.videoWidth || 640) / (video.videoHeight || 480)})))`,
         maxWidth: '90vw',
         aspectRatio: `${video.videoWidth || 640} / ${video.videoHeight || 480}`,
         borderRadius: 12,

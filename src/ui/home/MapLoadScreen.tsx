@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { starterMaps } from '../../beatmap/starterMaps';
 import { useAppState } from '../appState';
 import { useObjectUrl } from '../useObjectUrl';
@@ -15,7 +15,7 @@ export function MapLoadScreen() {
   const { map, mapset, setScreen } = useAppState();
   const library = useLibrary();
   const loader = useMapLoader(library.save);
-  const maps = useMemo(starterMaps, []);
+  const maps = starterMaps;
   const [search, setSearch] = useState('');
   const bgUrl = useObjectUrl(mapset?.preview.background ?? map?.background);
   const visible = maps.filter((song) =>

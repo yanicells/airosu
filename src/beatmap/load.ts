@@ -57,12 +57,12 @@ export class OszArchive {
   }
 
   preview(): MapsetPreview {
-    return this.cachedPreview ??= {
+    return (this.cachedPreview ??= {
       background: backgroundIn(this.files, this.entries),
       difficulties: this.entries
         .map((e) => ({ name: e.difficultyName, stars: starRating(e.osuText) }))
         .sort((a, b) => a.stars - b.stars),
-    };
+    });
   }
 
   load(difficultyName: string): LoadedBeatmap {
@@ -70,7 +70,9 @@ export class OszArchive {
     if (cached) return cached;
     const entry = this.entries.find((e) => e.difficultyName === difficultyName);
     if (!entry) throw new Error(`Difficulty not found: ${difficultyName}`);
-    const decoded = new BeatmapDecoder().decodeFromString(entry.osuText, { parseStoryboard: false });
+    const decoded = new BeatmapDecoder().decodeFromString(entry.osuText, {
+      parseStoryboard: false,
+    });
     const audioBytes = findEntry(this.files, decoded.general.audioFilename);
     if (!audioBytes) throw new Error(`Audio file not found: ${decoded.general.audioFilename}`);
     const bgBytes = findEntry(this.files, decoded.events.backgroundPath ?? '');
@@ -93,7 +95,9 @@ function backgroundIn(files: Record<string, Uint8Array>, entries: OszEntry[]): B
   const decoder = new BeatmapDecoder();
   for (const e of entries) {
     const bgPath = decoder.decodeFromString(e.osuText, {
-      parseStoryboard: false, parseHitObjects: false, parseTimingPoints: false,
+      parseStoryboard: false,
+      parseHitObjects: false,
+      parseTimingPoints: false,
     }).events.backgroundPath;
     const bgBytes = bgPath ? findEntry(files, bgPath) : undefined;
     if (bgBytes) return new Blob([bgBytes.slice().buffer]);

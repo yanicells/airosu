@@ -14,7 +14,10 @@ export function useCalibrationFlow(settings: Settings, initialBox?: CalibrationB
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [session, setSession] = useState<CvSession | null>(null);
   const [countdown, setCountdown] = useState(0);
-  const [box, setBox] = useState<CalibrationBox>(initialBox ?? defaultBox());
+  const [box, setBox] = useState<CalibrationBox>(() => displayBoxToCamera(
+    adjustAimArea(cameraBoxToDisplay(initialBox ?? defaultBox(), settings.sensitivity, settings.mirror), 'move', 0, 0),
+    settings.sensitivity, settings.mirror,
+  ));
   const samples = useRef(0);
   const collecting = useRef(false);
   const connection = useRef(0);
@@ -24,26 +27,45 @@ export function useCalibrationFlow(settings: Settings, initialBox?: CalibrationB
     const id = ++connection.current;
     setStep('loading');
     setError(null);
-    void getCvSession().then((s) => {
-      if (id !== connection.current) return;
-      setSession(s);
-      setStep('intro');
-    }).catch((e) => {
-      if (id !== connection.current) return;
-      setError(e instanceof Error ? e.message : 'Camera unavailable');
-      setStep('error');
-    });
+    void getCvSession()
+      .then((s) => {
+        if (id !== connection.current) return;
+        setSession(s);
+        setStep('intro');
+      })
+      .catch((e) => {
+        if (id !== connection.current) return;
+        setError(e instanceof Error ? e.message : 'Camera unavailable');
+        setStep('error');
+      });
   }, []);
   useEffect(() => {
     connect();
-    return () => { connection.current++; clearInterval(timer.current); collecting.current = false; };
+    return () => {
+      connection.current++;
+      clearInterval(timer.current);
+      collecting.current = false;
+    };
   }, [connect]);
 
-  useEffect(() => session?.cursor.onSample((sample) => {
-    if (collecting.current && sample.camera && isAtCalibrationCorner(
-      sample.camera, box, step === 'corner1' ? 'top-left' : 'bottom-right', settings.sensitivity, settings.mirror,
-    )) samples.current++;
-  }), [session, box, step, settings.sensitivity, settings.mirror]);
+  useEffect(
+    () =>
+      session?.cursor.onSample((sample) => {
+        if (
+          collecting.current &&
+          sample.camera &&
+          isAtCalibrationCorner(
+            sample.camera,
+            box,
+            step === 'corner1' ? 'top-left' : 'bottom-right',
+            settings.sensitivity,
+            settings.mirror,
+          )
+        )
+          samples.current++;
+      }),
+    [session, box, step, settings.sensitivity, settings.mirror],
+  );
 
   const collect = useCallback((corner: 'corner1' | 'corner2') => {
     clearInterval(timer.current);
@@ -67,10 +89,26 @@ export function useCalibrationFlow(settings: Settings, initialBox?: CalibrationB
   }, []);
 
   return {
-    step, error, captureError, session, countdown, box, setBox, connect,
+    step,
+    error,
+    captureError,
+    session,
+    countdown,
+    box,
+    setBox,
+    connect,
     startCorner1: () => collect('corner1'),
     startCorner2: () => collect('corner2'),
-    testArea: () => { setCaptureError(null); setStep('test'); },
-    editArea: () => { clearInterval(timer.current); collecting.current = false; setCountdown(0); setCaptureError(null); setStep('intro'); },
+    testArea: () => {
+      setCaptureError(null);
+      setStep('test');
+    },
+    editArea: () => {
+      clearInterval(timer.current);
+      collecting.current = false;
+      setCountdown(0);
+      setCaptureError(null);
+      setStep('intro');
+    },
   };
 }

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { listDifficulties } from '../beatmap/load';
-import { PpCounter, type HitStats } from './pp';
+import { PpCounter, preparePp, type HitStats } from './pp';
 
 const osz = new Uint8Array(
   readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
@@ -89,4 +89,15 @@ describe('PpCounter', () => {
     // far past the map end, timed attributes equal the full map
     expect(counter.currentAt(10_000_000, ss)).toBeCloseTo(counter.final(ss), 3);
   });
+});
+
+it('preserves pp after worker serialization and out-of-order time lookups', () => {
+  const text = diffs[0].osuText;
+  const reference = new PpCounter(text);
+  const transferred = new PpCounter(structuredClone(preparePp(text)));
+  const stats = ssStats(text);
+  for (const time of [1000000, 1000, 20000, -1, 10000]) {
+    expect(transferred.currentAt(time, stats)).toBe(reference.currentAt(time, stats));
+  }
+  expect(transferred.final(stats)).toBe(reference.final(stats));
 });

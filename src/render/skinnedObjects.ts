@@ -115,8 +115,8 @@ export class SkinnedObjectLayer {
     const r = circleRadius(view.cs);
     const seen = new Set<number>();
 
-    for (const { obj, index, judged } of view.objects) {
-      if (judged || obj.kind === 'spinner') continue;
+    for (const { obj, index } of view.objects) {
+      if (obj.kind === 'spinner') continue;
       seen.add(index);
       let group = this.groups.get(index);
       if (!group) {

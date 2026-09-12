@@ -18,29 +18,46 @@ async function mainThreadTracker(): Promise<HandTracker> {
     async detect(video, timestampMs) {
       return { landmarks: landmarker.detectForVideo(video, timestampMs).landmarks[0] ?? null };
     },
-    close() { landmarker.close(); },
+    close() {
+      landmarker.close();
+    },
   };
 }
 
 export async function createHandTracker(): Promise<HandTracker> {
-  let workerActive = typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined' && typeof createImageBitmap !== 'undefined';
+  let workerActive =
+    typeof Worker !== 'undefined' &&
+    typeof OffscreenCanvas !== 'undefined' &&
+    typeof createImageBitmap !== 'undefined';
   let engine = workerActive
-    ? await createWorkerTracker().catch(() => { workerActive = false; return mainThreadTracker(); })
+    ? await createWorkerTracker().catch(() => {
+        workerActive = false;
+        return mainThreadTracker();
+      })
     : await mainThreadTracker();
   let closed = false;
   return {
-    get usingCpuFallback() { return engine.usingCpuFallback; },
+    get usingCpuFallback() {
+      return engine.usingCpuFallback;
+    },
     async detect(video, timestampMs) {
-      try { return await engine.detect(video, timestampMs); }
-      catch (error) {
+      try {
+        return await engine.detect(video, timestampMs);
+      } catch (error) {
         if (closed || !workerActive) throw error;
         workerActive = false;
         engine.close();
         engine = await mainThreadTracker();
-        if (closed) { engine.close(); throw error; }
+        if (closed) {
+          engine.close();
+          throw error;
+        }
         return engine.detect(video, performance.now());
       }
     },
-    close() { closed = true; engine.close(); },
+    close() {
+      closed = true;
+      engine.close();
+    },
   };
 }

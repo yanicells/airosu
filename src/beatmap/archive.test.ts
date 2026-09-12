@@ -8,7 +8,9 @@ vi.mock('fflate', async (original) => {
   return { ...actual, unzipSync: vi.fn(actual.unzipSync) };
 });
 
-const bytes = new Uint8Array(readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'));
+const bytes = new Uint8Array(
+  readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
+);
 
 describe('reusable map archive', () => {
   it('shares extraction and cached parsing across preview and difficulty switches', () => {
@@ -23,14 +25,20 @@ describe('reusable map archive', () => {
   });
 
   it('never inflates videos or storyboard files', () => {
-    const archive = new OszArchive(zipSync({
-      'map.osu': strToU8('osu file format v14\n[General]\nMode:0\n[Metadata]\nVersion:Easy'),
-      'movie.mp4': new Uint8Array(100),
-      'story.osb': new Uint8Array(100),
-    }));
+    const archive = new OszArchive(
+      zipSync({
+        'map.osu': strToU8('osu file format v14\n[General]\nMode:0\n[Metadata]\nVersion:Easy'),
+        'movie.mp4': new Uint8Array(100),
+        'story.osb': new Uint8Array(100),
+      }),
+    );
     expect(archive.entries).toHaveLength(1);
     const options = vi.mocked(unzipSync).mock.lastCall?.[1];
-    expect(options?.filter?.({ name: 'movie.mp4', size: 100, originalSize: 100, compression: 0 })).toBe(false);
-    expect(options?.filter?.({ name: 'story.osb', size: 100, originalSize: 100, compression: 0 })).toBe(false);
+    expect(
+      options?.filter?.({ name: 'movie.mp4', size: 100, originalSize: 100, compression: 0 }),
+    ).toBe(false);
+    expect(
+      options?.filter?.({ name: 'story.osb', size: 100, originalSize: 100, compression: 0 }),
+    ).toBe(false);
   });
 });

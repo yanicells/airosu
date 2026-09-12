@@ -12,14 +12,20 @@ export function useSongBackground(map: StarterMap): Blob | undefined {
     setBg(undefined);
     let pending = cache.get(map.url);
     if (!pending) {
-      pending = starterBytes(map.url).then(loadMapBackground).catch(() => {
-        cache.delete(map.url);
-        return undefined;
-      });
+      pending = starterBytes(map.url)
+        .then(loadMapBackground)
+        .catch(() => {
+          cache.delete(map.url);
+          return undefined;
+        });
       cache.set(map.url, pending);
     }
-    void pending.then((blob) => { if (!stale) setBg(blob); });
-    return () => { stale = true; };
+    void pending.then((blob) => {
+      if (!stale) setBg(blob);
+    });
+    return () => {
+      stale = true;
+    };
   }, [map.url]);
   return bg;
 }

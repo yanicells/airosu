@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import type { Vec2 } from '../../beatmap/model';
+import { prepareMapPerformance } from '../../beatmap/mapWorker';
 import { peekCvSession } from '../../cv/cvSession';
 import { AudioClock } from '../../game/audioClock';
 import { PpCounter, type HitStats } from '../../game/pp';
@@ -91,6 +92,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
       let stage: Awaited<ReturnType<typeof createStage>>;
       let clock;
       let skin: Skin | null = null;
+      const preparedPp = prepareMapPerformance(map).catch(() => null);
       try {
         skin = await getSkin();
         if (disposed) return;
@@ -121,12 +123,9 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
       }
       clockRef.current = clock;
 
-      try {
-        ppRef.current = new PpCounter(map.rawOsu);
-      } catch (e) {
-        ppRef.current = null; // pp is cosmetic — never block play on it
-        console.warn('pp calculator unavailable for this map:', e);
-      }
+      const prepared = await preparedPp;
+      if (disposed) return;
+      ppRef.current = prepared ? new PpCounter(prepared) : null;
 
       let prevCombo = 0;
       let livePp = 0;
@@ -174,7 +173,6 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
           objects: state.activeObjects.map((i) => ({
             obj: map.objects[i],
             index: i,
-            judged: false,
           })),
           cursor,
           score: state.score.score,
@@ -214,7 +212,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
       clockRef.current = null;
       stageDestroy();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Each play snapshots its settings; a different map starts a new session.
   }, [map]);
 
   // input: tap keys and pause

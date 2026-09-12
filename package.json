@@ -6,12 +6,14 @@
   "packageManager": "pnpm@11.7.0",
   "scripts": {
     "dev": "vite",
-    "build": "pnpm run verify:starter-maps && tsc -b && vite build && pnpm run verify:starter-maps --dist",
-    "lint": "oxlint src convex scripts --ignore-pattern 'convex/_generated/**' --deny-warnings",
+    "build": "pnpm run verify:starter-maps && tsc -b && vite build && pnpm run verify:starter-maps --dist && pnpm run verify:build",
+    "lint": "oxlint src convex scripts vite.config.ts --ignore-pattern 'convex/_generated/**' --deny-warnings",
     "verify:starter-maps": "node scripts/verify-starter-maps.mjs",
     "test": "vitest run",
     "preview": "vite preview",
-    "typecheck:backend": "tsc -p convex/tsconfig.json --noEmit"
+    "typecheck:backend": "tsc -p convex/tsconfig.json --noEmit",
+    "check": "pnpm run lint && pnpm test && pnpm run typecheck:backend && pnpm run build",
+    "verify:build": "node scripts/verify-build.ts"
   },
   "dependencies": {
     "@auth/core": "^0.41.2",

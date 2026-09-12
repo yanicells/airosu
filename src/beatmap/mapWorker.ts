@@ -1,14 +1,19 @@
+import type { PreparedPp } from '../game/pp';
 import type { LoadedBeatmap } from './model';
 import type { MapsetPreview } from './load';
 
 export type MapRequest =
   | { type: 'open' | 'load'; key: number; bytes?: Uint8Array; name?: string }
   | { type: 'background'; bytes: Uint8Array }
-  | { type: 'osu'; text: string };
-export interface OpenMapResult { preview: MapsetPreview; map: LoadedBeatmap }
+  | { type: 'osu'; text: string }
+  | { type: 'pp'; text: string };
+export interface OpenMapResult {
+  preview: MapsetPreview;
+  map: LoadedBeatmap;
+}
 export interface MapResponse {
   id: number;
-  result?: OpenMapResult | LoadedBeatmap | Blob;
+  result?: OpenMapResult | LoadedBeatmap | Blob | PreparedPp;
   error?: string;
 }
 
@@ -29,14 +34,14 @@ function request<T>(operation: MapRequest): Promise<T> {
         if (data.error) {
           currentKey = undefined;
           task?.reject(new Error(data.error));
-        }
-        else task?.resolve(data.result);
+        } else task?.resolve(data.result);
       };
       worker.onerror = () => {
         worker?.terminate();
         worker = undefined;
         currentKey = undefined;
-        for (const task of pending.values()) task.reject(new Error('Map loader failed. Try opening the map again.'));
+        for (const task of pending.values())
+          task.reject(new Error('Map loader failed. Try opening the map again.'));
         pending.clear();
       };
     }
@@ -54,14 +59,29 @@ function request<T>(operation: MapRequest): Promise<T> {
 
 function archiveRequest(bytes: Uint8Array, type: 'open' | 'load', name?: string): MapRequest {
   let key = keys.get(bytes);
-  if (key === undefined) keys.set(bytes, key = ++nextKey);
+  if (key === undefined) keys.set(bytes, (key = ++nextKey));
   const payload = { type, key, bytes: currentKey === key ? undefined : bytes, name };
   currentKey = key;
   return payload;
 }
 
-export const openMapArchive = (bytes: Uint8Array) => request<OpenMapResult>(archiveRequest(bytes, 'open'));
+export const openMapArchive = (bytes: Uint8Array) =>
+  request<OpenMapResult>(archiveRequest(bytes, 'open'));
 export const loadMapDifficulty = (bytes: Uint8Array, name: string) =>
   request<LoadedBeatmap>(archiveRequest(bytes, 'load', name));
 export const loadStandaloneMap = (text: string) => request<LoadedBeatmap>({ type: 'osu', text });
-export const loadMapBackground = (bytes: Uint8Array) => request<Blob | undefined>({ type: 'background', bytes });
+export const loadMapBackground = (bytes: Uint8Array) =>
+  request<Blob | undefined>({ type: 'background', bytes });
+
+const performances = new WeakMap<LoadedBeatmap, Promise<PreparedPp>>();
+export function prepareMapPerformance(map: LoadedBeatmap): Promise<PreparedPp> {
+  let prepared = performances.get(map);
+  if (!prepared) {
+    prepared = request<PreparedPp>({ type: 'pp', text: map.rawOsu }).catch((error) => {
+      performances.delete(map);
+      throw error;
+    });
+    performances.set(map, prepared);
+  }
+  return prepared;
+}
