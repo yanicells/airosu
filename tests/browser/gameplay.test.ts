@@ -18,7 +18,7 @@ Artist: airosu
 ArtistUnicode: airosu
 Creator: Test
 Version: Smoke
-Source: 
+Source:
 Tags: browser smoke
 BeatmapID: 1
 BeatmapSetID: 1
