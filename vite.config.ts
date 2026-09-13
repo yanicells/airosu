@@ -1,11 +1,26 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { ConvexHttpClient } from 'convex/browser';
 import manifest from './game-assets/starter-maps/manifest.json' with { type: 'json' };
 
-export default defineConfig(({ command }) => ({
+export default defineConfig(({ command, mode }) => ({
   plugins: [
     react(),
+    {
+      name: 'require-backend-url',
+      apply: 'build',
+      configResolved(config) {
+        const url = loadEnv(mode, config.envDir, 'VITE_').VITE_CONVEX_URL;
+        try {
+          if (!url?.includes('://')) throw new Error('Expected an absolute URL');
+          // The constructor validates the address without making a request.
+          new ConvexHttpClient(url);
+        } catch (cause) {
+          throw new Error('Set VITE_CONVEX_URL to your Convex deployment URL before building.', { cause });
+        }
+      },
+    },
     {
       name: 'starter-map-manifest',
       resolveId(id) {
@@ -24,5 +39,5 @@ export default defineConfig(({ command }) => ({
     },
   ],
   assetsInclude: ['**/*.osz', '**/*.osk'],
-  test: { environment: 'node' },
+  test: { environment: 'node', include: ['src/**/*.test.{ts,tsx}', 'convex/**/*.test.ts'] },
 }));
