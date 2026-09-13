@@ -32,7 +32,7 @@ export function AuthButton() {
     };
   }, [open]);
 
-  if (me === undefined) return null; // loading — render nothing, no layout shift
+  if (me === undefined) return null;
   if (me === null) {
     return (
       <button type="button" className="btn btn--osu" onClick={() => void signIn('osu')}>

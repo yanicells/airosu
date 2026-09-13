@@ -83,7 +83,7 @@ function GameLoopRunner({
         >
           <p style={{ maxWidth: 420, textAlign: 'center' }}>{fatal}</p>
           <button className="btn" onClick={quit}>
-            Back to home
+            Back to song select
           </button>
         </div>
       )}

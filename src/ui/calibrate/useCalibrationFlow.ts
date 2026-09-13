@@ -9,7 +9,7 @@ import {
 } from '../../cv/calibration';
 import type { CalibrationBox } from '../../cv/calibration';
 import type { CvSession } from '../../cv/cvSession';
-import { getCvSession } from '../../cv/cvSession';
+import { getCvSession, stopCvSession } from '../../cv/cvSession';
 import type { Settings } from '../appState';
 
 export type CalibrationStep = 'loading' | 'error' | 'intro' | 'corner1' | 'corner2' | 'test';
@@ -66,6 +66,15 @@ export function useCalibrationFlow(settings: Settings, initialBox?: CalibrationB
   useEffect(
     () =>
       session?.cursor.onSample((sample) => {
+        if (sample.error) {
+          clearInterval(timer.current);
+          collecting.current = false;
+          stopCvSession();
+          setSession(null);
+          setError(sample.error);
+          setStep('error');
+          return;
+        }
         if (
           collecting.current &&
           sample.camera &&

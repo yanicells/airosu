@@ -10,54 +10,13 @@ export interface HandTracker {
   close(): void;
 }
 
-async function mainThreadTracker(): Promise<HandTracker> {
-  const { createLandmarker } = await import('./handLandmarker');
-  const { landmarker, usingCpuFallback } = await createLandmarker();
-  return {
-    usingCpuFallback,
-    async detect(video, timestampMs) {
-      return { landmarks: landmarker.detectForVideo(video, timestampMs).landmarks[0] ?? null };
-    },
-    close() {
-      landmarker.close();
-    },
-  };
-}
-
 export async function createHandTracker(): Promise<HandTracker> {
-  let workerActive =
-    typeof Worker !== 'undefined' &&
-    typeof OffscreenCanvas !== 'undefined' &&
-    typeof createImageBitmap !== 'undefined';
-  let engine = workerActive
-    ? await createWorkerTracker().catch(() => {
-        workerActive = false;
-        return mainThreadTracker();
-      })
-    : await mainThreadTracker();
-  let closed = false;
-  return {
-    get usingCpuFallback() {
-      return engine.usingCpuFallback;
-    },
-    async detect(video, timestampMs) {
-      try {
-        return await engine.detect(video, timestampMs);
-      } catch (error) {
-        if (closed || !workerActive) throw error;
-        workerActive = false;
-        engine.close();
-        engine = await mainThreadTracker();
-        if (closed) {
-          engine.close();
-          throw error;
-        }
-        return engine.detect(video, performance.now());
-      }
-    },
-    close() {
-      closed = true;
-      engine.close();
-    },
-  };
+  if (
+    typeof Worker === 'undefined' ||
+    typeof OffscreenCanvas === 'undefined' ||
+    typeof createImageBitmap === 'undefined'
+  )
+    throw new Error('Worker-based hand tracking is unavailable in this browser');
+
+  return createWorkerTracker();
 }

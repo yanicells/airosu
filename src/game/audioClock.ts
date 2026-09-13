@@ -36,12 +36,18 @@ export class AudioClock {
     return (this.ctx.currentTime - this.startTime) * 1000 + offsetMs;
   }
 
-  pause(): void {
-    void this.ctx.suspend();
+  get running(): boolean {
+    return !this.stopped && this.ctx.state === 'running';
   }
 
-  resume(): void {
-    void this.ctx.resume();
+  pause(): void {
+    if (!this.stopped) void this.ctx.suspend().catch(() => {});
+  }
+
+  async resume(): Promise<void> {
+    if (this.stopped) throw new Error('Audio has stopped');
+    await this.ctx.resume();
+    if (!this.running) throw new Error('Audio could not resume. Try restarting the map.');
   }
 
   stop(): void {
@@ -54,5 +60,4 @@ export class AudioClock {
     }
     void this.ctx.close();
   }
-
 }

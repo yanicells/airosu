@@ -26,14 +26,14 @@ describe('PpCounter', () => {
   if (!insane || !easy) throw new Error('fixture difficulties changed');
 
   it('computes plausible pp for an SS', () => {
-    const counter = new PpCounter(insane.osuText);
+    const counter = new PpCounter(preparePp(insane.osuText));
     const pp = counter.final(ssStats(insane.osuText));
     expect(pp).toBeGreaterThan(10);
     expect(pp).toBeLessThan(1000);
   });
 
   it('gives less pp for a play with misses', () => {
-    const counter = new PpCounter(insane.osuText);
+    const counter = new PpCounter(preparePp(insane.osuText));
     const ss = ssStats(insane.osuText);
     const missy: HitStats = {
       ...ss,
@@ -45,8 +45,8 @@ describe('PpCounter', () => {
   });
 
   it('gives more pp on harder difficulty for same-shape play', () => {
-    const easyPp = new PpCounter(easy.osuText).final(ssStats(easy.osuText));
-    const insanePp = new PpCounter(insane.osuText).final(ssStats(insane.osuText));
+    const easyPp = new PpCounter(preparePp(easy.osuText)).final(ssStats(easy.osuText));
+    const insanePp = new PpCounter(preparePp(insane.osuText)).final(ssStats(insane.osuText));
     expect(insanePp).toBeGreaterThan(easyPp);
   });
 
@@ -55,7 +55,7 @@ describe('PpCounter', () => {
     // lazer judges this ~0.2 pp; v2 keeps lazer's verdict (× the flat multiplier)
     const beginner = quaverDiffs.find((d) => d.difficultyName.includes('Beginner'));
     if (!beginner) throw new Error('fixture difficulties changed');
-    const counter = new PpCounter(beginner.osuText);
+    const counter = new PpCounter(preparePp(beginner.osuText));
     const play = counter.final({
       count300: 47,
       count100: 6,
@@ -73,14 +73,14 @@ describe('PpCounter', () => {
   it('treats a full per-object combo as a true full combo (no tick penalty)', () => {
     // game combo counts objects; the calculator's max combo counts slider
     // ticks too — a genuine FC must not be punished for the difference
-    const counter = new PpCounter(insane.osuText);
+    const counter = new PpCounter(preparePp(insane.osuText));
     const ss = ssStats(insane.osuText);
     const inflated = { ...ss, maxCombo: ss.maxCombo * 10 };
     expect(counter.final(ss)).toBeCloseTo(counter.final(inflated), 6);
   });
 
   it('live pp is 0 before any object and grows toward final', () => {
-    const counter = new PpCounter(insane.osuText);
+    const counter = new PpCounter(preparePp(insane.osuText));
     const ss = ssStats(insane.osuText);
     expect(counter.currentAt(-10000, ss)).toBe(0);
     const early = counter.currentAt(20_000, {
@@ -99,7 +99,7 @@ describe('PpCounter', () => {
 
 it('preserves pp after worker serialization and out-of-order time lookups', () => {
   const text = diffs[0].osuText;
-  const reference = new PpCounter(text);
+  const reference = new PpCounter(preparePp(text));
   const transferred = new PpCounter(structuredClone(preparePp(text)));
   const stats = ssStats(text);
   for (const time of [1000000, 1000, 20000, -1, 10000]) {

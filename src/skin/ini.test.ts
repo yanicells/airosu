@@ -51,6 +51,10 @@ describe('parseSkinIni', () => {
     expect(ini.hitCircleOverlap).toBe(-2);
   });
 
+  it('falls back when hit-circle overlap is malformed', () => {
+    expect(parseSkinIni('[Fonts]\nHitCircleOverlap: nope').hitCircleOverlap).toBe(-2);
+  });
+
   it('ignores malformed colour lines', () => {
     const ini = parseSkinIni('[Colours]\nCombo1: nonsense\nCombo2: 1,2\nCombo3: 10,20,30');
     expect(ini.comboColors).toEqual([0x0a141e]);

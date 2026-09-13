@@ -40,6 +40,7 @@ export function getCvSession(): Promise<CvSession> {
       video.muted = true;
       video.playsInline = true;
       await video.play();
+      if (current !== generation) throw new Error('Camera session stopped');
       await cursor.start(video);
       if (current !== generation) throw new Error('Camera session stopped');
       cancelPending = null;

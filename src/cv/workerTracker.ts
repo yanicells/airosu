@@ -11,9 +11,11 @@ export function createWorkerTracker(): Promise<HandTracker> {
       type: 'module',
     });
     let closed = false;
+    let frameBusy = false;
     let active:
       { resolve(result: HandTrackerResult): void; reject(error: Error): void } | undefined;
     const fail = (error: Error) => {
+      if (closed) return;
       clearTimeout(timeout);
       closed = true;
       worker.terminate();
@@ -24,9 +26,11 @@ export function createWorkerTracker(): Promise<HandTracker> {
     const timeout = setTimeout(() => fail(new Error('Tracking worker startup timed out')), 30_000);
     worker.onerror = () => fail(new Error('Tracking worker unavailable'));
     worker.onmessage = ({ data }: MessageEvent<TrackerResponse>) => {
+      if (closed) return;
       if (data.type === 'error') return fail(new Error(data.message));
       if (data.type === 'result') {
-        active?.resolve({ landmarks: data.landmarks });
+        if (!active) return;
+        active.resolve({ landmarks: data.landmarks });
         active = undefined;
         return;
       }
@@ -35,27 +39,36 @@ export function createWorkerTracker(): Promise<HandTracker> {
         usingCpuFallback: data.usingCpuFallback,
         async detect(video, timestampMs) {
           if (closed) throw new Error('Tracker closed');
-          if (active) throw new Error('A tracking frame is already in flight');
-          const frame = await createImageBitmap(video);
-          if (closed) {
-            frame.close();
-            throw new Error('Tracker closed');
-          }
-          return new Promise((resolveFrame, rejectFrame) => {
-            active = { resolve: resolveFrame, reject: rejectFrame };
-            try {
-              worker.postMessage({ frame, timestampMs }, [frame]);
-            } catch (error) {
+          if (frameBusy) throw new Error('A tracking frame is already in flight');
+          frameBusy = true;
+          try {
+            const frame = await createImageBitmap(video);
+            if (closed) {
               frame.close();
-              fail(error instanceof Error ? error : new Error('Frame transfer failed'));
+              throw new Error('Tracker closed');
             }
-          });
+            return await new Promise<HandTrackerResult>((resolveFrame, rejectFrame) => {
+              active = { resolve: resolveFrame, reject: rejectFrame };
+              try {
+                worker.postMessage({ frame, timestampMs }, [frame]);
+              } catch (error) {
+                frame.close();
+                fail(error instanceof Error ? error : new Error('Frame transfer failed'));
+              }
+            });
+          } finally {
+            frameBusy = false;
+          }
         },
         close() {
           fail(new Error('Tracker closed'));
         },
       });
     };
-    worker.postMessage({ timestampMs: 0 });
+    try {
+      worker.postMessage({ timestampMs: 0 });
+    } catch (error) {
+      fail(error instanceof Error ? error : new Error('Tracking worker unavailable'));
+    }
   });
 }

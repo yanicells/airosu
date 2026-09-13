@@ -26,8 +26,10 @@ online") — all optional, gameplay requires no sign-in. Initial startup needs n
 ## Browser requirements
 
 - A webcam and camera permission.
-- WebGL and Web Audio (any current Chrome, Edge, Firefox, or Safari).
-- GPU acceleration recommended — hand tracking falls back to CPU with more latency.
+- WebGL, Web Audio, module workers, `OffscreenCanvas`, and `createImageBitmap`.
+- GPU acceleration recommended — hand tracking can fall back to CPU inside its
+  worker. Unsupported worker graphics or tracking failures show an error instead
+  of running inference on the UI thread.
 
 ## Local development
 
@@ -39,6 +41,8 @@ pnpm run lint                 # oxlint
 pnpm run build                # production build (dist/)
 pnpm run verify:starter-maps   # starter-map manifest/rights audit
 pnpm run check                # lint, tests, backend types, build and bundle budget
+pnpm exec playwright install chromium
+pnpm run test:browser         # browser checks against the production build
 ```
 
 The online backend lives in `convex/`. `pnpm dlx convex dev` creates `.env.local`
@@ -46,6 +50,9 @@ The online backend lives in `convex/`. `pnpm dlx convex dev` creates `.env.local
 (callback `https://<deployment>.convex.site/api/auth/callback/osu`) with
 `AUTH_OSU_ID`, `AUTH_OSU_SECRET`, and `SITE_URL` set via `pnpm dlx convex env set`.
 Development and production use separate osu! OAuth applications.
+Production builds require a valid `VITE_CONVEX_URL`; missing configuration fails
+the build instead of shipping a blank page. CI uses a placeholder URL and blocks
+backend connections in browser tests. Browser tests use synthetic camera input.
 
 ## Architecture
 
@@ -53,8 +60,7 @@ Five client modules with hard boundaries: `src/cv/` (camera → smoothed cursor)
 `src/beatmap/` (.osz → internal model, IndexedDB library), `src/game/` (pure-TS
 clock/judging/scoring/pp), `src/render/` (PixiJS stage), `src/ui/` (React shell +
 react-router pages). Map extraction, difficulty preparation, and supported hand
-tracking run in workers; camera frames stay on-device. Hand tracking has a main-thread
-fallback for browsers without worker graphics support. The Convex backend (`convex/`) handles osu!-only auth, map
+tracking run in workers; camera frames stay on-device. The Convex backend (`convex/`) handles osu!-only auth, map
 registration (`.osu` text only), server-validated score submission with
 authoritative pp, aggregate-backed leaderboards, and profiles. See
 `docs/superpowers/specs/2026-07-04-airosu-design.md` and

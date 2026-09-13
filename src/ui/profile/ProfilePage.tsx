@@ -13,13 +13,16 @@ export function ProfilePage() {
   const osuId = Number(params.osuId);
   const profile = useQuery(api.profile.byOsuId, Number.isNaN(osuId) ? 'skip' : { osuId });
   const syncOsuStats = useAction(api.osuApi.syncOsuStats);
-  const syncedRef = useRef(false);
+  const syncedRef = useRef<number | undefined>(undefined);
 
   const syncedAt = profile?.user.osuStatsSyncedAt;
   useEffect(() => {
-    if (!profile || syncedRef.current) return;
-    if (syncedAt !== undefined && Date.now() - syncedAt < DAY_MS) return;
-    syncedRef.current = true;
+    if (!profile || syncedRef.current === osuId) return;
+    if (syncedAt !== undefined && Date.now() - syncedAt < DAY_MS) {
+      syncedRef.current = osuId;
+      return;
+    }
+    syncedRef.current = osuId;
     void syncOsuStats({ osuId }).catch(() => {});
   }, [profile, syncedAt, osuId, syncOsuStats]);
 

@@ -124,13 +124,16 @@ export function SelectMenu({
           data-align={align}
           role="listbox"
           aria-label={ariaLabel}
+          aria-activedescendant={activeIndex >= 0 ? `${listboxId}-${activeIndex}` : undefined}
           tabIndex={-1}
           onKeyDown={onListboxKeyDown}
         >
           {options.map((option, index) => (
             <button
               key={option.value}
+              id={`${listboxId}-${index}`}
               type="button"
+              tabIndex={-1}
               className="select-menu__option"
               role="option"
               aria-selected={option.value === value}

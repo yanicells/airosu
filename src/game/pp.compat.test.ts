@@ -4,7 +4,7 @@ import { ScoreInfo } from 'osu-classes';
 import { BeatmapDecoder } from 'osu-parsers';
 import { StandardRuleset } from 'osu-standard-stable';
 import { OszArchive, listDifficulties } from '../beatmap/load';
-import { PpCounter, type HitStats } from './pp';
+import { PpCounter, preparePp, type HitStats } from './pp';
 
 const kira = new Uint8Array(
   readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
@@ -80,9 +80,9 @@ describe('airosu PP v2 fixtures', () => {
     const diffs = listDifficulties(kira);
     const easy = diffs.find((d) => d.difficultyName.includes("Rocket's Easy"))!;
     const insane = diffs.find((d) => d.difficultyName.includes("Mamayu's Insane"))!;
-    expect(new PpCounter(easy.osuText).final(perfectStats(kira, easy.difficultyName)))
+    expect(new PpCounter(preparePp(easy.osuText)).final(perfectStats(kira, easy.difficultyName)))
       .toBeCloseTo(11.165093312671301, 8);
-    expect(new PpCounter(insane.osuText).final(perfectStats(kira, insane.difficultyName)))
+    expect(new PpCounter(preparePp(insane.osuText)).final(perfectStats(kira, insane.difficultyName)))
       .toBeCloseTo(350.89074684163637, 8);
   });
 
@@ -90,6 +90,6 @@ describe('airosu PP v2 fixtures', () => {
     const beginner = listDifficulties(quaver)
       .find((d) => d.difficultyName.includes("Akitoshi's Beginner"))!;
     const play = { count300: 47, count100: 6, count50: 0, countMiss: 5, maxCombo: 19 };
-    expect(new PpCounter(beginner.osuText).final(play)).toBeCloseTo(0.4108497141346454, 8);
+    expect(new PpCounter(preparePp(beginner.osuText)).final(play)).toBeCloseTo(0.4108497141346454, 8);
   });
 });

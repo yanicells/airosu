@@ -3,6 +3,7 @@ import type { MapsetPreview } from '../beatmap/load';
 import type { LoadedBeatmap } from '../beatmap/model';
 import type { CalibrationBox } from '../cv/calibration';
 import type { CursorAnchor } from '../cv/cursorPoint';
+import { normalizeCapturedKey } from './shared/keyBindings';
 
 /** A parsed .osz the player is browsing; survives screen changes. */
 export interface Mapset {
@@ -90,7 +91,31 @@ export function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultSettings;
-    return { ...defaultSettings, ...JSON.parse(raw) };
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return defaultSettings;
+    const saved = parsed as Record<string, unknown>;
+    const number = (key: keyof Settings, min: number, max: number): number => {
+      const value = saved[key];
+      return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
+        ? value : defaultSettings[key] as number;
+    };
+    const keys = Array.isArray(saved.tapKeys)
+      ? [...new Set(saved.tapKeys.flatMap((key: unknown) => {
+          const normalized = typeof key === 'string' ? normalizeCapturedKey(key) : null;
+          return normalized ? [normalized] : [];
+        }))] : [];
+    return {
+      sensitivity: number('sensitivity', 0.5, 2),
+      smoothing: number('smoothing', 0, 1),
+      forgiveness: number('forgiveness', 1, 2.5),
+      audioOffsetMs: number('audioOffsetMs', -200, 200),
+      volume: number('volume', 0, 1),
+      mirror: typeof saved.mirror === 'boolean' ? saved.mirror : defaultSettings.mirror,
+      inputMode: saved.inputMode === 'manual' ? 'manual' : defaultSettings.inputMode,
+      visualMode: saved.visualMode === 'focus' ? 'focus' : defaultSettings.visualMode,
+      cursorAnchor: saved.cursorAnchor === 'index' ? 'index' : defaultSettings.cursorAnchor,
+      tapKeys: keys.length ? keys : defaultSettings.tapKeys,
+    };
   } catch {
     return defaultSettings;
   }
