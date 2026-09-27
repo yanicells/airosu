@@ -5,7 +5,7 @@
   --ov-deep: #251f21;
   --ov-row: #3b3034;
   --ov-dim: #d0bfc5;
-  --ov-accent: #ff66aa;
+  --ov-accent: var(--lz-pink);
   height: 100dvh;
   overflow-y: auto;
   display: flex;
@@ -339,7 +339,7 @@
   color: var(--ov-dim);
 }
 .play-row__version {
-  color: #ffcc22;
+  color: var(--lz-yellow);
   font-weight: 600;
 }
 .play-row__status {
@@ -357,7 +357,7 @@
 }
 .play-row__stat {
   font-size: 14px;
-  color: #ffcc22;
+  color: var(--lz-yellow);
   font-variant-numeric: tabular-nums;
 }
 .play-row__combo {

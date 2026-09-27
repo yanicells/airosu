@@ -292,7 +292,7 @@
   align-self: stretch;
   display: grid;
   place-items: center;
-  color: #1c1c1c;
+  color: var(--lz-bg);
   font-size: 17px;
   font-weight: 800;
   clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%);

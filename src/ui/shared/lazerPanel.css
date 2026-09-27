@@ -1,10 +1,7 @@
 /* osu!lazer settings-style side panel, shared by settings and calibration. */
 .lz-panel {
-  --lz-purple: #8866ee;
-  --lz-purple-dark: #6644cc;
-  --lz-control: #212227;
   position: relative;
-  background: #2f3036;
+  background: var(--lz-panel);
   color: #fff;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -33,7 +30,7 @@
   align-items: center;
   margin: 0 -30px;
   padding: 14px 30px;
-  background: #2f3036;
+  background: var(--lz-panel);
   border-bottom: 4px solid #25262b;
 }
 .lz-search input {
@@ -52,7 +49,7 @@
   box-shadow: inset 0 0 0 2px #8866ee88;
 }
 .lz-search input::placeholder {
-  color: #b9bac2;
+  color: var(--lz-dim);
 }
 .lz-search svg {
   margin-left: -42px;
@@ -87,11 +84,11 @@
   font-weight: 500;
 }
 .setting-label output {
-  color: #c9c1f2;
+  color: var(--lz-soft);
   font-variant-numeric: tabular-nums;
 }
 .lz-panel .setting-hint {
-  color: #b9bac2;
+  color: var(--lz-dim);
   font-size: 13px;
   font-weight: 500;
 }
@@ -164,60 +161,6 @@
   outline-offset: 3px;
 }
 
-/* dropdowns and key chips on lazer's dark controls */
-.lz-panel .select-menu {
-  min-width: 0;
-  width: 100%;
-}
-.lz-panel .select-menu__trigger {
-  min-height: 48px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--lz-control);
-  box-shadow: none;
-  transform: none;
-  font-size: 16px;
-  font-weight: 500;
-}
-.lz-panel .select-menu__trigger:hover,
-.lz-panel .select-menu[data-open='true'] .select-menu__trigger {
-  transform: none;
-  background: #292a30;
-  box-shadow: none;
-}
-.lz-panel .select-menu__chevron {
-  color: #fff;
-}
-.lz-panel .select-menu__list {
-  background: var(--lz-control);
-  border-color: #ffffff14;
-  border-radius: 6px;
-}
-.lz-panel .select-menu__option[data-active='true'] {
-  background: #ffffff14;
-}
-.lz-panel .key-editor {
-  width: 100%;
-  align-items: stretch;
-}
-.lz-panel .key-editor__chips {
-  justify-content: flex-start;
-  background: var(--lz-control);
-  border: 0;
-  border-radius: 6px;
-  box-shadow: none;
-}
-.lz-panel .key-chip {
-  background: #3a3b44;
-  border-color: #ffffff1a;
-}
-.lz-panel .key-editor__capture {
-  color: #c9c1f2;
-  background: transparent;
-  border-color: var(--lz-purple);
-}
-
 /* rounded pill buttons with lazer's triangle texture */
 .lz-button {
   width: 100%;
@@ -233,7 +176,7 @@
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='60'%3E%3Cpath d='M60 6 88 56H32Z' fill='none' stroke='%23fff' stroke-opacity='.18' stroke-width='2'/%3E%3Cpath d='M190 20 214 62H166Z' fill='none' stroke='%23fff' stroke-opacity='.14' stroke-width='2'/%3E%3C/svg%3E")
       0 50% / 260px 100% repeat-x,
-    var(--lz-purple-dark, #6644cc);
+    var(--lz-purple-dark, var(--lz-purple-dark));
   transition: filter 0.15s;
 }
 .lz-button:hover:not(:disabled) {
@@ -247,7 +190,7 @@
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='60'%3E%3Cpath d='M60 6 88 56H32Z' fill='none' stroke='%23fff' stroke-opacity='.25' stroke-width='2'/%3E%3C/svg%3E"),
       0 50% / 260px 100% repeat-x,
-    #eeaa00;
+    var(--lz-orange);
 }
 .lz-button--ghost {
   background: #ffffff14;

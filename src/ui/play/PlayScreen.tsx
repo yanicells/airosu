@@ -3,6 +3,7 @@ import { peekCvSession } from '../../cv/cvSession';
 import { useAppState } from '../appState';
 import { GameplayMenu, PauseOverlay } from './PauseOverlay';
 import { useGameLoop } from './useGameLoop';
+import { lz } from '../shared/palette';
 
 export function PlayScreen() {
   const { settings, setScreen } = useAppState();
@@ -31,7 +32,7 @@ export function PlayScreen() {
       retries={restartKey}
       onRestart={() => setRestartKey((k) => k + 1)}
     >
-      <div style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--bg)' }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--lz-bg)' }}>
         <div
           ref={videoHolderRef}
           style={{
@@ -75,7 +76,7 @@ function GameLoopRunner({
           title="failed"
           tone="fail"
           description={fatal}
-          buttons={[{ label: 'Quit', color: '#aa1b27', onClick: quit }]}
+          buttons={[{ label: 'Quit', color: lz.red, onClick: quit }]}
         />
       )}
       {phase === 'countdown' && (
@@ -89,7 +90,7 @@ function GameLoopRunner({
             fontSize: 110,
             fontWeight: 800,
             fontStyle: 'italic',
-            color: 'var(--pink)',
+            color: lz.pink,
             textShadow: '0 0 40px rgba(255, 102, 170, 0.5)',
             zIndex: 10,
             pointerEvents: 'none',
