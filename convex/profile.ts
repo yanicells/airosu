@@ -69,6 +69,7 @@ export const byOsuId = query({
         osuPp: user.osuPp,
         osuGlobalRank: user.osuGlobalRank,
         osuStatsSyncedAt: user.osuStatsSyncedAt,
+        joinedAt: user._creationTime,
       },
       ...ranks,
       topPlays,

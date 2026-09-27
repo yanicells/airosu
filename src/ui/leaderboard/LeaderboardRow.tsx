@@ -16,9 +16,13 @@ export function LeaderboardRow({ row }: { row: BoardRow }) {
   return (
     <tr className="board__row">
       <td className="board__rank">#{row.rank}</td>
-      <td>
+      <td className="board__left">
         <span className="board__player">
-          {row.image && <img src={row.image} alt="" width={28} height={28} />}
+          {row.image ? (
+            <img src={row.image} alt="" width={34} height={34} loading="lazy" />
+          ) : (
+            <span className="board__avatar" />
+          )}
           {row.countryCode && (
             <span title={row.countryCode}>{flagEmoji(row.countryCode)}</span>
           )}
@@ -29,9 +33,9 @@ export function LeaderboardRow({ row }: { row: BoardRow }) {
           )}
         </span>
       </td>
-      <td className="board__num">{(row.hitAccuracy * 100).toFixed(2)}%</td>
-      <td className="board__num">{row.playCount}</td>
-      <td className="board__num board__pp">{Math.round(row.totalPp).toLocaleString()}</td>
+      <td>{(row.hitAccuracy * 100).toFixed(2)}%</td>
+      <td>{row.playCount.toLocaleString()}</td>
+      <td className="board__pp">{Math.round(row.totalPp).toLocaleString()}</td>
     </tr>
   );
 }
