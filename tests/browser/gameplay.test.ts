@@ -195,7 +195,7 @@ async function uploadMap(page: Page, name: string, text: string): Promise<void> 
 
 async function openStandaloneMap(page: Page, start = true): Promise<void> {
   await page.getByRole('button', { name: 'Open main menu' }).click();
-  await page.getByRole('button', { name: /Play Find your next beat/ }).click();
+  await page.getByRole('button', { name: 'play', exact: true }).click();
   await uploadMap(page, 'browser-smoke.osu', OSU_MAP);
   await expect(page.getByRole('heading', { name: 'Browser Smoke' })).toBeVisible();
   await page.locator('input[type="file"][accept="audio/*"]').setInputFiles({
@@ -238,9 +238,9 @@ test.afterEach(async ({ page }) => {
 });
 
 test('starts production build and supports custom SelectMenu keyboard semantics', async ({ page }) => {
-  await expect(page.getByText('A little rhythm. A little motion.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open main menu' })).toBeVisible();
   await openStandaloneMap(page, false);
+  await page.getByRole('button', { name: 'Options' }).click();
   const trigger = page.getByRole('button', { name: 'Input mode' });
   await trigger.press('ArrowDown');
   const listbox = page.getByRole('listbox', { name: 'Input mode' });
@@ -256,7 +256,7 @@ test('starts production build and supports custom SelectMenu keyboard semantics'
 
 test('does not let a slow AudioPicker read replace a newer standalone map', async ({ page }) => {
   await page.getByRole('button', { name: 'Open main menu' }).click();
-  await page.getByRole('button', { name: /Play Find your next beat/ }).click();
+  await page.getByRole('button', { name: 'play', exact: true }).click();
   await uploadMap(page, 'browser-smoke.osu', OSU_MAP);
   await expect(page.getByRole('heading', { name: 'Browser Smoke' })).toBeVisible();
   await page.locator('input[type="file"][accept="audio/*"]').setInputFiles({
@@ -293,7 +293,7 @@ test('pauses on an interrupted native AudioContext and resumes its preserved clo
   await expect
     .poll(() => page.evaluate(() => window.__airosuAudio.contexts.at(-1)?.state))
     .toBe('suspended');
-  await expect(page.getByRole('heading', { name: 'Take a breath.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'paused' })).toBeVisible();
   const pausedAt = await page.evaluate(
     () => window.__airosuAudio.contexts.at(-1)?.currentTime ?? 0,
   );
@@ -301,8 +301,8 @@ test('pauses on an interrupted native AudioContext and resumes its preserved clo
     .poll(() => page.evaluate(() => window.__airosuAudio.contexts.at(-1)?.currentTime ?? 0))
     .toBeLessThan(pausedAt + 0.05);
 
-  await page.getByRole('button', { name: /Resume Return to the beatmap/ }).click();
-  await expect(page.getByRole('heading', { name: 'Take a breath.' })).toBeHidden();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByRole('heading', { name: 'paused' })).toBeHidden();
   await expect
     .poll(() => page.evaluate(() => window.__airosuAudio.contexts.at(-1)?.state))
     .toBe('running');
@@ -319,5 +319,5 @@ test('surfaces a terminal hand-tracking error during gameplay', async ({ page })
     window.__airosuTracking.fail();
   });
   await expect(page.getByText('Synthetic tracking failure')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Back to (home|song select)/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Quit', exact: true })).toBeVisible();
 });

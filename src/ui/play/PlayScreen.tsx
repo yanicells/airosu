@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { peekCvSession } from '../../cv/cvSession';
 import { useAppState } from '../appState';
-import { PauseOverlay } from './PauseOverlay';
+import { GameplayMenu, PauseOverlay } from './PauseOverlay';
 import { useGameLoop } from './useGameLoop';
 
 export function PlayScreen() {
@@ -28,6 +28,7 @@ export function PlayScreen() {
     <GameLoopRunner
       key={restartKey}
       stageHostRef={stageHostRef}
+      retries={restartKey}
       onRestart={() => setRestartKey((k) => k + 1)}
     >
       <div style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--bg)' }}>
@@ -55,10 +56,12 @@ export function PlayScreen() {
 
 function GameLoopRunner({
   stageHostRef,
+  retries,
   onRestart,
   children,
 }: {
   stageHostRef: React.RefObject<HTMLDivElement | null>;
+  retries: number;
   onRestart: () => void;
   children: React.ReactNode;
 }) {
@@ -68,24 +71,12 @@ function GameLoopRunner({
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       {children}
       {fatal && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 16,
-            background: '#111',
-            zIndex: 20,
-          }}
-        >
-          <p style={{ maxWidth: 420, textAlign: 'center' }}>{fatal}</p>
-          <button className="btn" onClick={quit}>
-            Back to song select
-          </button>
-        </div>
+        <GameplayMenu
+          title="failed"
+          tone="fail"
+          description={fatal}
+          buttons={[{ label: 'Quit', color: '#aa1b27', onClick: quit }]}
+        />
       )}
       {phase === 'countdown' && (
         <div
@@ -110,7 +101,7 @@ function GameLoopRunner({
         </div>
       )}
       {phase === 'paused' && (
-        <PauseOverlay onResume={resume} onRestart={onRestart} onQuit={quit} />
+        <PauseOverlay retries={retries} onResume={resume} onRestart={onRestart} onQuit={quit} />
       )}
     </div>
   );

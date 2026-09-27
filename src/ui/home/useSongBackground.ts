@@ -5,9 +5,11 @@ import { starterBytes } from '../../beatmap/starterBytes';
 
 const cache = new Map<string, Promise<Blob | undefined>>();
 
+/** Fallback artwork loader for starter maps whose background wasn't extracted at build time. */
 export function useSongBackground(map: StarterMap): Blob | undefined {
   const [bg, setBg] = useState<Blob>();
   useEffect(() => {
+    if (map.backgroundUrl) return;
     let stale = false;
     setBg(undefined);
     let pending = cache.get(map.url);
@@ -26,6 +28,6 @@ export function useSongBackground(map: StarterMap): Blob | undefined {
     return () => {
       stale = true;
     };
-  }, [map.url]);
+  }, [map.url, map.backgroundUrl]);
   return bg;
 }

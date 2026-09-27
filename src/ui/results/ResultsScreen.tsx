@@ -1,25 +1,42 @@
+import { useLayoutEffect, useRef } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { useSubmitScore } from '../../online/useSubmitScore';
 import { useAppState } from '../appState';
 import { useObjectUrl } from '../useObjectUrl';
 import { GameHeader } from '../shared/GameHeader';
-import { PersonalScores } from '../shared/PersonalScores';
-import { AccuracyRing } from './AccuracyRing';
-import { JudgmentGrid } from './JudgmentGrid';
-import { MapLeaderboard } from './MapLeaderboard';
+import { ChevronLeftIcon, RetryIcon, TargetIcon } from '../shared/icons';
+import { ResultCard } from './ResultCard';
+import { ScoreCard } from './ScoreCard';
 import { SubmitPanel } from './SubmitPanel';
-import { grade } from './grade';
-import { useCountUp } from './useCountUp';
+import { placeCurrent } from './placement';
 import './results.css';
 
+/** osu!lazer results: the play's expanded card centred in a strip of the map's other top plays. */
 export function ResultsScreen() {
   const { map, mapset, lastResult, setScreen } = useAppState();
   const me = useQuery(api.users.me);
   const submission = useSubmitScore();
+  const board = useQuery(
+    api.scores.mapLeaderboard,
+    submission.mapId ? { mapId: submission.mapId } : 'skip',
+  );
   const bgUrl = useObjectUrl(map?.background);
-  const shownScore = useCountUp(lastResult?.score ?? 0);
-  const shownPp = useCountUp(Math.round(lastResult?.pp ?? 0), 1400);
+  const stripRef = useRef<HTMLDivElement>(null);
+  const { before, after } = placeCurrent(
+    board ?? [],
+    lastResult?.pp ?? 0,
+    submission.result?.isBest ? me?.osuId : undefined,
+  );
+
+  // Keep the current play centred whenever cards load around it.
+  useLayoutEffect(() => {
+    const strip = stripRef.current;
+    const card = strip?.querySelector<HTMLElement>('.result-card');
+    if (!strip || !card) return;
+    strip.scrollLeft = card.offsetLeft + card.offsetWidth / 2 - strip.clientWidth / 2;
+  }, [before.length, after.length]);
+
   if (!lastResult || !map)
     return (
       <div className="screen-center">
@@ -29,72 +46,50 @@ export function ResultsScreen() {
         </button>
       </div>
     );
-  const stars = mapset?.preview.difficulties.find(
-    (difficulty) => difficulty.name === map.meta.version,
-  )?.stars;
+  const stars = mapset?.preview.difficulties.find((d) => d.name === map.meta.version)?.stars;
   return (
     <div className="lazer-shell result-scene">
       {bgUrl && <div className="result-backdrop" style={{ backgroundImage: `url("${bgUrl}")` }} />}
-      <GameHeader title="Results" />
-      <main className="result-layout">
-        <section className="lazer-result-card">
-          <header className="result-player">
-            {me?.image ? <img src={me.image} alt="" /> : <span className="result-avatar">◉</span>}
-            <strong>{me?.name ?? 'Guest player'}</strong>
-            <small>
-              {lastResult.inputMode} · {lastResult.cursorAnchor} · {lastResult.forgiveness}×
-              forgiveness
-            </small>
-          </header>
-          <div className="result-song-title">
-            <h1>{map.meta.title}</h1>
-            <p>{map.meta.artist}</p>
-          </div>
-          <AccuracyRing counts={lastResult.counts} grade={grade(lastResult.accuracy)} />
-          <div className="result-big-score">{shownScore.toLocaleString()}</div>
-          <div className="result-difficulty">
-            <span>★ {stars?.toFixed(2) ?? '—'}</span>
-            <strong>{map.meta.version}</strong>
-            <small>mapped by {map.meta.creator}</small>
-          </div>
-          <div className="result-metrics">
-            <Stat label="Accuracy" value={`${(lastResult.accuracy * 100).toFixed(2)}%`} />
-            <Stat label="Max combo" value={`${lastResult.maxCombo}×`} />
-            <Stat label="Performance" value={`${shownPp} pp`} />
-          </div>
-          <JudgmentGrid counts={lastResult.counts} />
-          <SubmitPanel submission={submission} />
-        </section>
-        <aside className="result-comparison">
-          <PersonalScores
-            osuText={map.rawOsu}
-            mapId={submission.mapId}
-            excludePlayId={lastResult.playId}
-            cards
-          />
-          <MapLeaderboard mapId={submission.mapId} />
-        </aside>
+      <GameHeader />
+      <main
+        ref={stripRef}
+        className="result-strip"
+        onWheel={(event) => {
+          if (Math.abs(event.deltaY) > Math.abs(event.deltaX))
+            event.currentTarget.scrollLeft += event.deltaY;
+        }}
+      >
+        {before.map((row, index) => (
+          <ScoreCard key={row.scoreId} row={row} rank={index + 1} />
+        ))}
+        <ResultCard
+          result={lastResult}
+          map={map}
+          stars={stars}
+          player={{ name: me?.name ?? 'Guest', image: me?.image }}
+        />
+        {after.map((row, index) => (
+          <ScoreCard key={row.scoreId} row={row} rank={before.length + index + 2} />
+        ))}
       </main>
-      <footer className="result-footer">
+      <footer className="lazer-footer result-footer">
         <button className="lazer-back" onClick={() => setScreen('songs')}>
-          ‹ <span>Song select</span>
+          <ChevronLeftIcon size={22} />
+          <span>Back</span>
         </button>
-        <button className="result-retry" onClick={() => setScreen('play')}>
-          ↻ <span>Try again</span>
+        <button className="result-retry" onClick={() => setScreen('play')} aria-label="Retry">
+          <RetryIcon size={24} />
         </button>
-        <button className="btn" onClick={() => setScreen('calibrate')}>
-          Recalibrate
+        <button
+          className="result-recalibrate"
+          onClick={() => setScreen('calibrate')}
+          aria-label="Recalibrate"
+          title="Recalibrate"
+        >
+          <TargetIcon size={22} />
         </button>
+        <SubmitPanel submission={submission} />
       </footer>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <small>{label}</small>
-      <strong>{value}</strong>
     </div>
   );
 }

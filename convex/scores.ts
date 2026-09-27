@@ -124,6 +124,8 @@ export const mapLeaderboard = query({
         const u = await ctx.db.get(s.userId);
         return {
           scoreId: s._id,
+          score: s.score,
+          counts: { 300: s.count300, 100: s.count100, 50: s.count50, 0: s.countMiss },
           pp: s.pp,
           accuracy: s.accuracy,
           grade: s.grade,

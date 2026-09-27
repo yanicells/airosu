@@ -1,293 +1,338 @@
 .result-scene {
-  background: radial-gradient(ellipse at 50% 30%, #634656, #322b39 45%, #17242a);
+  --card-w: clamp(340px, 28vw, 480px);
+  --avatar: clamp(64px, 11vh, 110px);
+  --ring: clamp(160px, 27vh, 300px);
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 35%, #4a3346, #221c26 60%, #141216);
 }
 .result-backdrop {
   position: absolute;
-  inset: 0;
+  inset: -40px;
   background-position: center;
   background-size: cover;
-  filter: blur(25px);
-  opacity: 0.28;
+  filter: blur(22px) brightness(0.45);
   z-index: -1;
 }
-.result-layout {
-  display: grid;
-  grid-template-columns: minmax(350px, 470px) minmax(0, 1fr);
-  gap: 36px;
-  width: min(1250px, 94%);
-  margin: 60px auto 40px;
-  flex: 1;
-  align-items: start;
-}
-.lazer-result-card {
-  background: linear-gradient(145deg, #547f77dc, #344b48f2 55%, #2a3338);
-  border-radius: 28px;
-  box-shadow: 0 25px 70px #0004;
-  padding: 0 26px 26px;
-  text-align: center;
-  border: 1px solid #ffffff10;
-}
-.result-player {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 6px;
+
+/* ── horizontal strip ─────────────────────────────────── */
+.result-strip {
   position: relative;
-  margin-top: -35px;
-}
-.result-player img,
-.result-avatar {
-  width: 76px;
-  height: 76px;
-  object-fit: cover;
-  border-radius: 18px;
-  border: 3px solid #ffffffbb;
-  box-shadow: 0 4px 20px #0004;
-}
-.result-avatar {
-  display: grid;
-  place-items: center;
-  background: #d95194;
-  font-size: 40px;
-}
-.result-player strong {
-  font-size: 15px;
-}
-.result-player small {
-  font-size: 10px;
-  color: #cfddd7;
-  text-transform: capitalize;
-}
-.result-song-title {
-  margin: 23px 0 5px;
-}
-.result-song-title h1 {
-  font-size: 25px;
-  line-height: 1.2;
-  margin: 0 0 6px;
-}
-.result-song-title p {
-  margin: 0;
-  font-size: 14px;
-  color: #d3dfda;
-}
-.lazer-result-card .results-ring {
-  margin: 18px auto 0;
-}
-.result-big-score {
-  font-size: clamp(35px, 4vw, 58px);
-  font-weight: 300;
-  letter-spacing: 1px;
-  font-variant-numeric: tabular-nums;
-  margin: 10px 0 16px;
-}
-.result-difficulty {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: 6px;
-}
-.result-difficulty > span {
-  font-size: 12px;
-  font-weight: 800;
-  border-radius: 20px;
-  background: #f358a3;
-  padding: 4px 13px;
-  color: #31182a;
-}
-.result-difficulty strong {
-  font-size: 15px;
-}
-.result-difficulty small {
-  font-size: 11px;
-  color: #c3d0cb;
-}
-.result-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 3px;
-  margin: 25px -12px 15px;
-}
-.result-metrics > div {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.result-metrics small {
-  font-size: 9px;
-  text-transform: uppercase;
-  background: #182725a8;
-  border-radius: 10px;
-  padding: 4px;
-}
-.result-metrics strong {
-  font-size: 19px;
-  font-weight: 400;
-}
-.lazer-result-card .results-judgments {
-  margin: 15px 0;
-}
-.lazer-result-card .submit-panel {
-  flex-wrap: wrap;
-  font-size: 11px;
-}
-.result-comparison {
-  min-width: 0;
-  padding-top: 10px;
-}
-.result-comparison .personal-scores {
-  margin: 0;
-}
-.result-comparison .scores-heading {
-  background: #283637b0;
-  border-radius: 12px 12px 0 0;
-}
-.personal-scores--cards .score-history {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  max-height: 600px;
-  overflow: auto;
-}
-.personal-scores--cards .history-play {
-  display: flex;
-  flex-direction: column;
-  padding: 22px 12px;
-  background: linear-gradient(#44564ee6, #28312fea);
-  border-radius: 18px;
-  gap: 18px;
-  text-align: center;
-}
-.personal-scores--cards .score-grade {
-  font-size: 48px;
-}
-.personal-scores--cards .history-main strong {
-  font-size: 27px;
-}
-.personal-scores--cards .history-numbers {
-  text-align: center;
-  gap: 8px;
-}
-.personal-scores--cards .history-mode {
-  font-size: 9px;
-  margin-top: auto;
-}
-.result-comparison .map-board {
-  margin-top: 30px;
-  background: #15292cbf;
-  padding: 18px;
-  border-radius: 12px;
-}
-.result-footer {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-  min-height: 72px;
-  background: #20292fec;
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-  padding-right: 25px;
-}
-.result-retry {
-  display: flex;
-  justify-content: center;
   align-items: center;
   gap: 16px;
-  flex: 1;
-  max-width: 550px;
-  margin-left: auto;
-  background: #98bb16;
-  border: 0;
-  border-radius: 9px;
-  padding: 12px;
-  color: white;
-  font-size: 26px;
-  cursor: pointer;
-}
-.result-retry span {
-  font-size: 16px;
-  font-weight: 700;
-}
-.result-footer > .btn {
-  margin-right: auto;
-  font-size: 12px;
-}
-@media (max-width: 850px) {
-  .result-layout {
-    grid-template-columns: 1fr;
-    max-width: 580px;
-    gap: 25px;
-  }
-  .result-comparison {
-    padding: 0;
-  }
-  .result-big-score {
-    font-size: 50px;
-  }
-  .result-footer {
-    gap: 12px;
-    padding-right: 12px;
-  }
-  .result-footer > .btn {
-    padding: 10px;
-    font-size: 10px;
-  }
-  .result-retry {
-    padding: 10px;
-  }
-  .result-retry span {
-    font-size: 13px;
-  }
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 10px max(20px, calc(50% - var(--card-w) / 2)) 14px;
+  scrollbar-width: thin;
+  scrollbar-color: #f5a9d0 #ffffff1a;
 }
 
-@media (min-width: 851px) and (max-height: 850px) {
-  .result-layout {
-    margin: 40px auto 20px;
-    gap: 28px;
+/* ── the expanded card for this play ──────────────────── */
+.result-card {
+  width: var(--card-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.result-card__player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.result-card__player img,
+.result-card__avatar {
+  width: var(--avatar);
+  height: var(--avatar);
+  border-radius: 18%;
+  object-fit: cover;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+.result-card__avatar {
+  background:
+    radial-gradient(circle at 50% 38%, #fff 0 16%, transparent 17%),
+    radial-gradient(ellipse at 50% 95%, #fff 0 34%, transparent 35%),
+    #e2458f;
+  opacity: 0.9;
+}
+.result-card__player strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+.result-card__body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 18px 14px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #5b4a6c, #3f3649 55%, #2f2a37);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+.result-card__body h1 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.result-card__artist {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.result-card__score {
+  font-size: clamp(38px, 6vh, 62px);
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  margin: 2px 0 6px;
+}
+.result-card__version {
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.result-card__mapper {
+  font-size: 12px;
+}
+.result-card__played {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: #d3cbd9;
+  text-transform: capitalize;
+}
+.result-footer .submit-panel {
+  align-self: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 34vw;
+  font-size: 12px;
+}
+.result-footer .btn--osu {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+/* ── accuracy circle ──────────────────────────────────── */
+.accuracy-ring {
+  position: relative;
+  width: var(--ring);
+  height: var(--ring);
+  margin: 20px 0 6px;
+  display: grid;
+  place-items: center;
+}
+.accuracy-ring svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.accuracy-ring circle {
+  fill: none;
+}
+.accuracy-ring__track {
+  stroke: rgba(0, 0, 0, 0.3);
+  stroke-width: 26;
+}
+.accuracy-ring__fill {
+  stroke: url(#accuracy-fill);
+  stroke-width: 26;
+  animation: accuracy-fill 1.2s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+@keyframes accuracy-fill {
+  from {
+    stroke-dashoffset: var(--len);
   }
-  .lazer-result-card {
-    padding-bottom: 16px;
+}
+.accuracy-ring__band {
+  stroke-width: 7;
+}
+.accuracy-ring__badge {
+  position: absolute;
+  translate: -50% -50%;
+  min-width: 30px;
+  height: 17px;
+  font-size: 11px;
+}
+.accuracy-ring__grade {
+  font-size: calc(var(--ring) * 0.38);
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 0 24px var(--grade-color),
+    0 0 2px var(--grade-color);
+}
+
+/* ── stat rows ────────────────────────────────────────── */
+.result-stats {
+  width: 100%;
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+  margin: 12px 0 0;
+}
+.result-stats div {
+  display: flex;
+  flex-direction: column;
+}
+.result-stats dt {
+  padding: 2px 0;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.result-stats dd {
+  margin: 2px 0 0;
+  font-size: 21px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.result-stats dd small {
+  font-size: 13px;
+}
+.result-stats--judgements {
+  margin-top: 8px;
+}
+
+/* ── other plays ──────────────────────────────────────── */
+.score-card {
+  position: relative;
+  width: clamp(160px, 11vw, 190px);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 14px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #3b3b40, #2c2c31);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.score-card__rank {
+  position: absolute;
+  top: -30px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.score-card__top {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  border-radius: 20px;
+  background: #45454b;
+}
+.score-card__top img,
+.score-card__avatar {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  object-fit: cover;
+  background: #ffffff14;
+}
+.score-card__top a,
+.score-card__top strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 17px;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+}
+.score-card dl {
+  width: 100%;
+  margin: 4px 0 0;
+}
+.score-card dl div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.score-card dd {
+  margin: 0;
+  color: var(--lz-yellow);
+  font-variant-numeric: tabular-nums;
+}
+.score-card__spacer {
+  margin-top: 8px;
+}
+.score-card__score {
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── footer ───────────────────────────────────────────── */
+.result-retry,
+.result-recalibrate {
+  align-self: center;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.result-retry {
+  flex: 0 1 460px;
+  margin-left: auto;
+  background: #88b300;
+}
+.result-recalibrate {
+  width: 96px;
+  margin-right: auto;
+  background: rgba(58, 60, 66, 0.95);
+}
+.result-retry:hover,
+.result-recalibrate:hover {
+  filter: brightness(1.15);
+}
+.result-footer {
+  padding-right: 18px;
+}
+
+@media (max-height: 820px) {
+  .result-scene {
+    --avatar: 50px;
+    --ring: clamp(140px, 23vh, 190px);
   }
-  .result-player img,
-  .result-avatar {
-    width: 54px;
-    height: 54px;
-    border-radius: 14px;
+  .result-card__body {
+    padding-top: 10px;
   }
-  .result-player {
-    margin-top: -27px;
-    gap: 3px;
+  .result-stats dd {
+    font-size: 17px;
   }
-  .result-song-title {
-    margin-top: 12px;
+}
+@media (max-width: 600px) {
+  .result-scene {
+    --card-w: calc(100vw - 32px);
   }
-  .result-song-title h1 {
-    font-size: 21px;
-  }
-  .lazer-result-card .results-ring {
-    width: 180px !important;
-    height: 180px !important;
-    margin-top: 6px;
-  }
-  .lazer-result-card .results-ring svg {
-    width: 100%;
-    height: 100%;
-  }
-  .lazer-result-card .results-grade {
-    font-size: 60px;
-  }
-  .result-big-score {
-    font-size: 42px;
-    margin: 0 0 8px;
-  }
-  .result-metrics {
-    margin: 14px -12px 8px;
-  }
-  .lazer-result-card .results-judgments {
-    margin: 8px 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .accuracy-ring__fill {
+    animation: none;
   }
 }

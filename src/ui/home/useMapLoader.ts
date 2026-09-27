@@ -47,11 +47,12 @@ export function useMapLoader(
     [setMap, setMapset],
   );
 
+  /** `sourceUrl` identifies the carousel entry (starter url or `library:<id>`). */
   const openMapset = useCallback(
-    (bytes: Uint8Array, label: string) =>
+    (bytes: Uint8Array, label: string, sourceUrl?: string) =>
       run(async (id) => {
-        await loadArchive(bytes, label, id);
-      }),
+        await loadArchive(bytes, label, id, sourceUrl);
+      }, sourceUrl),
     [run, loadArchive],
   );
 
