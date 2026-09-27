@@ -253,19 +253,18 @@
   .is-open .home-logo {
     translate: 0 -120px;
   }
+  .home-actions {
+    position: absolute;
+    top: calc(50% + 60px);
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    height: var(--band);
+  }
   .home-actions__left,
   .home-actions__right {
-    top: calc(50% + 70px);
-  }
-  .home-actions__left {
-    right: auto;
-    left: 50%;
-    translate: -50% 0;
-  }
-  .home-actions__right {
-    top: calc(50% + 70px + var(--band));
-    left: 50%;
-    translate: -50% 0;
+    display: contents;
   }
   .home-actions .menu-button,
   .home-actions .menu-button:hover,
@@ -273,8 +272,9 @@
   .home-actions__right .menu-button:first-child:hover,
   .home-actions__left .menu-button,
   .home-actions__left .menu-button:hover {
-    width: 92px;
+    width: 86px;
     padding: 0;
+    animation: menu-reveal-right 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) both;
   }
   .home-band {
     display: none;

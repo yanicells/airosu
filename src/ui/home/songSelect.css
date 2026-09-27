@@ -673,15 +673,16 @@
   .song-footer {
     position: sticky;
     bottom: 0;
+    background: rgba(18, 18, 22, 0.96);
     gap: 6px;
     padding-left: 8px;
     overflow-x: auto;
   }
   .song-start {
-    --logo: 170px;
+    --logo: 130px;
     position: fixed;
-    right: -40px;
-    bottom: -40px;
+    right: -30px;
+    bottom: 40px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
