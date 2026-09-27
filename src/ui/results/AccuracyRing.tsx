@@ -1,63 +1,84 @@
+import type { CSSProperties } from 'react';
 import type { Grade } from './grade';
-import { gradeColor, judgmentColors } from './grade';
+import { gradeColor } from './grade';
 
-interface Props {
-  counts: { 300: number; 100: number; 50: number; 0: number };
-  grade: Grade;
-}
+const SIZE = 300;
+const OUTER = 128;
+const INNER = 106;
+const C_OUTER = 2 * Math.PI * OUTER;
+const C_INNER = 2 * Math.PI * INNER;
+const GAP = 0.006;
 
-const SIZE = 250;
-const R = 106;
-const C = 2 * Math.PI * R;
-const GAP = 6; // px of arc between segments
+/** Accuracy bands and where each grade badge sits (the band midpoint), as fractions of the circle. */
+const BANDS: { grade: Grade; from: number; to: number }[] = [
+  { grade: 'D', from: 0, to: 0.7 },
+  { grade: 'C', from: 0.7, to: 0.8 },
+  { grade: 'B', from: 0.8, to: 0.9 },
+  { grade: 'A', from: 0.9, to: 0.95 },
+  { grade: 'S', from: 0.95, to: 1 },
+];
 
 /**
- * osu!lazer-style results ring: one arc segment per judgment type,
- * length proportional to its share of the hit objects, grade in the middle.
+ * osu!lazer accuracy circle: a thick cyan→green arc filled to the play's accuracy,
+ * an inner ring split into grade bands, grade badges around it, and the grade in the middle.
  */
-export function AccuracyRing({ counts, grade }: Props) {
-  const total = counts[300] + counts[100] + counts[50] + counts[0];
-  const order: (300 | 100 | 50 | 0)[] = [300, 100, 50, 0];
-  const segments: { color: string; length: number; offset: number }[] = [];
-  let used = 0;
-  for (const j of order) {
-    if (!counts[j] || !total) continue;
-    const length = (counts[j] / total) * C;
-    segments.push({ color: judgmentColors[j], length: Math.max(0, length - GAP), offset: used });
-    used += length;
-  }
-
+export function AccuracyRing({ accuracy, grade }: { accuracy: number; grade: Grade }) {
+  const filled = Math.max(0, Math.min(1, accuracy)) * C_OUTER;
   return (
-    <div className="results-ring" style={{ width: SIZE, height: SIZE }}>
-      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} aria-hidden>
-        <circle
-          cx={SIZE / 2}
-          cy={SIZE / 2}
-          r={R}
-          fill="none"
-          stroke="rgba(255,255,255,0.08)"
-          strokeWidth={10}
-        />
+    <div className="accuracy-ring">
+      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} aria-hidden="true">
+        <defs>
+          <linearGradient id="accuracy-fill" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#7cf6ff" />
+            <stop offset="1" stopColor="#baffa9" />
+          </linearGradient>
+        </defs>
         <g transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}>
-          {segments.map((s, i) => (
-            <circle
-              key={i}
-              cx={SIZE / 2}
-              cy={SIZE / 2}
-              r={R}
-              fill="none"
-              stroke={s.color}
-              strokeWidth={10}
-              strokeLinecap="round"
-              strokeDasharray={`${s.length} ${C - s.length}`}
-              strokeDashoffset={-s.offset}
-            />
-          ))}
+          <circle cx={SIZE / 2} cy={SIZE / 2} r={OUTER} className="accuracy-ring__track" />
+          <circle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={OUTER}
+            className="accuracy-ring__fill"
+            strokeDasharray={`${filled} ${C_OUTER}`}
+            style={{ '--len': filled } as CSSProperties}
+          />
+          {BANDS.map((band) => {
+            const length = (band.to - band.from - GAP) * C_INNER;
+            return (
+              <circle
+                key={band.grade}
+                cx={SIZE / 2}
+                cy={SIZE / 2}
+                r={INNER}
+                className="accuracy-ring__band"
+                stroke={gradeColor(band.grade)}
+                strokeDasharray={`${length} ${C_INNER}`}
+                strokeDashoffset={-(band.from + GAP / 2) * C_INNER}
+              />
+            );
+          })}
         </g>
       </svg>
+      {BANDS.map((band) => {
+        const angle = ((band.from + band.to) / 2) * 2 * Math.PI;
+        return (
+          <span
+            key={band.grade}
+            className="grade-pill accuracy-ring__badge"
+            style={{
+              background: gradeColor(band.grade),
+              left: `${50 + Math.sin(angle) * 57}%`,
+              top: `${50 - Math.cos(angle) * 57}%`,
+            }}
+          >
+            {band.grade}
+          </span>
+        );
+      })}
       <div
-        className="results-grade count-pop"
-        style={{ color: gradeColor(grade), textShadow: `0 0 56px ${gradeColor(grade)}66` }}
+        className="accuracy-ring__grade count-pop"
+        style={{ '--grade-color': gradeColor(grade) } as CSSProperties}
       >
         {grade}
       </div>

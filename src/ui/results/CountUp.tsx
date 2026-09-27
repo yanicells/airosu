@@ -23,3 +23,11 @@ export function useCountUp(target: number, durationMs = 1100): number {
 
   return value;
 }
+
+/**
+ * Counting number as its own component, so each animation frame re-renders only this text
+ * instead of the whole results screen (and its Convex-backed children).
+ */
+export function CountUp({ value, durationMs }: { value: number; durationMs?: number }) {
+  return <>{useCountUp(value, durationMs).toLocaleString()}</>;
+}
