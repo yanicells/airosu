@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { lz } from '../shared/palette';
 import './pause.css';
 
 interface MenuButton {
@@ -87,9 +88,9 @@ export function PauseOverlay({
       retries={retries}
       onEscape={onResume}
       buttons={[
-        { label: 'Continue', color: '#88b300', onClick: onResume },
-        { label: 'Retry', color: '#eeaa00', onClick: onRestart },
-        { label: 'Quit', color: '#aa1b27', onClick: onQuit },
+        { label: 'Continue', color: lz.green, onClick: onResume },
+        { label: 'Retry', color: lz.orange, onClick: onRestart },
+        { label: 'Quit', color: lz.red, onClick: onQuit },
       ]}
     />
   );

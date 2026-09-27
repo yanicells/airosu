@@ -1,21 +1,10 @@
 .lazer-shell {
-  --lz-toolbar: #1a1a1a;
-  --lz-panel: rgba(30, 32, 36, 0.86);
-  --lz-panel-solid: #26282c;
-  --lz-mint: #65edcd;
-  --lz-pink: #eb3d9d;
-  --lz-yellow: #ffcc22;
-  --lz-dim: #a8b0b5;
-  --lz-slant: 12deg;
   min-height: 100dvh;
   color: #fff;
-  background: #1c1c1c;
+  background: var(--lz-bg);
   position: relative;
   isolation: isolate;
   font-family: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
-}
-.lazer-shell :is(h1, h2, h3) {
-  font-style: normal;
 }
 .lazer-shell button,
 .lazer-shell a {
@@ -172,7 +161,7 @@
   height: 46px;
   border: 0;
   border-radius: 10px;
-  background: var(--lz-pink);
+  background: var(--lz-pink-deep);
   color: #fff;
   font-size: 19px;
   font-weight: 600;
@@ -269,7 +258,7 @@
   font-size: 13px;
   font-weight: 800;
   color: #1b1b1b;
-  background: var(--star-color, #65edcd);
+  background: var(--star-color, var(--lz-mint));
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

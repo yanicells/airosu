@@ -1,0 +1,33 @@
+/* osu!lazer palette. Every screen reads colours from here; TSX goes through ui/shared/palette.ts. */
+:root {
+  /* surfaces */
+  --lz-bg: #1c1c1c;
+  --lz-toolbar: #1a1a1a;
+  --lz-rail: #25262c;
+  --lz-panel: #2f3036;
+  --lz-control: #212227;
+  --lz-control-hover: #292a30;
+  --lz-line: rgba(255, 255, 255, 0.09);
+  --lz-hover: rgba(255, 255, 255, 0.08);
+
+  /* text */
+  --lz-text: #fff;
+  --lz-dim: #b9bac2;
+  --lz-soft: #c9c1f2;
+
+  /* accents (lazer's OsuColour names in comments) */
+  --lz-grey: #5c5c5c;
+  --lz-purple: #8866ee; /* Purple */
+  --lz-purple-dark: #6644cc; /* PurpleDark */
+  --lz-pink: #ff66aa; /* Pink */
+  --lz-pink-deep: #eb3d9d; /* back button */
+  --lz-yellow: #ffcc22; /* Yellow */
+  --lz-orange: #eeaa00; /* YellowDark */
+  --lz-lime: #a5cc00; /* Lime */
+  --lz-green: #88b300; /* Green */
+  --lz-red: #aa1b27; /* quit */
+  --lz-blue: #66ccff; /* BlueLight */
+  --lz-mint: #65edcd;
+
+  --lz-slant: 12deg;
+}

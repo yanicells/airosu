@@ -5,6 +5,7 @@ import { ConvexReactClient } from 'convex/react';
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
 import { Analytics } from '@vercel/analytics/react';
 import '@fontsource-variable/nunito';
+import './tokens.css';
 import './styles.css';
 import { AppRoutes } from './ui/AppRoutes';
 

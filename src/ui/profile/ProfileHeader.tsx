@@ -1,8 +1,9 @@
 import type { CSSProperties } from 'react';
-import { grade as gradeFor, gradeColor, type Grade } from '../results/grade';
+import { grade as gradeFor, gradeColor, judgmentColors, type Grade } from '../results/grade';
 import { flagEmoji } from '../shared/flag';
 import { TrophyIcon } from '../shared/icons';
 import { timeAgo } from '../shared/timeAgo';
+import { lz } from '../shared/palette';
 
 export interface ProfileUser {
   osuId?: number;
@@ -105,15 +106,15 @@ export function ProfileHeader({
       <section className="profile-detail">
         <div className="profile-detail__left">
           <dl className="profile-trio">
-            <div style={{ '--line': '#ff66aa' } as CSSProperties}>
+            <div style={{ '--line': lz.pink } as CSSProperties}>
               <dt>Total pp</dt>
               <dd>{Math.round(user.totalPp).toLocaleString()}</dd>
             </div>
-            <div style={{ '--line': '#b3d944' } as CSSProperties}>
+            <div style={{ '--line': judgmentColors[100] } as CSSProperties}>
               <dt>Play count</dt>
               <dd>{user.playCount.toLocaleString()}</dd>
             </div>
-            <div style={{ '--line': '#ed1121' } as CSSProperties}>
+            <div style={{ '--line': judgmentColors[0] } as CSSProperties}>
               <dt>Accuracy</dt>
               <dd>{(user.hitAccuracy * 100).toFixed(2)}%</dd>
             </div>

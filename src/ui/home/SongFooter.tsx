@@ -8,6 +8,7 @@ import {
   TargetIcon,
   UploadIcon,
 } from '../shared/icons';
+import { lz } from '../shared/palette';
 
 function FooterTab({
   color,
@@ -53,7 +54,7 @@ export function SongFooter({
         <span>Back</span>
       </button>
       <FooterTab
-        color="#a5cc00"
+        color={lz.lime}
         icon={<HandIcon size={20} />}
         label="Input"
         value={settings.inputMode === 'relax' ? 'Relax' : 'Manual'}
@@ -62,7 +63,7 @@ export function SongFooter({
         }
       />
       <FooterTab
-        color="#ff66aa"
+        color={lz.pink}
         icon={<TargetIcon size={20} />}
         label="Cursor"
         value={settings.cursorAnchor === 'palm' ? 'Palm' : 'Fingertip'}
@@ -71,19 +72,19 @@ export function SongFooter({
         }
       />
       <FooterTab
-        color="#66ccff"
+        color={lz.blue}
         icon={<ShuffleIcon size={20} />}
         label="Random"
         disabled={randomDisabled}
         onClick={onRandom}
       />
       <FooterTab
-        color="#8866ee"
+        color={lz.purple}
         icon={<OptionsIcon size={20} />}
         label="Options"
         onClick={() => setScreen('settings')}
       />
-      <label className="footer-tab footer-tab--import" style={{ '--tab-color': '#eeaa00' } as CSSProperties}>
+      <label className="footer-tab footer-tab--import" style={{ '--tab-color': lz.orange } as CSSProperties}>
         <UploadIcon size={20} />
         <strong>Import</strong>
         <input

@@ -18,7 +18,7 @@
   font-weight: 500;
   font-style: normal;
   letter-spacing: 0.22em;
-  color: #ffcc22;
+  color: var(--lz-yellow);
 }
 .gameplay-menu--fail header h2 {
   color: #ff5a5a;

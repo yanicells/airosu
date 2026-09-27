@@ -299,7 +299,7 @@
 .result-retry {
   flex: 0 1 460px;
   margin-left: auto;
-  background: #88b300;
+  background: var(--lz-green);
 }
 .result-recalibrate {
   width: 96px;

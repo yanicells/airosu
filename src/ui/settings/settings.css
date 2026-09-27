@@ -16,7 +16,7 @@
   flex-direction: column;
   gap: 4px;
   padding: 16px 0;
-  background: #25262c;
+  background: var(--lz-rail);
   overflow-y: auto;
 }
 .settings-rail button {
@@ -45,7 +45,7 @@
   bottom: 12px;
   width: 4px;
   border-radius: 2px;
-  background: #8866ee;
+  background: var(--lz-purple);
 }
 .settings-panel {
   padding-bottom: 55vh; /* lets the last sections scroll to the top when picked from the rail */
@@ -59,7 +59,7 @@
 }
 .settings-empty {
   margin: 30px 0;
-  color: #b9bac2;
+  color: var(--lz-dim);
 }
 /* the screen behind lazer's settings overlay, dimmed; clicking it closes settings */
 .settings-dim {
