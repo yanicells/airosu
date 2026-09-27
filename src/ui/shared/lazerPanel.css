@@ -1,0 +1,261 @@
+/* osu!lazer settings-style side panel, shared by settings and calibration. */
+.lz-panel {
+  --lz-purple: #8866ee;
+  --lz-purple-dark: #6644cc;
+  --lz-control: #212227;
+  position: relative;
+  background: #2f3036;
+  color: #fff;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff30 transparent;
+  padding: 0 30px 40px;
+}
+.lz-panel__title {
+  padding: 34px 0 26px;
+}
+.lz-panel__title h1 {
+  margin: 0;
+  font-size: 44px;
+  font-weight: 500;
+  line-height: 1;
+}
+.lz-panel__title p {
+  margin: 8px 0 0;
+  font-size: 19px;
+  color: #e8e8ec;
+}
+.lz-search {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  margin: 0 -30px;
+  padding: 14px 30px;
+  background: #2f3036;
+  border-bottom: 4px solid #25262b;
+}
+.lz-search input {
+  flex: 1;
+  height: 48px;
+  padding: 0 50px 0 14px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--lz-control);
+  color: #fff;
+  font: inherit;
+  font-size: 18px;
+}
+.lz-panel .lz-search input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px #8866ee88;
+}
+.lz-search input::placeholder {
+  color: #b9bac2;
+}
+.lz-search svg {
+  margin-left: -42px;
+  pointer-events: none;
+}
+
+/* sections and rows */
+.lz-panel h3,
+.settings-section h3 {
+  margin: 30px 0 14px;
+  font-size: 23px;
+  font-weight: 500;
+}
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.setting-row--inline {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+.setting-row--inline .setting-hint {
+  grid-column: 1 / -1;
+}
+.setting-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: 500;
+}
+.setting-label output {
+  color: #c9c1f2;
+  font-variant-numeric: tabular-nums;
+}
+.lz-panel .setting-hint {
+  color: #b9bac2;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* slider: thin track, purple fill, pill thumb */
+.lz-slider {
+  --progress: 50%;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.lz-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--lz-purple) var(--progress), #ffffff26 var(--progress));
+}
+.lz-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--lz-purple) var(--progress), #ffffff26 var(--progress));
+}
+.lz-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 44px;
+  height: 18px;
+  margin-top: -7px;
+  border-radius: 9px;
+  background: var(--lz-purple);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.12s;
+}
+.lz-slider::-moz-range-thumb {
+  width: 44px;
+  height: 18px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--lz-purple);
+}
+.lz-slider:hover::-webkit-slider-thumb,
+.lz-slider:focus-visible::-webkit-slider-thumb {
+  transform: scaleY(1.2);
+}
+.lz-slider:focus-visible {
+  outline: none;
+}
+.lz-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px #fff;
+}
+
+/* toggle: purple pill, outlined when off */
+.lz-toggle {
+  appearance: none;
+  width: 54px;
+  height: 20px;
+  margin: 0;
+  border: 3px solid var(--lz-purple);
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lz-toggle:checked {
+  background: var(--lz-purple);
+}
+.lz-toggle:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* dropdowns and key chips on lazer's dark controls */
+.lz-panel .select-menu {
+  min-width: 0;
+  width: 100%;
+}
+.lz-panel .select-menu__trigger {
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--lz-control);
+  box-shadow: none;
+  transform: none;
+  font-size: 16px;
+  font-weight: 500;
+}
+.lz-panel .select-menu__trigger:hover,
+.lz-panel .select-menu[data-open='true'] .select-menu__trigger {
+  transform: none;
+  background: #292a30;
+  box-shadow: none;
+}
+.lz-panel .select-menu__chevron {
+  color: #fff;
+}
+.lz-panel .select-menu__list {
+  background: var(--lz-control);
+  border-color: #ffffff14;
+  border-radius: 6px;
+}
+.lz-panel .select-menu__option[data-active='true'] {
+  background: #ffffff14;
+}
+.lz-panel .key-editor {
+  width: 100%;
+  align-items: stretch;
+}
+.lz-panel .key-editor__chips {
+  justify-content: flex-start;
+  background: var(--lz-control);
+  border: 0;
+  border-radius: 6px;
+  box-shadow: none;
+}
+.lz-panel .key-chip {
+  background: #3a3b44;
+  border-color: #ffffff1a;
+}
+.lz-panel .key-editor__capture {
+  color: #c9c1f2;
+  background: transparent;
+  border-color: var(--lz-purple);
+}
+
+/* rounded pill buttons with lazer's triangle texture */
+.lz-button {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 25px;
+  color: #fff;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='60'%3E%3Cpath d='M60 6 88 56H32Z' fill='none' stroke='%23fff' stroke-opacity='.18' stroke-width='2'/%3E%3Cpath d='M190 20 214 62H166Z' fill='none' stroke='%23fff' stroke-opacity='.14' stroke-width='2'/%3E%3C/svg%3E")
+      0 50% / 260px 100% repeat-x,
+    var(--lz-purple-dark, #6644cc);
+  transition: filter 0.15s;
+}
+.lz-button:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+.lz-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.lz-button--yellow {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='60'%3E%3Cpath d='M60 6 88 56H32Z' fill='none' stroke='%23fff' stroke-opacity='.25' stroke-width='2'/%3E%3C/svg%3E"),
+      0 50% / 260px 100% repeat-x,
+    #eeaa00;
+}
+.lz-button--ghost {
+  background: #ffffff14;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lz-button,
+  .lz-slider::-webkit-slider-thumb,
+  .lz-toggle {
+    transition: none;
+  }
+}

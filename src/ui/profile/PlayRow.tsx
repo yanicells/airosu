@@ -1,5 +1,6 @@
 import { starColor } from '../home/starColor';
 import { gradeColor, type Grade } from '../results/grade';
+import { timeAgo } from '../shared/timeAgo';
 
 export interface ProfilePlay {
   scoreId: string;
@@ -39,19 +40,8 @@ export function PlayRow({ play }: { play: ProfilePlay }) {
       : undefined;
 
   return (
-    <div
-      className="play-row panel"
-      style={
-        map?.coverUrl
-          ? {
-              backgroundImage: `linear-gradient(90deg, rgba(23,17,31,0.94) 45%, rgba(23,17,31,0.72)), url(${map.coverUrl})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }
-          : undefined
-      }
-    >
-      <span className="play-row__grade" style={{ color: gradeColor(play.grade as Grade) }}>
+    <article className="play-row">
+      <span className="grade-pill play-row__grade" style={{ background: gradeColor(play.grade as Grade) }}>
         {play.grade}
       </span>
       <div className="play-row__map">
@@ -63,32 +53,35 @@ export function PlayRow({ play }: { play: ProfilePlay }) {
           ) : (
             (map?.title ?? 'unknown map')
           )}{' '}
-          <span className="play-row__version">[{map?.version}]</span>
+          <small>by {map?.artist}</small>
         </span>
-        <span className="play-row__artist">
-          {map?.artist}
+        <span className="play-row__meta">
+          <span className="play-row__version">{map?.version}</span>
           {map && (
             <span className="play-row__stars" style={{ color: starColor(map.starRating) }}>
-              {' '}
               ★ {map.starRating.toFixed(2)}
             </span>
           )}
           {map?.rankedStatus && SHOWN_STATUSES.has(map.rankedStatus) && (
-            <span className="play-row__status"> {map.rankedStatus}</span>
+            <span className="play-row__status">{map.rankedStatus}</span>
           )}
+          <span>{timeAgo(play.playedAt)}</span>
         </span>
       </div>
       {badges.length > 0 && <span className="play-row__badge">{badges.join(' · ')}</span>}
       <span className="play-row__stat">{(play.accuracy * 100).toFixed(2)}%</span>
-      <span className="play-row__stat">{play.maxCombo}x</span>
+      <span className="play-row__stat play-row__combo">{play.maxCombo}x</span>
       <div className="play-row__pp">
-        <span>{Math.round(play.pp)}pp</span>
+        <span>
+          {Math.round(play.pp)}
+          <small>pp</small>
+        </span>
         {play.weight !== undefined && (
           <span className="play-row__weighted">
             weighted {Math.round(play.pp * play.weight)}pp ({Math.round(play.weight * 100)}%)
           </span>
         )}
       </div>
-    </div>
+    </article>
   );
 }

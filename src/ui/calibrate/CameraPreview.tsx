@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 /** Mirrors the shared cv session <video> into this component. */
 export function CameraPreview({
@@ -28,15 +28,8 @@ export function CameraPreview({
 
   return (
     <div
-      style={{
-        position: 'relative',
-        width: `min(640px, max(280px, calc((100dvh - 310px) * ${(video.videoWidth || 640) / (video.videoHeight || 480)})))`,
-        maxWidth: '90vw',
-        aspectRatio: `${video.videoWidth || 640} / ${video.videoHeight || 480}`,
-        borderRadius: 12,
-        overflow: 'hidden',
-        background: '#000',
-      }}
+      className="camera-preview"
+      style={{ '--aspect': (video.videoWidth || 640) / (video.videoHeight || 480) } as CSSProperties}
     >
       <div
         ref={holderRef}

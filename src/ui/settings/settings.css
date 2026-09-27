@@ -1,0 +1,97 @@
+.settings-scene {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 70% 40%, #1f4f4c, #0b1d22 80%);
+}
+.settings-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 560px) 1fr;
+}
+.settings-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 0;
+  background: #25262c;
+  overflow-y: auto;
+}
+.settings-rail button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 32px 14px 36px;
+  border: 0;
+  background: none;
+  color: #c8c9d0;
+  font: inherit;
+  font-size: 17px;
+  text-align: left;
+  cursor: pointer;
+}
+.settings-rail button:hover,
+.settings-rail button.is-active {
+  color: #fff;
+}
+.settings-rail button.is-active::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  border-radius: 2px;
+  background: #8866ee;
+}
+.settings-panel {
+  padding-bottom: 55vh; /* lets the last sections scroll to the top when picked from the rail */
+  box-shadow: 10px 0 40px rgba(0, 0, 0, 0.35);
+}
+.settings-panel .settings-section:not(:has(.setting-row)) {
+  display: none;
+}
+.settings-panel:has(.setting-row) .settings-empty {
+  display: none;
+}
+.settings-empty {
+  margin: 30px 0;
+  color: #b9bac2;
+}
+/* the screen behind lazer's settings overlay, dimmed; clicking it closes settings */
+.settings-dim {
+  border: 0;
+  cursor: pointer;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)),
+    url('../menu/triangles.svg') 0 0 / 900px 900px;
+}
+@media (max-width: 900px) {
+  .settings-rail button {
+    padding: 14px 18px;
+  }
+  .settings-rail button span {
+    display: none;
+  }
+  .settings-body {
+    grid-template-columns: auto minmax(0, 1fr) 40px;
+  }
+}
+@media (max-width: 600px) {
+  .settings-body {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .settings-dim {
+    display: none;
+  }
+  .lz-panel {
+    padding: 0 18px 30px;
+  }
+  .lz-search {
+    margin: 0 -18px;
+    padding: 12px 18px;
+  }
+}

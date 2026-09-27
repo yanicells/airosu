@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router';
 import type { LoadedBeatmap } from '../beatmap/model';
 import { stopCvSession } from '../cv/cvSession';
 import type { CalibrationBox } from '../cv/calibration';
@@ -15,7 +16,19 @@ const ResultsScreen = lazy(() => import('./results').then((m) => ({ default: m.R
 const SettingsScreen = lazy(() => import('./settings').then((m) => ({ default: m.SettingsScreen })));
 
 export function App() {
-  const [screen, setScreen] = useState<Screen>('home');
+  const location = useLocation();
+  // The toolbar on web routes can ask for settings via navigation state.
+  const [screen, setScreen] = useState<Screen>(() =>
+    (location.state as { screen?: Screen } | null)?.screen === 'settings' ? 'settings' : 'home',
+  );
+  // Settings slides over whatever screen opened it, so closing it returns there.
+  const [settingsReturn, setSettingsReturn] = useState<Screen>('home');
+  const screenRef = useRef(screen);
+  screenRef.current = screen;
+  const go = useCallback((next: Screen) => {
+    if (next === 'settings' && screenRef.current !== 'settings') setSettingsReturn(screenRef.current);
+    setScreen(next);
+  }, []);
   const [map, setMap] = useState<LoadedBeatmap | undefined>();
   const [mapset, setMapset] = useState<Mapset | undefined>();
   const [settings, setSettingsState] = useState<Settings>(loadSettings);
@@ -35,7 +48,8 @@ export function App() {
       settings,
       calibration,
       lastResult,
-      setScreen,
+      settingsReturn,
+      setScreen: go,
       setMap,
       setMapset,
       setSettings(s: Settings) {
@@ -45,7 +59,7 @@ export function App() {
       setCalibration,
       setLastResult,
     }),
-    [screen, map, mapset, settings, calibration, lastResult],
+    [screen, settingsReturn, go, map, mapset, settings, calibration, lastResult],
   );
 
   return (
