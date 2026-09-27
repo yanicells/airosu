@@ -34,7 +34,7 @@ export function MapLoadScreen() {
       }}
     >
       {bgUrl && <div className="song-backdrop" style={{ backgroundImage: `url("${bgUrl}")` }} />}
-      <GameHeader title="Song select" />
+      <GameHeader />
       <main className="song-select-grid">
         <div className="song-left">
           <SongDetails />

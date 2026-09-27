@@ -35,7 +35,7 @@ export function ResultsScreen() {
   return (
     <div className="lazer-shell result-scene">
       {bgUrl && <div className="result-backdrop" style={{ backgroundImage: `url("${bgUrl}")` }} />}
-      <GameHeader title="Results" />
+      <GameHeader />
       <main className="result-layout">
         <section className="lazer-result-card">
           <header className="result-player">

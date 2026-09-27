@@ -195,7 +195,7 @@ async function uploadMap(page: Page, name: string, text: string): Promise<void> 
 
 async function openStandaloneMap(page: Page, start = true): Promise<void> {
   await page.getByRole('button', { name: 'Open main menu' }).click();
-  await page.getByRole('button', { name: /Play Find your next beat/ }).click();
+  await page.getByRole('button', { name: 'play', exact: true }).click();
   await uploadMap(page, 'browser-smoke.osu', OSU_MAP);
   await expect(page.getByRole('heading', { name: 'Browser Smoke' })).toBeVisible();
   await page.locator('input[type="file"][accept="audio/*"]').setInputFiles({
@@ -238,7 +238,6 @@ test.afterEach(async ({ page }) => {
 });
 
 test('starts production build and supports custom SelectMenu keyboard semantics', async ({ page }) => {
-  await expect(page.getByText('A little rhythm. A little motion.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open main menu' })).toBeVisible();
   await openStandaloneMap(page, false);
   const trigger = page.getByRole('button', { name: 'Input mode' });
@@ -256,7 +255,7 @@ test('starts production build and supports custom SelectMenu keyboard semantics'
 
 test('does not let a slow AudioPicker read replace a newer standalone map', async ({ page }) => {
   await page.getByRole('button', { name: 'Open main menu' }).click();
-  await page.getByRole('button', { name: /Play Find your next beat/ }).click();
+  await page.getByRole('button', { name: 'play', exact: true }).click();
   await uploadMap(page, 'browser-smoke.osu', OSU_MAP);
   await expect(page.getByRole('heading', { name: 'Browser Smoke' })).toBeVisible();
   await page.locator('input[type="file"][accept="audio/*"]').setInputFiles({
