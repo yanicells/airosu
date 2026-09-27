@@ -14,6 +14,9 @@
   isolation: isolate;
   font-family: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
 }
+.lazer-shell :is(h1, h2, h3) {
+  font-style: normal;
+}
 .lazer-shell button,
 .lazer-shell a {
   -webkit-tap-highlight-color: transparent;
@@ -152,7 +155,7 @@
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  height: 58px;
+  height: 64px;
   padding: 0 0 0 18px;
   position: relative;
   z-index: 10;
@@ -191,7 +194,8 @@
 .footer-tab {
   --tab-color: #fff;
   width: 136px;
-  height: 52px;
+  height: 60px;
+  padding-bottom: 4px;
   display: flex;
   flex-direction: column;
   align-items: center;

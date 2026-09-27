@@ -240,6 +240,7 @@ test.afterEach(async ({ page }) => {
 test('starts production build and supports custom SelectMenu keyboard semantics', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Open main menu' })).toBeVisible();
   await openStandaloneMap(page, false);
+  await page.getByRole('button', { name: 'Options' }).click();
   const trigger = page.getByRole('button', { name: 'Input mode' });
   await trigger.press('ArrowDown');
   const listbox = page.getByRole('listbox', { name: 'Input mode' });

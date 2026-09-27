@@ -2,25 +2,24 @@ import { useState } from 'react';
 import { starterMaps } from '../../beatmap/starterMaps';
 import { useAppState } from '../appState';
 import { useObjectUrl } from '../useObjectUrl';
+import { AirosuLogo } from '../menu/AirosuLogo';
 import { GameHeader } from '../shared/GameHeader';
+import { SearchIcon } from '../shared/icons';
+import { SongCarousel } from './SongCarousel';
 import { SongDetails } from './SongDetails';
-import { SongList } from './SongList';
-import { YourMaps } from './YourMaps';
+import { SongFooter } from './SongFooter';
 import { useLibrary } from './useLibrary';
 import { useMapLoader } from './useMapLoader';
-import { SongDifficulties } from './SongDifficulties';
 import './songSelect.css';
 
+/** osu!lazer song select: map artwork behind a wedge on the left and the set carousel on the right. */
 export function MapLoadScreen() {
   const { map, mapset, setScreen } = useAppState();
   const library = useLibrary();
   const loader = useMapLoader(library.save);
-  const maps = starterMaps;
   const [search, setSearch] = useState('');
   const bgUrl = useObjectUrl(mapset?.preview.background ?? map?.background);
-  const visible = maps.filter((song) =>
-    `${song.title} ${song.artist}`.toLowerCase().includes(search.toLowerCase()),
-  );
+  const total = starterMaps.length + library.entries.length;
   return (
     <div
       className="lazer-shell song-select"
@@ -28,12 +27,14 @@ export function MapLoadScreen() {
       onDrop={(event) => {
         event.preventDefault();
         const file = event.dataTransfer.files[0];
-        if (file) {
-          void loader.handleFile(file);
-        }
+        if (file) void loader.handleFile(file);
       }}
     >
-      {bgUrl && <div className="song-backdrop" style={{ backgroundImage: `url("${bgUrl}")` }} />}
+      <div
+        className="song-backdrop"
+        style={bgUrl ? { backgroundImage: `url("${bgUrl}")` } : undefined}
+        aria-hidden="true"
+      />
       <GameHeader />
       <main className="song-select-grid">
         <div className="song-left">
@@ -41,97 +42,37 @@ export function MapLoadScreen() {
         </div>
         <aside className="song-right" aria-label="Song selection">
           <div className="song-search">
-            <label htmlFor="song-search">Find a song</label>
             <input
               id="song-search"
+              aria-label="Search beatmaps"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search title or artist…"
+              placeholder="Search"
             />
-            <span>⌕</span>
-          </div>
-          <div className="song-library-heading">
-            <span>Your beatmaps</span>
+            <SearchIcon size={24} />
             <small>
-              {visible.length} {visible.length === 1 ? 'song' : 'songs'}
+              {search ? `${total} beatmaps · filtering “${search}”` : `${total} beatmaps`}
             </small>
           </div>
-          <SongList
-            maps={visible}
-            busyUrl={loader.busyUrl}
-            selectedUrl={loader.busyUrl ?? mapset?.sourceUrl}
-            onPick={(song) => {
-              void loader.pickBundled(song);
-            }}
-          />
-          {visible.length === 0 && (
-            <p className="score-empty">
-              {maps.length
-                ? `No songs match “${search}”. Try another title.`
-                : 'Import a beatmap below to start playing.'}
+          {(loader.busy || loader.error) && (
+            <p role={loader.error ? 'alert' : 'status'} className={`song-toast${loader.error ? ' is-error' : ''}`}>
+              {loader.error ?? 'Loading beatmap…'}
             </p>
           )}
-          {loader.busy && (
-            <p role="status" className="score-empty">
-              Loading difficulties…
-            </p>
-          )}
-          {mapset && (
-            <SongDifficulties
-              mapset={mapset}
-              onPick={(name) => {
-                void loader.pickDifficulty(name);
-              }}
-            />
-          )}
-          <label className="song-import">
-            ＋ Import a beatmap <small>.osz or .osu · or drop it anywhere</small>
-            <input
-              type="file"
-              accept=".osz,.osu"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                  void loader.handleFile(file);
-                }
-                event.target.value = '';
-              }}
-            />
-          </label>
-          <YourMaps library={library} onOpen={loader.openMapset} />
-          {loader.error && (
-            <p role="alert" className="song-error">
-              {loader.error}
-            </p>
-          )}
+          <SongCarousel search={search} starters={starterMaps} library={library} loader={loader} />
         </aside>
       </main>
-      <footer className="song-footer">
-        <button className="lazer-back" onClick={() => setScreen('home')}>
-          ‹ <span>Back</span>
-        </button>
-        <span className="song-footer-hint">
-          {map ? `${map.meta.title} / ${map.meta.version}` : 'Choose a song to get started'}
-        </span>
-        <button
-          className="song-random"
-          disabled={!maps.length || loader.busy}
-          onClick={() => {
-            const song = maps[Math.floor(Math.random() * maps.length)];
-            void loader.pickBundled(song);
-          }}
-        >
-          ⇄ <span>Random</span>
-        </button>
-        <button
-          className="song-start"
-          disabled={!map?.audio.byteLength || loader.busy}
-          onClick={() => setScreen('calibrate')}
-        >
-          <strong>airosu!</strong>
-          <span>Play ▷</span>
-        </button>
-      </footer>
+      <SongFooter
+        randomDisabled={!starterMaps.length || loader.busy}
+        onRandom={() => void loader.pickBundled(starterMaps[Math.floor(Math.random() * starterMaps.length)])}
+        onImport={(file) => void loader.handleFile(file)}
+      />
+      <AirosuLogo
+        className="song-start"
+        aria-label={map ? `Play ${map.meta.title} [${map.meta.version}]` : 'Play'}
+        disabled={!map?.audio.byteLength || loader.busy}
+        onClick={() => setScreen('calibrate')}
+      />
     </div>
   );
 }

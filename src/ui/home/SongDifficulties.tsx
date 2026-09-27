@@ -1,33 +1,53 @@
 import type { CSSProperties } from 'react';
-import type { Mapset } from '../appState';
+import { TargetIcon } from '../shared/icons';
 import { starColor } from './starColor';
 
+/** Difficulty rows that slide out under the selected set, tinted by star rating. */
 export function SongDifficulties({
-  mapset,
+  difficulties,
+  picked,
+  creator,
   onPick,
 }: {
-  mapset: Mapset;
+  difficulties: { name: string; stars?: number }[];
+  picked?: string;
+  creator?: string;
   onPick: (name: string) => void;
 }) {
   return (
-    <div className="lazer-difficulties" aria-label="Difficulties">
-      <p>{mapset.label}</p>
-      {mapset.preview.difficulties.map((difficulty) => (
-        <button
-          key={difficulty.name}
-          className={mapset.pickedName === difficulty.name ? 'is-active' : ''}
-          style={{ '--difficulty-color': starColor(difficulty.stars) } as CSSProperties}
-          aria-pressed={mapset.pickedName === difficulty.name}
-          onClick={() => onPick(difficulty.name)}
-        >
-          <span>◉</span>
-          <div>
-            <strong>{difficulty.name}</strong>
-            <small>★ {difficulty.stars.toFixed(2)}</small>
-          </div>
-          <span className="difficulty-chevron">›</span>
-        </button>
-      ))}
+    <div className="difficulty-rows" aria-label="Difficulties">
+      {difficulties.map(({ name, stars }) => {
+        const active = picked === name;
+        const color = stars === undefined ? '#8a8f99' : starColor(stars);
+        return (
+          <button
+            key={name}
+            className={`difficulty-row${active ? ' is-active' : ''}`}
+            style={{ '--difficulty-color': color } as CSSProperties}
+            aria-pressed={active}
+            onClick={() => onPick(name)}
+          >
+            <TargetIcon size={24} />
+            <span className="difficulty-row__copy">
+              <span>
+                <strong>{name}</strong>
+                {creator && active && (
+                  <>
+                    {' '}
+                    mapped by <strong>{creator}</strong>
+                  </>
+                )}
+              </span>
+              <span className="difficulty-row__stars">
+                <span className="star-pill" style={{ '--star-color': color } as CSSProperties}>
+                  ★ {stars?.toFixed(2) ?? '—'}
+                </span>
+                <span aria-hidden="true">{'★'.repeat(Math.min(10, Math.round(stars ?? 0)))}</span>
+              </span>
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

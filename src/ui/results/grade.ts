@@ -1,28 +1,30 @@
 export { grade, type Grade } from '../../game/grade';
 import type { Grade } from '../../game/grade';
 
+/** osu!lazer rank colours (OsuColour.ForRank). */
 export function gradeColor(g: Grade): string {
   switch (g) {
     case 'SS':
+      return '#de31ae';
     case 'S':
-      return '#ffd700';
+      return '#02b5c3';
     case 'A':
-      return '#88ee88';
+      return '#88da20';
     case 'B':
-      return '#66aaff';
+      return '#e3b130';
     case 'C':
-      return '#cc88ff';
+      return '#ff8e5d';
     default:
-      return '#ff5555';
+      return '#ff5a5a';
   }
 }
 
-/** shared judgment palette: 300 / 100 / 50 / miss */
+/** osu!lazer judgement palette: great / ok / meh / miss */
 export const judgmentColors: Record<300 | 100 | 50 | 0, string> = {
   300: '#66ccff',
-  100: '#88ee88',
-  50: '#ffcc55',
-  0: '#ff5555',
+  100: '#b3d944',
+  50: '#ffcc22',
+  0: '#ed1121',
 };
 
 export const judgmentLabels: Record<300 | 100 | 50 | 0, string> = {

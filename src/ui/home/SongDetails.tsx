@@ -1,78 +1,89 @@
+import { useState } from 'react';
+import { starterMaps } from '../../beatmap/starterMaps';
 import { useAppState } from '../appState';
 import { SelectMenu } from '../shared/SelectMenu';
 import { AudioPicker } from './AudioPicker';
-import { PersonalScores } from '../shared/PersonalScores';
-import { starColor } from './starColor';
+import { BeatmapWedge } from './BeatmapWedge';
+import { SongRanking, type RankingScope } from './SongRanking';
 
+/** Left column of song select: the beatmap wedge plus Details / Ranking tabs. */
 export function SongDetails() {
-  const { map, mapset, settings, setSettings, setScreen } = useAppState();
+  const { map, mapset, settings } = useAppState();
+  const [tab, setTab] = useState<'details' | 'ranking'>('ranking');
+  const [scope, setScope] = useState<RankingScope>('global');
   if (!map)
     return (
       <div className="song-welcome">
-        <span>◉</span>
         <h1>Find your rhythm.</h1>
-        <p>Choose a song, or import your own beatmap.</p>
+        <p>Pick a song from the list, or drop an .osz / .osu anywhere to import it.</p>
       </div>
     );
   const stars = mapset?.preview.difficulties.find((d) => d.name === map.meta.version)?.stars;
-  const seconds = Math.round(map.meta.lengthMs / 1000);
+  const starter = starterMaps.find((song) => song.url === mapset?.sourceUrl);
   return (
     <>
-      <section className="song-detail">
-        <span className="song-mode-label">AIROSU! STANDARD</span>
-        <h1>{map.meta.title}</h1>
-        <p className="song-artist">{map.meta.artist}</p>
-        <div className="song-metadata">
-          <span>
-            ◷ {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}
-          </span>
-          <span>♫ {Math.round(map.meta.bpm)} BPM</span>
-          <span>◯ {map.objects.length} objects</span>
-        </div>
-        <div className="song-difficulty">
-          <span style={{ background: stars === undefined ? undefined : starColor(stars) }}>
-            ★ {stars?.toFixed(2) ?? '—'}
-          </span>
-          <strong>{map.meta.version}</strong>
-          <small>mapped by {map.meta.creator}</small>
-        </div>
-        <div className="song-stat-grid">
-          {(['cs', 'od', 'hp', 'ar'] as const).map((key, index) => (
-            <div key={key}>
-              <span>{['Circle size', 'Accuracy', 'HP drain', 'Approach rate'][index]}</span>
-              <strong>{map.meta[key].toFixed(1)}</strong>
-              <i style={{ width: `${Math.min(100, map.meta[key] * 10)}%` }} />
-            </div>
+      <BeatmapWedge map={map} stars={stars} />
+      <div className="song-tabs">
+        <div role="tablist" aria-label="Beatmap information">
+          {(['details', 'ranking'] as const).map((name) => (
+            <button
+              key={name}
+              role="tab"
+              aria-selected={tab === name}
+              className={tab === name ? 'is-active' : ''}
+              onClick={() => setTab(name)}
+            >
+              {name === 'details' ? 'Details' : 'Ranking'}
+            </button>
           ))}
         </div>
-      </section>
-      <PersonalScores osuText={map.rawOsu} />
-      <div className="song-play-options">
-        <SelectMenu
-          ariaLabel="Input mode"
-          value={settings.inputMode}
-          options={[
-            { value: 'relax', label: 'Relax' },
-            { value: 'manual', label: 'Manual' },
-          ]}
-          onChange={(value) => setSettings({ ...settings, inputMode: value as 'relax' | 'manual' })}
-        />
-        <SelectMenu
-          ariaLabel="Cursor anchor"
-          value={settings.cursorAnchor}
-          options={[
-            { value: 'palm', label: 'Palm' },
-            { value: 'index', label: 'Fingertip' },
-          ]}
-          onChange={(value) =>
-            setSettings({ ...settings, cursorAnchor: value as 'palm' | 'index' })
-          }
-        />
-        <button className="btn" onClick={() => setScreen('settings')}>
-          More options
-        </button>
+        {tab === 'ranking' && (
+          <div className="song-scope">
+            <span>Scope</span>
+            <SelectMenu
+              ariaLabel="Ranking scope"
+              value={scope}
+              options={[
+                { value: 'global', label: 'Global' },
+                { value: 'personal', label: 'Personal' },
+              ]}
+              onChange={(value) => setScope(value as RankingScope)}
+            />
+          </div>
+        )}
       </div>
       {map.audio.byteLength === 0 && <AudioPicker map={map} />}
+      {tab === 'ranking' ? (
+        <SongRanking osuText={map.rawOsu} scope={scope} />
+      ) : (
+        <dl className="song-info">
+          <div>
+            <dt>Source</dt>
+            <dd>{starter ? 'airosu! starter map' : (mapset?.label ?? 'Imported .osu file')}</dd>
+          </div>
+          {starter && (
+            <div>
+              <dt>Beatmap page</dt>
+              <dd>
+                <a href={starter.sourceUrl} target="_blank" rel="noreferrer">
+                  {starter.attribution}
+                </a>
+              </dd>
+            </div>
+          )}
+          <div>
+            <dt>Difficulties</dt>
+            <dd>{mapset?.preview.difficulties.length ?? 1}</dd>
+          </div>
+          <div>
+            <dt>Play style</dt>
+            <dd>
+              {settings.inputMode === 'relax' ? 'Relax (hover to hit)' : 'Manual (tap keys to hit)'} ·{' '}
+              {settings.cursorAnchor === 'palm' ? 'palm cursor' : 'fingertip cursor'}
+            </dd>
+          </div>
+        </dl>
+      )}
     </>
   );
 }
