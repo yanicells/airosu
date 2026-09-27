@@ -293,7 +293,7 @@ test('pauses on an interrupted native AudioContext and resumes its preserved clo
   await expect
     .poll(() => page.evaluate(() => window.__airosuAudio.contexts.at(-1)?.state))
     .toBe('suspended');
-  await expect(page.getByRole('heading', { name: 'Take a breath.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'paused' })).toBeVisible();
   const pausedAt = await page.evaluate(
     () => window.__airosuAudio.contexts.at(-1)?.currentTime ?? 0,
   );
@@ -301,8 +301,8 @@ test('pauses on an interrupted native AudioContext and resumes its preserved clo
     .poll(() => page.evaluate(() => window.__airosuAudio.contexts.at(-1)?.currentTime ?? 0))
     .toBeLessThan(pausedAt + 0.05);
 
-  await page.getByRole('button', { name: /Resume Return to the beatmap/ }).click();
-  await expect(page.getByRole('heading', { name: 'Take a breath.' })).toBeHidden();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByRole('heading', { name: 'paused' })).toBeHidden();
   await expect
     .poll(() => page.evaluate(() => window.__airosuAudio.contexts.at(-1)?.state))
     .toBe('running');
@@ -319,5 +319,5 @@ test('surfaces a terminal hand-tracking error during gameplay', async ({ page })
     window.__airosuTracking.fail();
   });
   await expect(page.getByText('Synthetic tracking failure')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Back to (home|song select)/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Quit' })).toBeVisible();
 });

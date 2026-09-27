@@ -1,0 +1,92 @@
+.gameplay-menu {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 34px;
+  background: rgba(0, 0, 0, 0.8);
+  font-family: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
+  color: #fff;
+  text-align: center;
+  animation: gameplay-menu-in 0.2s ease-out;
+}
+.gameplay-menu header h2 {
+  margin: 0 0 18px;
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: 0.22em;
+  color: #ffcc22;
+}
+.gameplay-menu--fail header h2 {
+  color: #ff5a5a;
+}
+.gameplay-menu header p {
+  margin: 0 auto;
+  max-width: min(760px, 90vw);
+  font-size: clamp(14px, 1.2vw, 18px);
+}
+.gameplay-menu__buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.gameplay-menu__button {
+  --inset: 9vw;
+  position: relative;
+  width: calc(100% - 2 * var(--inset));
+  height: clamp(58px, 8vh, 78px);
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  transform: skewX(-10deg);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='90'%3E%3Cpath d='M40 10 90 90H-10Z' fill='%23000' fill-opacity='.07'/%3E%3Cpath d='M150 0 200 80H100Z' fill='%23fff' fill-opacity='.06'/%3E%3Cpath d='M190 40 230 100H150Z' fill='%23000' fill-opacity='.05'/%3E%3C/svg%3E")
+      0 50% / 220px 100% repeat-x,
+    var(--button-color);
+  transition:
+    width 0.3s cubic-bezier(0.2, 0.9, 0.3, 1),
+    box-shadow 0.3s,
+    filter 0.2s;
+}
+.gameplay-menu__button > span {
+  display: inline-block;
+  transform: skewX(10deg);
+  font-size: clamp(20px, 2vw, 28px);
+  font-weight: 700;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: letter-spacing 0.3s;
+}
+.gameplay-menu__button:hover,
+.gameplay-menu .gameplay-menu__button:focus-visible {
+  --inset: 4vw;
+  outline: none;
+  z-index: 1;
+  box-shadow:
+    -30px 0 40px -18px var(--button-color),
+    30px 0 40px -18px var(--button-color);
+  filter: brightness(1.08);
+}
+.gameplay-menu__button:hover > span,
+.gameplay-menu__button:focus-visible > span {
+  letter-spacing: 0.12em;
+}
+.gameplay-menu__retries {
+  margin: 0;
+  font-size: clamp(14px, 1.2vw, 18px);
+}
+@keyframes gameplay-menu-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gameplay-menu,
+  .gameplay-menu__button,
+  .gameplay-menu__button > span {
+    animation: none;
+    transition: none;
+  }
+}
