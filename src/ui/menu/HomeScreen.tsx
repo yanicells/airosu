@@ -26,7 +26,11 @@ export function HomeScreen() {
           aria-label={open ? 'Play' : 'Open main menu'}
           aria-expanded={open}
           aria-controls="home-actions"
-          onClick={() => (open ? setScreen('songs') : setOpen(true))}
+          onClick={() => {
+            if (open) return setScreen('songs');
+            setOpen(true);
+            void import('../home'); // warm the song select chunk while the menu animates in
+          }}
         />
       </main>
       <aside className="home-news">

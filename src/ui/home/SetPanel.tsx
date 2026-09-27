@@ -62,13 +62,19 @@ export function SetPanel({
   );
 }
 
-/** Bundled starter map; its artwork is pulled from the .osz lazily and cached. */
+/** Bundled starter map; artwork comes from the build-time extract, else from the archive. */
 export function StarterSetPanel({
   map,
   ...props
 }: { map: StarterMap } & Omit<SetPanelProps, 'title' | 'artist' | 'badge' | 'background'>) {
-  const background = useObjectUrl(useSongBackground(map));
+  const fallback = useObjectUrl(useSongBackground(map));
   return (
-    <SetPanel {...props} title={map.title} artist={map.artist} badge="starter" background={background} />
+    <SetPanel
+      {...props}
+      title={map.title}
+      artist={map.artist}
+      badge="starter"
+      background={map.backgroundUrl ?? fallback}
+    />
   );
 }
