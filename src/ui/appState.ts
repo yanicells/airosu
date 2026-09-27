@@ -69,6 +69,8 @@ export interface AppState {
   settings: Settings;
   calibration?: CalibrationBox;
   lastResult?: LastResult;
+  /** screen to go back to when settings closes */
+  settingsReturn: Screen;
   setScreen(screen: Screen): void;
   setMap(map: LoadedBeatmap | undefined): void;
   setMapset(mapset: Mapset | undefined): void;

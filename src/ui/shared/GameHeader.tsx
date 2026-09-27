@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { useContext, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { useQuery } from 'convex/react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { api } from '../../../convex/_generated/api';
-import { useAppState } from '../appState';
+import { AppStateContext, type Screen } from '../appState';
 import { AuthButton } from '../nav';
 import { GearIcon, HomeIcon, TargetIcon, TrophyIcon, UserIcon } from './icons';
 
@@ -28,16 +28,21 @@ function ToolbarClock() {
   );
 }
 
-/** Thin osu!lazer-style toolbar shared by every non-gameplay screen. */
+/** Thin osu!lazer-style toolbar shared by every non-gameplay screen and the web routes. */
 export function GameHeader() {
-  const { screen, setScreen } = useAppState();
+  const app = useContext(AppStateContext);
+  const navigate = useNavigate();
+  const screen = app?.screen;
+  // Web routes (profile, rankings) live outside the game; send them home with the wanted screen.
+  const setScreen = (next: Screen) =>
+    app ? app.setScreen(next) : navigate('/', { state: { screen: next } });
   const me = useQuery(api.users.me);
   const { signIn } = useAuthActions();
   return (
     <header className="game-header">
       <button
         className={`toolbar-button${screen === 'settings' ? ' is-active' : ''}`}
-        onClick={() => setScreen('settings')}
+        onClick={() => (app && screen === 'settings' ? app.setScreen(app.settingsReturn) : setScreen('settings'))}
         aria-label="Settings"
       >
         <GearIcon />

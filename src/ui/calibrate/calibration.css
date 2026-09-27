@@ -1,41 +1,139 @@
-.calibration-screen {
-  min-height: 100%;
-  padding: 28px 20px;
+.calibration-scene {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  background: #16171b;
 }
-.calibration-back {
-  position: absolute;
-  top: 16px;
-  left: 16px;
+.calibration-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 460px) 1fr;
 }
-.calibration-screen .calibration-instruction {
+.calibration-panel {
+  display: flex;
+  flex-direction: column;
+  box-shadow: 10px 0 40px rgba(0, 0, 0, 0.35);
+}
+.calibration-panel h2 {
   margin: 0;
+  font-size: 23px;
+  font-weight: 500;
 }
-.calibration-actions,
-.aim-area-info {
+.calibration-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.calibration-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 20px 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+.calibration-steps li {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: #212227;
+  color: #9fa0a8;
+  font-size: 15px;
+  counter-increment: step;
+}
+.calibration-steps li::before {
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  font-size: 12px;
+  font-weight: 800;
+}
+.calibration-steps li.is-active {
+  color: #fff;
+  box-shadow: inset 4px 0 #8866ee;
+}
+.calibration-steps li.is-active::before {
+  border-color: #8866ee;
+  background: #8866ee;
+}
+.calibration-steps li.is-done {
+  color: #d9f28a;
+}
+.calibration-panel .calibration-instruction {
+  margin: 0 0 14px;
+  color: #e8e8ec;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  max-width: none;
 }
 .aim-area-info {
-  width: min(640px, 90vw);
+  display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 12px;
   font-variant-numeric: tabular-nums;
-  color: #cbb9d9;
+  color: #c9c1f2;
+}
+.lz-link {
+  border: 0;
+  background: none;
+  color: #c9c1f2;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.lz-link:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 #aim-help {
-  font-size: 12px;
-  color: #cbb9d9;
-  margin: 0;
-  max-width: 640px;
-  text-align: center;
+  display: block;
+  margin: 8px 0 22px;
+}
+.calibration-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.calibration-back {
+  margin-top: auto;
+}
+.calibration-panel > section {
+  margin-bottom: 26px;
+}
+.calibration-stage {
+  --preview-h: calc(100dvh - 48px - 64px);
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  min-width: 0;
+  background: radial-gradient(ellipse at 50% 45%, #22252c, #121316 75%);
+}
+.camera-preview {
+  position: relative;
+  width: min(100%, calc(var(--preview-h) * var(--aspect)));
+  aspect-ratio: var(--aspect);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  box-shadow:
+    0 0 0 3px #ffffff14,
+    0 24px 70px rgba(0, 0, 0, 0.5);
+}
+.calibration-waiting {
+  font-size: 18px;
+  color: #c8c9d0;
 }
 .aim-editor {
   position: absolute;
@@ -43,15 +141,15 @@
 }
 .aim-area {
   position: absolute;
-  border: 2px solid #ff66aa;
-  box-shadow: 0 0 0 100vmax rgb(10 6 18 / 48%);
+  border: 2px solid #8866ee;
+  box-shadow: 0 0 0 100vmax rgb(10 10 16 / 50%);
 }
 .aim-area__move {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  background: rgb(255 102 170 / 5%);
+  background: rgb(136 102 238 / 6%);
   border: 0;
   color: white;
   cursor: move;
@@ -72,7 +170,7 @@
   padding: 0;
   border: 2px solid #fff;
   border-radius: 5px;
-  background: #a3346a;
+  background: #8866ee;
   transform: translate(-50%, -50%);
   touch-action: none;
   z-index: 2;
@@ -107,14 +205,14 @@
 .aim-editor button:disabled.aim-area__handle {
   opacity: 0;
 }
-.calibration-screen .corner-target.is-idle {
+.calibration-scene .corner-target.is-idle {
   opacity: 0.5;
 }
-.calibration-screen .corner-target.is-idle::after {
+.calibration-scene .corner-target.is-idle::after {
   animation: none;
   display: none;
 }
-.calibration-screen .calibration-cursor {
+.calibration-scene .calibration-cursor {
   z-index: 3;
 }
 .calibration-warning {
@@ -122,7 +220,22 @@
   font-size: 13px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .calibration-screen .corner-target {
+  .calibration-scene .corner-target {
     animation: none;
+  }
+}
+@media (max-width: 800px) {
+  .calibration-scene {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .calibration-body {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  .calibration-stage {
+    --preview-h: 50vh;
+    padding: 16px;
   }
 }
