@@ -319,5 +319,5 @@ test('surfaces a terminal hand-tracking error during gameplay', async ({ page })
     window.__airosuTracking.fail();
   });
   await expect(page.getByText('Synthetic tracking failure')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Quit' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Quit', exact: true })).toBeVisible();
 });
