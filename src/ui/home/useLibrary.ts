@@ -24,13 +24,16 @@ export function useLibrary() {
     refresh().catch(() => setUnavailable(true));
   }, [refresh]);
 
+  /** Resolves to the saved entry's id, or undefined when storage is unavailable. */
   const save = useCallback(
     async (bytes: Uint8Array, label: string, difficultyCount: number) => {
       try {
-        await saveMapset(bytes, label, difficultyCount);
+        const { id } = await saveMapset(bytes, label, difficultyCount);
         await refresh();
+        return id;
       } catch {
         setUnavailable(true); // upload continues in-memory
+        return undefined;
       }
     },
     [refresh],

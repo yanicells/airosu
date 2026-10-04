@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { expect, test, type Page } from '@playwright/test';
+import { strToU8, zipSync } from 'fflate';
 
 const BASE_ORIGIN = 'http://127.0.0.1:4173';
 
@@ -342,4 +343,18 @@ test('retries from results after visiting settings without losing the camera', a
   await expect(page.locator('canvas')).toBeVisible();
   await expect(page.locator('.count-pop')).toBeVisible();
   await expect(page.getByText(/Hand tracking is unavailable/)).toBeHidden();
+});
+
+test('lists an imported .osz once after it is saved to the library', async ({ page }) => {
+  await page.getByRole('button', { name: 'Open main menu' }).click();
+  await page.getByRole('button', { name: 'play', exact: true }).click();
+  await page.locator('input[type="file"][accept=".osz,.osu"]').setInputFiles({
+    name: 'browser-smoke.osz',
+    mimeType: 'application/octet-stream',
+    buffer: Buffer.from(zipSync({ 'map.osu': strToU8(OSU_MAP), 'song.wav': wavBytes(1000) })),
+  });
+  await expect(page.getByRole('heading', { name: 'Browser Smoke' })).toBeVisible();
+  // the library entry (titled by file name) replaces the temporary panel (titled by metadata)
+  await expect(page.locator('.set-panel', { hasText: /browser[- ]smoke/i })).toHaveCount(1);
+  await expect(page.locator('.set-panel.is-selected')).toHaveText(/browser-smoke/);
 });
