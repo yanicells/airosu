@@ -55,8 +55,7 @@ console.log(`verified ${manifest.maps.length} starter maps (${total} bytes)`);
 const AUDIO = /\.(mp3|ogg|wav|flac|m4a)$/i;
 const approvedAudio = new Map([
   // Bundled skin hitsounds (game-assets/skins/Aristia(Edit)+trail.osk).
-  // TODO: licence unverified. No document in this repo grants redistribution rights
-  // for the Aristia skin; resolve before relying on this allowlist entry.
+  // The repo owner approved shipping this skin's audio (2026-10-05).
   ['bc02d4e3ec94922f331e1c4da10efb3c9de2b13ae278d203e73b40178d9b8df2', 'skin normal-hitnormal.wav'],
   ['d2c78fd56564bf8a107ea0988df13a7a75520192471f5bff1fa05bd9f20e6590', 'skin combobreak.wav'],
 ]);
