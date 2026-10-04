@@ -40,6 +40,12 @@ SliderTickRate: 1
 384,288,20000,1,0
 `;
 
+// One early circle so a play reaches results within a few seconds.
+const SHORT_MAP = OSU_MAP.replace(
+  '256,192,10000,1,0\n128,96,15000,1,0\n384,288,20000,1,0',
+  '256,192,1000,1,0',
+);
+
 const REPLACEMENT_MAP = OSU_MAP
   .replaceAll('Browser Smoke', 'Replacement Map')
   .replace('song.wav', 'replacement.wav');
@@ -193,10 +199,10 @@ async function uploadMap(page: Page, name: string, text: string): Promise<void> 
   });
 }
 
-async function openStandaloneMap(page: Page, start = true): Promise<void> {
+async function openStandaloneMap(page: Page, start = true, map = OSU_MAP): Promise<void> {
   await page.getByRole('button', { name: 'Open main menu' }).click();
   await page.getByRole('button', { name: 'play', exact: true }).click();
-  await uploadMap(page, 'browser-smoke.osu', OSU_MAP);
+  await uploadMap(page, 'browser-smoke.osu', map);
   await expect(page.getByRole('heading', { name: 'Browser Smoke' })).toBeVisible();
   await page.locator('input[type="file"][accept="audio/*"]').setInputFiles({
     name: 'song.wav',
@@ -320,4 +326,20 @@ test('surfaces a terminal hand-tracking error during gameplay', async ({ page })
   });
   await expect(page.getByText('Synthetic tracking failure')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Quit', exact: true })).toBeVisible();
+});
+
+test('retries from results after visiting settings without losing the camera', async ({ page }) => {
+  await openStandaloneMap(page, true, SHORT_MAP);
+  await enterGameplay(page);
+  const retry = page.getByRole('button', { name: 'Retry' });
+  await expect(retry).toBeVisible({ timeout: 15_000 });
+
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(retry).toBeHidden();
+  await page.getByRole('button', { name: 'Close settings' }).click();
+  await retry.click();
+
+  await expect(page.locator('canvas')).toBeVisible();
+  await expect(page.locator('.count-pop')).toBeVisible();
+  await expect(page.getByText(/Hand tracking is unavailable/)).toBeHidden();
 });
