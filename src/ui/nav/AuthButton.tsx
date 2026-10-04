@@ -18,18 +18,8 @@ export function AuthButton() {
     const closeOutside = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
-    const closeWithEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setOpen(false);
-      faceRef.current?.focus();
-    };
-
     document.addEventListener('pointerdown', closeOutside);
-    document.addEventListener('keydown', closeWithEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOutside);
-      document.removeEventListener('keydown', closeWithEscape);
-    };
+    return () => document.removeEventListener('pointerdown', closeOutside);
   }, [open]);
 
   if (me === undefined) return null;
@@ -41,7 +31,18 @@ export function AuthButton() {
     );
   }
   return (
-    <div className="auth-chip" ref={rootRef}>
+    <div
+      className="auth-chip"
+      ref={rootRef}
+      onKeyDown={(event) => {
+        // Claim Escape so the screen behind (settings, calibration) doesn't also close.
+        if (event.key !== 'Escape' || !open) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setOpen(false);
+        faceRef.current?.focus();
+      }}
+    >
       <button
         ref={faceRef}
         type="button"
