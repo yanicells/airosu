@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { convexTest } from 'convex-test';
 import aggregate from '@convex-dev/aggregate/test';
 import migrationComponent from '@convex-dev/migrations/test';
@@ -311,5 +311,24 @@ describe('migrations.backfillBoards', () => {
       total: 1,
       rows: [{ osuId: 10 }],
     });
+  });
+});
+
+describe('osuApi.syncOsuStats', () => {
+  it('lets one concurrent caller fetch and cools down after a failure', async () => {
+    const t = makeTest();
+    await t.run((ctx) => ctx.db.insert('users', { osuId: 31, name: 'stale' }));
+    const fetchMock = vi.fn(async () => new Response('nope', { status: 500 }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      await Promise.all([
+        t.action(api.osuApi.syncOsuStats, { osuId: 31 }),
+        t.action(api.osuApi.syncOsuStats, { osuId: 31 }),
+      ]);
+      await t.action(api.osuApi.syncOsuStats, { osuId: 31 });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(1); // one token request, then the cooldown holds
   });
 });

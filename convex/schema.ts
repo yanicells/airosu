@@ -29,6 +29,8 @@ export default defineSchema({
     osuPp: v.optional(v.number()),
     osuGlobalRank: v.optional(v.number()),
     osuStatsSyncedAt: v.optional(v.number()),
+    /** last osu! stats fetch attempt; leases the sync and rate-limits retries */
+    osuStatsAttemptAt: v.optional(v.number()),
   })
     .index('email', ['email'])
     .index('phone', ['phone'])
