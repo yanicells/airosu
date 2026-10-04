@@ -431,7 +431,7 @@
     filter: brightness(1.35);
   }
 }
-.set-panel__face:disabled {
+.set-panel__face[aria-disabled='true'] {
   cursor: progress;
 }
 .set-panel__chevron {
