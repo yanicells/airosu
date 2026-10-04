@@ -35,7 +35,8 @@ export interface SliderObj {
   time: number;
   pos: Vec2;
   endTime: number;
-  repeats: number;
+  /** number of path traversals: 1 = no reverse, 2 = one reverse, … */
+  spans: number;
   /** flattened path in playfield coords incl. start point, ~5px spacing */
   path: Vec2[];
   comboIndex: number;

@@ -100,11 +100,11 @@ describe('GameSession lifecycle', () => {
 });
 
 describe('sliderBallPos', () => {
-  const slider = (repeats: number): import('../beatmap/model').SliderObj => ({
+  const slider = (spans: number): import('../beatmap/model').SliderObj => ({
     kind: 'slider', comboIndex: 0, comboNumber: 1,
     time: 1000,
     endTime: 2000,
-    repeats,
+    spans,
     pos: { x: 0, y: 0 },
     path: [
       { x: 0, y: 0 },
@@ -131,7 +131,7 @@ describe('slider judgment', () => {
         kind: 'slider', comboIndex: 0, comboNumber: 1,
         time: 1000,
         endTime: 2000,
-        repeats: 1,
+        spans: 1,
         pos: { x: 0, y: 0 },
         path: [
           { x: 0, y: 0 },
@@ -169,7 +169,7 @@ it('keeps an unfinished slider visible while later circles resolve', () => {
       kind: 'slider', comboIndex: 0, comboNumber: 1,
       time: 1000,
       endTime: 4000,
-      repeats: 1,
+      spans: 1,
       pos: { x: 100, y: 100 },
       path: [
         { x: 100, y: 100 },
@@ -202,7 +202,7 @@ it('reuses slider geometry across frames without recomputing segment lengths', (
     kind: 'slider' as const, comboIndex: 0, comboNumber: 1,
     time: 0,
     endTime: 1000,
-    repeats: 1,
+    spans: 1,
     pos: path[0],
     path,
   };

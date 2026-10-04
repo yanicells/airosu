@@ -23,11 +23,11 @@ const FOLLOW_SCALE = 2.4;
 
 const pathLengths = new WeakMap<Vec2[], Float64Array>();
 
-/** slider ball position at timeMs: linear interp along path incl. repeats */
+/** slider ball position at timeMs: linear interp along path incl. reverse spans */
 export function sliderBallPos(s: SliderObj, timeMs: number): Vec2 {
   if (s.path.length < 2) return s.pos;
   const duration = s.endTime - s.time;
-  const spans = Math.max(s.repeats, 1);
+  const spans = Math.max(s.spans, 1);
   let progress = Math.min(Math.max((timeMs - s.time) / duration, 0), 1) * spans;
   const span = Math.min(Math.floor(progress), spans - 1);
   progress -= span;

@@ -65,7 +65,7 @@ export class SkinnedObjectLayer {
       root.addChild(group.approach);
     }
     if (obj.kind === 'slider') {
-      if (reverseArrow && obj.repeats > 1) {
+      if (reverseArrow && obj.spans > 1) {
         group.reverse = makeSprite(reverseArrow);
         group.reverse.scale.set(circleSpriteScale(reverseArrow, r));
         root.addChild(group.reverse);
@@ -96,7 +96,7 @@ export class SkinnedObjectLayer {
       group.follow?.position.set(pos.x, pos.y);
     }
     if (group.reverse) {
-      const spans = Math.max(obj.repeats, 1);
+      const spans = Math.max(obj.spans, 1);
       const duration = (obj.endTime - obj.time) / spans;
       const span = active ? Math.min(Math.floor((timeMs - obj.time) / duration), spans - 1) : 0;
       const remaining = spans - 1 - span;
