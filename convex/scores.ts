@@ -3,6 +3,7 @@ import { getAuthUserId } from '@convex-dev/auth/server';
 import { mutation, query, type MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { PP_VERSION } from '../src/game/ppFormula';
+import { maxScore } from '../src/game/score';
 import { scoreDerived, validateSubmission, weightedTotals } from './lib/scoring';
 import { syncBoards } from './leaderboard';
 
@@ -74,6 +75,9 @@ export const submit = mutation({
     };
     const invalid = validateSubmission(map, stats);
     if (invalid) throw new ConvexError(`score could not be verified: ${invalid}`);
+    if (args.score > maxScore(stats)) {
+      throw new ConvexError('score could not be verified: score exceeds what these judgments allow');
+    }
 
     const derived = scoreDerived(map, stats);
 

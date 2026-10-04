@@ -38,3 +38,33 @@ export class ScoreState {
     this._maxCombo = Math.max(this._maxCombo, this._combo);
   }
 }
+
+/**
+ * Highest raw score any play with these judgement counts and max combo could reach: hits
+ * fill combo runs no longer than maxCombo, with the best judgements on the highest combos.
+ * Each hit is worth j × (1 + combo/25), always an integer for 300/100/50.
+ */
+export function maxScore(s: {
+  count300: number;
+  count100: number;
+  count50: number;
+  maxCombo: number;
+}): number {
+  const hits = s.count300 + s.count100 + s.count50;
+  if (hits === 0 || s.maxCombo <= 0) return 0;
+  const fullRuns = Math.floor(hits / s.maxCombo);
+  const remainder = hits % s.maxCombo;
+  const left = { 300: s.count300, 100: s.count100, 50: s.count50 };
+  let total = 0;
+  for (let combo = s.maxCombo - 1; combo >= 0; combo--) {
+    // hits that land at this combo position across all runs
+    let slots = fullRuns + (combo < remainder ? 1 : 0);
+    for (const j of [300, 100, 50] as const) {
+      const used = Math.min(slots, left[j]);
+      left[j] -= used;
+      slots -= used;
+      total += used * j * (1 + combo / 25);
+    }
+  }
+  return Math.round(total);
+}

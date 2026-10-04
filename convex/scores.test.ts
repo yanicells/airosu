@@ -73,7 +73,7 @@ describe('scores.submit', () => {
       count50: 0,
       countMiss: 0,
       maxCombo: 100,
-      score: 123_456,
+      score: 89_400, // 100-hit full combo of 300s
       inputMode: 'relax' as const,
       forgiveness: 1.5,
       cursorAnchor: 'palm' as const,
@@ -99,6 +99,42 @@ describe('scores.submit', () => {
     const other = t.withIdentity({ subject: `${otherId}|other-session` });
     expect((await other.query(api.scores.personalHistory, { mapId }))?.recent).toEqual([]);
 
+  });
+
+  it('rejects a raw score above what the judgments and combo allow', async () => {
+    const t = makeTest();
+    const { userId, mapId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert('users', { osuId: 9, name: 'p3' });
+      const osuFileId = await ctx.storage.store(new Blob(['osu file format v14']));
+      const mapId = await ctx.db.insert('maps', { md5: 'c'.repeat(32), ...mapAttributes, osuFileId });
+      return { userId, mapId };
+    });
+    const authed = t.withIdentity({ subject: `${userId}|test-session` });
+    const play = {
+      mapId,
+      count300: 100,
+      count100: 0,
+      count50: 0,
+      countMiss: 0,
+      maxCombo: 100,
+      inputMode: 'relax' as const,
+      forgiveness: 1.5,
+      cursorAnchor: 'palm' as const,
+    };
+    await expect(
+      authed.mutation(api.scores.submit, {
+        ...play,
+        playId: '44444444-4444-4444-8444-444444444444',
+        score: 89_401,
+      }),
+    ).rejects.toThrow(/exceeds/);
+    await expect(
+      authed.mutation(api.scores.submit, {
+        ...play,
+        playId: '55555555-5555-4555-8555-555555555555',
+        score: 89_400,
+      }),
+    ).resolves.toMatchObject({ isBest: true });
   });
 
   it('marks a better replay as best and flips the old flag', async () => {
