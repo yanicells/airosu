@@ -4,6 +4,7 @@ import { ConvexError } from 'convex/values';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { useAppState } from '../ui/appState';
+import { savePendingSubmission, scoreArgs } from './pendingSubmission';
 
 export type SubmitStatus = 'signedOut' | 'idle' | 'submitting' | 'done' | 'error';
 
@@ -27,19 +28,7 @@ export function useSubmitScore() {
       try {
         const mapId = await registerMap({ osuText: map.rawOsu });
         setMapId(mapId);
-        const res = await submitScore({
-          playId: lastResult.playId,
-          mapId,
-          count300: lastResult.counts[300],
-          count100: lastResult.counts[100],
-          count50: lastResult.counts[50],
-          countMiss: lastResult.counts[0],
-          maxCombo: lastResult.maxCombo,
-          score: lastResult.score,
-          inputMode: lastResult.inputMode,
-          forgiveness: lastResult.forgiveness,
-          cursorAnchor: lastResult.cursorAnchor,
-        });
+        const res = await submitScore(scoreArgs(lastResult, mapId));
         setResult({ pp: res.pp, isBest: res.isBest });
         setStatus('done');
       } catch (e) {
@@ -52,6 +41,8 @@ export function useSubmitScore() {
   useEffect(() => {
     if (me === null) {
       setStatus('signedOut');
+      // osu! sign-in is a full-page redirect; keep the play so it can submit on return
+      if (map && lastResult) savePendingSubmission({ osuText: map.rawOsu, play: lastResult });
       return;
     }
     if (me && !startedRef.current && map && lastResult) {
