@@ -73,9 +73,9 @@ export const submit = mutation({
       countMiss: args.countMiss,
       maxCombo: args.maxCombo,
     };
-    const invalid = validateSubmission(map, stats);
+    const invalid = validateSubmission(map.difficulty, stats);
     if (invalid) throw new ConvexError(`score could not be verified: ${invalid}`);
-    if (args.score > maxScore(stats)) {
+    if (args.score > maxScore(stats, map.difficulty.sliderCount)) {
       throw new ConvexError('score could not be verified: score exceeds what these judgments allow');
     }
 

@@ -3,13 +3,15 @@ import {
   AIROSU_PP_MULTIPLIER,
   PP_VERSION,
   accuracyOf,
+  airosuMaxCombo,
   judgedCount,
   lazerPp,
   playPp,
   type MapDifficulty,
 } from './ppFormula';
 
-const ss = { count300: 100, count100: 0, count50: 0, countMiss: 0, maxCombo: 100 };
+/** 90 objects; a full airosu combo is 100 (each slider's head + end) */
+const ss = { count300: 90, count100: 0, count50: 0, countMiss: 0, maxCombo: 100 };
 
 /** plausible ~3★ map attributes */
 const difficulty: MapDifficulty = {
@@ -29,7 +31,7 @@ const difficulty: MapDifficulty = {
 };
 
 describe('ppFormula', () => {
-  it('has a version', () => expect(PP_VERSION).toBe(2));
+  it('has a version', () => expect(PP_VERSION).toBe(3));
 
   it('accuracy: SS is 1, all-miss is 0, empty is 0', () => {
     expect(accuracyOf(ss)).toBe(1);
@@ -37,7 +39,10 @@ describe('ppFormula', () => {
     expect(accuracyOf({ count300: 0, count100: 0, count50: 0, countMiss: 0, maxCombo: 0 })).toBe(0);
   });
 
-  it('judgedCount sums all judgments', () => expect(judgedCount(ss)).toBe(100));
+  it('judgedCount sums all judgments', () => expect(judgedCount(ss)).toBe(90));
+
+  it('airosu max combo counts every object plus each slider head', () =>
+    expect(airosuMaxCombo(difficulty)).toBe(100));
 
   it('pp is lazer play pp times the flat airosu multiplier', () => {
     expect(playPp(difficulty, ss)).toBeCloseTo(lazerPp(difficulty, ss) * AIROSU_PP_MULTIPLIER, 10);
@@ -45,18 +50,24 @@ describe('ppFormula', () => {
   });
 
   it('worse accuracy, combo, and misses earn strictly less', () => {
-    const worseAcc = { ...ss, count300: 90, count100: 10 };
+    const worseAcc = { ...ss, count300: 80, count100: 10 };
     const worseCombo = { ...ss, maxCombo: 50 };
-    const missy = { ...ss, count300: 90, countMiss: 10, maxCombo: 40 };
+    const missy = { ...ss, count300: 80, countMiss: 10, maxCombo: 40 };
     expect(playPp(difficulty, worseAcc)).toBeLessThan(playPp(difficulty, ss));
     expect(playPp(difficulty, worseCombo)).toBeLessThan(playPp(difficulty, ss));
     expect(playPp(difficulty, missy)).toBeLessThan(playPp(difficulty, worseAcc));
     expect(playPp(difficulty, missy)).toBeGreaterThan(0);
   });
 
-  it('a full per-judgment combo maps to a lazer full combo', () => {
-    // game combo counts judgments; lazer max combo counts slider ticks too
+  it('a full airosu combo maps to a lazer full combo', () => {
+    // airosu combo counts slider heads + ends; lazer max combo counts slider ticks too
     expect(playPp(difficulty, ss)).toBeCloseTo(playPp(difficulty, { ...ss, maxCombo: 1000 }), 10);
+  });
+
+  it('a combo one object short of the full airosu combo is not a full combo', () => {
+    // judged-count combo (v2's denominator) would wrongly read 90/90 as an FC
+    expect(playPp(difficulty, { ...ss, maxCombo: 90 })).toBeLessThan(playPp(difficulty, ss));
+    expect(playPp(difficulty, { ...ss, maxCombo: 99 })).toBeLessThan(playPp(difficulty, ss));
   });
 
   it('zero judgments earn zero pp', () => {

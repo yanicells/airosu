@@ -157,26 +157,43 @@ describe('slider judgment', () => {
       },
     ]);
 
-  it('cursor glued to ball → final 300', () => {
+  const ballAt = (t: number) =>
+    sliderBallPos(sliderMap().objects[0] as import('../beatmap/model').SliderObj, t);
+  /** plays the slider at 50 fps; `cursorAt` picks the cursor per frame */
+  const playSlider = (cursorAt: (t: number) => { x: number; y: number } | null) => {
     const s = new GameSession(sliderMap(), relax);
-    const all: number[] = [];
-    for (let t = 1000; t <= 2000; t += 20) {
-      const ball = sliderBallPos(sliderMap().objects[0] as import('../beatmap/model').SliderObj, t);
-      for (const e of s.tick(t, ball)) all.push(e.judgment);
-    }
-    expect(all[0]).toBe(300); // head
-    expect(all[1]).toBe(300); // slider end
+    const events = [];
+    for (let t = 1000; t <= 2000; t += 20) events.push(...s.tick(t, cursorAt(t)));
+    return { s, events };
+  };
+
+  it('cursor glued to ball → head combo + one 300', () => {
+    const { s, events } = playSlider(ballAt);
+    expect(events.map((e) => [e.head ?? false, e.judgment])).toEqual([
+      [true, 300],
+      [false, 300],
+    ]);
     expect(s.state.finished).toBe(true);
+    expect(s.state.score.counts).toEqual({ 300: 1, 100: 0, 50: 0, 0: 0 });
+    expect(s.state.score.maxCombo).toBe(2);
   });
 
-  it('cursor absent whole slider → 0', () => {
-    const s = new GameSession(sliderMap(), relax);
-    const all: number[] = [];
-    for (let t = 1000; t <= 2000; t += 20) for (const e of s.tick(t, null)) all.push(e.judgment);
-    // head miss + follow 0
-    expect(all).toContain(0);
-    expect(all[all.length - 1]).toBe(0);
+  it('cursor absent whole slider → one miss, the head is not counted', () => {
+    const { s, events } = playSlider(() => null);
+    expect(events.map((e) => [e.head ?? false, e.judgment])).toEqual([
+      [true, 0],
+      [false, 0],
+    ]);
     expect(s.state.finished).toBe(true);
+    expect(s.state.score.counts).toEqual({ 300: 0, 100: 0, 50: 0, 0: 1 });
+  });
+
+  it('missed head but full follow → 100, combo broken by the head only', () => {
+    // arrive after the head's window closes, then follow the ball to the end
+    const { s, events } = playSlider((t) => (t < 1200 ? null : ballAt(t)));
+    expect(events.at(-1)?.judgment).toBe(100);
+    expect(s.state.score.counts).toEqual({ 300: 0, 100: 1, 50: 0, 0: 0 });
+    expect(s.state.score.maxCombo).toBe(1);
   });
 });
 

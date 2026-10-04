@@ -1,14 +1,17 @@
 import type { HitObject, LoadedBeatmap, SliderObj, Vec2 } from '../beatmap/model';
 import { circleRadius } from '../beatmap/model';
 import type { Settings } from '../ui/appState';
-import { hitWindows, inRadius, judgeTiming } from './judge';
+import { hitWindows, inRadius, judgeTiming, sliderJudgment } from './judge';
 import type { Judgment } from './judge';
 import { ScoreState } from './score';
 
 export interface HitEvent {
   objectIndex: number;
+  /** for a slider head: its timing quality, or 0 when missed — not a counted judgement */
   judgment: Judgment;
   at: Vec2;
+  /** slider head: feeds combo and hitsounds only; the slider's judgement comes at its end */
+  head?: true;
 }
 
 export interface SessionState {
@@ -85,7 +88,7 @@ interface SliderTrack {
 export class GameSession {
   private map: LoadedBeatmap;
   private settings: Settings;
-  /** fully resolved (slider = final judgment emitted) */
+  /** fully resolved (slider = its one judgement emitted at endTime) */
   private judged: boolean[];
   private sliders = new Map<number, SliderTrack>();
   private scoreState = new ScoreState();
@@ -156,12 +159,12 @@ export class GameSession {
   }
 
   private resolveHead(events: HitEvent[], i: number, judgment: Judgment): void {
-    const obj = this.map.objects[i];
     const track = this.sliders.get(i);
     if (track) {
       track.headDone = true;
       track.headMissed = judgment === 0;
-      this.emit(events, i, judgment, obj.kind === 'slider' ? obj.pos : undefined);
+      this.scoreState.applySliderHead(judgment !== 0);
+      events.push({ objectIndex: i, judgment, at: objPos(this.map.objects[i]), head: true });
     } else {
       this.judged[i] = true;
       this.emit(events, i, judgment);
@@ -227,8 +230,7 @@ export class GameSession {
         this.judged[i] = true;
         this.sliders.delete(i);
         const ratio = track.totalTicks === 0 ? 0 : track.inTicks / track.totalTicks;
-        let j: Judgment = ratio >= 0.9 ? 300 : ratio >= 0.5 ? 100 : ratio > 0 ? 50 : 0;
-        if (track.headMissed && j === 300) j = 100; // missed head caps the slider at 100
+        const j = sliderJudgment(!track.headMissed, ratio, obj.spans);
         this.emit(events, i, j, sliderBallPos(obj, obj.endTime));
       }
     }

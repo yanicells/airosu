@@ -6,6 +6,7 @@ import migrationComponent from '@convex-dev/migrations/test';
 import { api, internal } from './_generated/api';
 import schema from './schema';
 import { PP_VERSION } from '../src/game/ppFormula';
+import { maxScore } from '../src/game/score';
 import { syncBoards, userRanks } from './leaderboard';
 
 const modules = import.meta.glob('./**/*.ts');
@@ -32,7 +33,7 @@ const mapAttributes = {
   starRating: 3,
   maxCombo: 120,
   objectCount: 80,
-  judgmentCount: 100,
+  judgmentCount: 80,
   ssPp: 100,
   difficulty: {
     starRating: 3,
@@ -49,8 +50,10 @@ const mapAttributes = {
     spinnerCount: 0,
     maxCombo: 120,
   },
-  attributesVersion: 2,
+  attributesVersion: 3,
 };
+/** a full clean play on mapAttributes: 80 objects, combo 100 (each slider's head + end) */
+const fullCombo = { count300: 80, count100: 0, count50: 0, countMiss: 0, maxCombo: 100 };
 
 describe('scores.submit', () => {
   it('stores the same playId only once', async () => {
@@ -69,12 +72,8 @@ describe('scores.submit', () => {
     const args = {
       playId: '11111111-1111-4111-8111-111111111111',
       mapId,
-      count300: 100,
-      count100: 0,
-      count50: 0,
-      countMiss: 0,
-      maxCombo: 100,
-      score: 89_400, // 100-hit full combo of 300s
+      ...fullCombo,
+      score: 50_000,
       inputMode: 'relax' as const,
       forgiveness: 1.5,
       cursorAnchor: 'palm' as const,
@@ -111,13 +110,10 @@ describe('scores.submit', () => {
       return { userId, mapId };
     });
     const authed = t.withIdentity({ subject: `${userId}|test-session` });
+    const bound = maxScore(fullCombo, mapAttributes.difficulty.sliderCount);
     const play = {
       mapId,
-      count300: 100,
-      count100: 0,
-      count50: 0,
-      countMiss: 0,
-      maxCombo: 100,
+      ...fullCombo,
       inputMode: 'relax' as const,
       forgiveness: 1.5,
       cursorAnchor: 'palm' as const,
@@ -126,14 +122,14 @@ describe('scores.submit', () => {
       authed.mutation(api.scores.submit, {
         ...play,
         playId: '44444444-4444-4444-8444-444444444444',
-        score: 89_401,
+        score: bound + 1,
       }),
     ).rejects.toThrow(/exceeds/);
     await expect(
       authed.mutation(api.scores.submit, {
         ...play,
         playId: '55555555-5555-4555-8555-555555555555',
-        score: 89_400,
+        score: bound,
       }),
     ).resolves.toMatchObject({ isBest: true });
   });
@@ -162,18 +158,15 @@ describe('scores.submit', () => {
     const weak = await authed.mutation(api.scores.submit, {
       ...base,
       playId: '22222222-2222-4222-8222-222222222222',
-      count300: 60,
-      count100: 30,
+      count300: 50,
+      count100: 20,
       countMiss: 10,
       maxCombo: 40,
     });
     const strong = await authed.mutation(api.scores.submit, {
       ...base,
       playId: '33333333-3333-4333-8333-333333333333',
-      count300: 100,
-      count100: 0,
-      countMiss: 0,
-      maxCombo: 100,
+      ...fullCombo,
     });
     expect(weak.isBest).toBe(true);
     expect(strong.isBest).toBe(true);
@@ -212,6 +205,7 @@ describe('migrations.recalcScores', () => {
         userId,
         mapId,
         playId: '44444444-4444-4444-8444-444444444444',
+        // PP v2-era stats (a judgement per slider head): recalculated as-is, never rejected
         count300: 100,
         count100: 0,
         count50: 0,

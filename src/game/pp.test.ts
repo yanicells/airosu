@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { listDifficulties } from '../beatmap/load';
 import { PpCounter, preparePp, type HitStats } from './pp';
+import { airosuMaxCombo } from './ppFormula';
 
 const osz = new Uint8Array(
   readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
@@ -11,13 +12,11 @@ const diffs = listDifficulties(osz);
 const quaverOsz = new Uint8Array(readFileSync('game-assets/test-maps/873811 dj TAKA - quaver.osz'));
 const quaverDiffs = listDifficulties(quaverOsz);
 
-/** rough SS stats: every object a 300, combo = object count */
+/** SS stats: every object a 300, full airosu combo (slider head + end) */
 function ssStats(osuText: string): HitStats {
-  const objectCount = osuText
-    .slice(osuText.indexOf('[HitObjects]'))
-    .split('\n')
-    .filter((l) => l.includes(',')).length;
-  return { count300: objectCount, count100: 0, count50: 0, countMiss: 0, maxCombo: objectCount };
+  const d = preparePp(osuText).full;
+  const objectCount = d.hitCircleCount + d.sliderCount + d.spinnerCount;
+  return { count300: objectCount, count100: 0, count50: 0, countMiss: 0, maxCombo: airosuMaxCombo(d) };
 }
 
 describe('PpCounter', () => {
@@ -70,9 +69,9 @@ describe('PpCounter', () => {
     expect(ss).toBeLessThan(20);
   });
 
-  it('treats a full per-object combo as a true full combo (no tick penalty)', () => {
-    // game combo counts objects; the calculator's max combo counts slider
-    // ticks too — a genuine FC must not be punished for the difference
+  it('treats a full airosu combo as a true full combo (no tick penalty)', () => {
+    // game combo counts slider heads + ends; the calculator's max combo counts
+    // slider ticks too — a genuine FC must not be punished for the difference
     const counter = new PpCounter(preparePp(insane.osuText));
     const ss = ssStats(insane.osuText);
     const inflated = { ...ss, maxCombo: ss.maxCombo * 10 };

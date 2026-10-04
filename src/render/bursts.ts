@@ -28,6 +28,8 @@ export class BurstLayer {
 
   add(view: RenderView): void {
     for (const hit of view.recentHits) {
+      // like osu!stable, slider heads get no judgement popup; the slider is judged at its end
+      if (hit.head) continue;
       const skinTex = this.skin?.hitResults[hit.judgment];
       let node: Sprite | Text | null = null;
       if (skinTex) {

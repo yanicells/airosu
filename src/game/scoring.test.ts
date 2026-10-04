@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { PP_VERSION } from './ppFormula';
 import { scoreDerived, validateSubmission, weightedTotals } from '../../convex/lib/scoring';
 
+/** 80 objects (60 circles, 20 sliders); full airosu combo 100 */
 const map = {
-  judgmentCount: 100,
   difficulty: {
     starRating: 3,
     aimDifficulty: 1.5,
@@ -20,20 +20,23 @@ const map = {
     maxCombo: 120,
   },
 };
-const ss = { count300: 100, count100: 0, count50: 0, countMiss: 0, maxCombo: 100 };
+const ss = { count300: 80, count100: 0, count50: 0, countMiss: 0, maxCombo: 100 };
+const v = (s: typeof ss) => validateSubmission(map.difficulty, s);
 
 describe('validateSubmission', () => {
-  it('accepts a full clean play', () => expect(validateSubmission(map, ss)).toBeNull());
+  it('accepts a full clean play', () => expect(v(ss)).toBeNull());
   it('rejects judgment counts that do not cover the map', () =>
-    expect(validateSubmission(map, { ...ss, count300: 50 })).toMatch(/judgment/i));
-  it('rejects impossible combo', () =>
-    expect(validateSubmission(map, { ...ss, maxCombo: 101 })).toMatch(/combo/i));
-  it('rejects combo larger than the number of successful judgments', () => {
-    expect(validateSubmission(map, { ...ss, count300: 10, countMiss: 90, maxCombo: 11 })).toMatch(/combo/i);
+    expect(v({ ...ss, count300: 50 })).toMatch(/judgment/i));
+  it('rejects v2-style counts with a judgement per slider head', () =>
+    expect(v({ ...ss, count300: 100 })).toMatch(/judgment/i));
+  it('rejects impossible combo', () => expect(v({ ...ss, maxCombo: 101 })).toMatch(/combo/i));
+  it('rejects combo larger than what the unmissed objects allow', () => {
+    expect(v({ ...ss, count300: 10, countMiss: 70, maxCombo: 31 })).toMatch(/combo/i);
+    expect(v({ ...ss, count300: 10, countMiss: 70, maxCombo: 30 })).toBeNull();
   });
   it('rejects negative and non-integer counts', () => {
-    expect(validateSubmission(map, { ...ss, count100: -1, count300: 101 })).not.toBeNull();
-    expect(validateSubmission(map, { ...ss, count300: 99.5, count100: 0.5 })).not.toBeNull();
+    expect(v({ ...ss, count100: -1, count300: 81 })).not.toBeNull();
+    expect(v({ ...ss, count300: 79.5, count100: 0.5 })).not.toBeNull();
   });
 });
 
