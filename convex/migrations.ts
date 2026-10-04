@@ -1,4 +1,6 @@
-import { Migrations } from '@convex-dev/migrations';
+import { Migrations, type MigrationStatus } from '@convex-dev/migrations';
+import { createFunctionHandle, getFunctionName } from 'convex/server';
+import { v } from 'convex/values';
 import { components, internal } from './_generated/api';
 import { internalMutation } from './_generated/server';
 import type { DataModel } from './_generated/dataModel';
@@ -46,11 +48,35 @@ export const recalcUsers = migrations.define({
   },
 });
 
-export const runPpRework = migrations.runner([
-  internal.migrations.recalcScores,
-  internal.migrations.recalcBestFlags,
-  internal.migrations.recalcUsers,
-]);
+/**
+ * Runs phases 1–3 in order. The component remembers progress by migration
+ * name, so the series is keyed by PP_VERSION ("migrations:recalcScores@pp3"):
+ * after a bump, the same command replays every phase instead of skipping ones
+ * a previous version already completed. Rerun to resume; pass
+ * `{"reset": true}` to restart the current version's series from scratch.
+ */
+export const runPpRework = internalMutation({
+  args: { reset: v.optional(v.boolean()) },
+  handler: async (ctx, { reset }): Promise<MigrationStatus> => {
+    const [first, ...next]: { name: string; fnHandle: string }[] = await Promise.all(
+      [
+        internal.migrations.recalcScores,
+        internal.migrations.recalcBestFlags,
+        internal.migrations.recalcUsers,
+      ].map(async (fn) => ({
+        name: `${getFunctionName(fn)}@pp${PP_VERSION}`,
+        fnHandle: await createFunctionHandle(fn),
+      })),
+    );
+    return ctx.runMutation(components.migrations.lib.migrate, {
+      ...first,
+      next,
+      dryRun: false,
+      reset,
+      ...(reset ? { cursor: null } : {}),
+    });
+  },
+});
 
 /** One-time backfill of leaderboard aggregates from existing ranked users. */
 export const backfillBoards = migrations.define({

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { convexTest } from 'convex-test';
 import aggregate from '@convex-dev/aggregate/test';
 import migrationComponent from '@convex-dev/migrations/test';
-import { api, internal } from './_generated/api';
+import { api, components, internal } from './_generated/api';
 import schema from './schema';
 import { PP_VERSION } from '../src/game/ppFormula';
 import { maxScore } from '../src/game/score';
@@ -238,6 +238,53 @@ describe('migrations.recalcScores', () => {
     await expect(
       t.run(async (ctx) => (await ctx.db.get(scoreId))?.ppVersion),
     ).resolves.toBe(PP_VERSION);
+  });
+});
+
+describe('migrations.runPpRework', () => {
+  it('replays every phase under a PP_VERSION-keyed name', async () => {
+    vi.useFakeTimers();
+    try {
+      const t = makeTest();
+      const { userId, scoreId } = await t.run(async (ctx) => {
+        const userId = await ctx.db.insert('users', { name: 'player', ppVersion: PP_VERSION - 1 });
+        const osuFileId = await ctx.storage.store(new Blob(['map']));
+        const mapId = await ctx.db.insert('maps', { md5: 'd'.repeat(32), ...mapAttributes, osuFileId });
+        const scoreId = await ctx.db.insert('scores', {
+          userId,
+          mapId,
+          playId: '66666666-6666-4666-8666-666666666666',
+          ...fullCombo,
+          score: 1000,
+          accuracy: 1,
+          grade: 'SS',
+          pp: 1,
+          ppVersion: PP_VERSION - 1,
+          isBest: false,
+          inputMode: 'relax',
+          forgiveness: 1.5,
+          cursorAnchor: 'palm',
+        });
+        return { userId, scoreId };
+      });
+      await t.mutation(internal.migrations.runPpRework, {});
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
+      const state = await t.run(async (ctx) => ({
+        score: await ctx.db.get(scoreId),
+        user: await ctx.db.get(userId),
+        status: await ctx.runQuery(components.migrations.lib.getStatus, {
+          names: ['recalcScores', 'recalcBestFlags', 'recalcUsers'].map(
+            (phase) => `migrations:${phase}@pp${PP_VERSION}`,
+          ),
+        }),
+      }));
+      expect(state.score).toMatchObject({ ppVersion: PP_VERSION, isBest: true });
+      expect(state.score!.pp).toBeGreaterThan(1);
+      expect(state.user).toMatchObject({ ppVersion: PP_VERSION, totalPp: state.score!.pp });
+      expect(state.status.map((s) => s.state)).toEqual(['success', 'success', 'success']);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
