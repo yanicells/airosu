@@ -56,6 +56,6 @@ describe('maxScore', () => {
   });
 
   it('is zero without hits', () => {
-    expect(maxScore({ count300: 0, count100: 0, count50: 0, countMiss: 5, maxCombo: 0 })).toBe(0);
+    expect(maxScore({ count300: 0, count100: 0, count50: 0, maxCombo: 0 })).toBe(0);
   });
 });
