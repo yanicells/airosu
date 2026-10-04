@@ -98,10 +98,11 @@ export class HudLayer {
       this.lastAccuracy = accuracy;
       this.accText.text = `${(accuracy * 100).toFixed(1)}%`;
     }
-    const roundedPp = Math.round(pp);
-    if (roundedPp !== this.lastPp) {
-      this.lastPp = roundedPp;
-      this.ppText.text = roundedPp > 0 ? `${roundedPp}pp` : '';
+    // any earned pp shows, even under 0.5 ("0pp"); -1 = none earned yet, blank
+    const shownPp = pp > 0 ? Math.round(pp) : -1;
+    if (shownPp !== this.lastPp) {
+      this.lastPp = shownPp;
+      this.ppText.text = shownPp >= 0 ? `${shownPp}pp` : '';
     }
     if (combo > this.lastCombo) this.comboPopAt = nowMs;
     this.lastCombo = combo;
