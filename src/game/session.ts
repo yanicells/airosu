@@ -26,9 +26,16 @@ const FOLLOW_SCALE = 2.4;
 
 const pathLengths = new WeakMap<Vec2[], Float64Array>();
 
-/** slider ball position at timeMs: linear interp along path incl. reverse spans */
-export function sliderBallPos(s: SliderObj, timeMs: number): Vec2 {
-  if (s.path.length < 2) return s.pos;
+/**
+ * Slider ball position at timeMs: linear interp along path incl. reverse spans.
+ * Pass `out` to write into a reused vector instead of allocating one per call.
+ */
+export function sliderBallPos(s: SliderObj, timeMs: number, out: Vec2 = { x: 0, y: 0 }): Vec2 {
+  if (s.path.length < 2) {
+    out.x = s.pos.x;
+    out.y = s.pos.y;
+    return out;
+  }
   const duration = s.endTime - s.time;
   const spans = Math.max(s.spans, 1);
   // zero-length sliders jump straight to their end instead of dividing by zero
@@ -59,7 +66,9 @@ export function sliderBallPos(s: SliderObj, timeMs: number): Vec2 {
   const t = distance === 0 ? 0 : (target - lengths[low - 1]) / distance;
   const a = s.path[low - 1],
     b = s.path[low];
-  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+  out.x = a.x + (b.x - a.x) * t;
+  out.y = a.y + (b.y - a.y) * t;
+  return out;
 }
 
 function objPos(obj: HitObject): Vec2 {
@@ -84,6 +93,9 @@ export class GameSession {
   private lastTime = 0;
   private nextHead = 0;
   private firstUnjudged = 0;
+  /** reused every frame by the `state` getter */
+  private snapshot: SessionState = { score: this.scoreState, activeObjects: [], finished: false };
+  private ball: Vec2 = { x: 0, y: 0 };
 
   constructor(map: LoadedBeatmap, settings: Settings) {
     this.map = map;
@@ -108,19 +120,18 @@ export class GameSession {
     return first ? Math.max(0, this.preemptMs() + LEAD_IN_MARGIN_MS - first.time) : 0;
   }
 
+  /** Current snapshot. The same object is updated on every read, so don't hold on to it. */
   get state(): SessionState {
     const preempt = this.preemptMs();
-    const active: number[] = [];
+    const active = this.snapshot.activeObjects;
+    active.length = 0;
     while (this.judged[this.firstUnjudged]) this.firstUnjudged++;
     for (let i = this.firstUnjudged; i < this.map.objects.length; i++) {
       if (this.map.objects[i].time - preempt > this.lastTime) break;
       if (!this.judged[i]) active.push(i);
     }
-    return {
-      score: this.scoreState,
-      activeObjects: active,
-      finished: this.firstUnjudged === this.judged.length,
-    };
+    this.snapshot.finished = this.firstUnjudged === this.judged.length;
+    return this.snapshot;
   }
 
   private emit(events: HitEvent[], index: number, judgment: Judgment, at?: Vec2): void {
@@ -206,7 +217,7 @@ export class GameSession {
       if (timeMs >= obj.time && timeMs <= obj.endTime) {
         track.totalTicks++;
         if (cursor) {
-          const ball = sliderBallPos(obj, timeMs);
+          const ball = sliderBallPos(obj, timeMs, this.ball);
           const dx = cursor.x - ball.x;
           const dy = cursor.y - ball.y;
           if (dx * dx + dy * dy <= followRadius * followRadius) track.inTicks++;

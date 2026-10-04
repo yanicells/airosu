@@ -14,6 +14,9 @@ export class HudLayer {
   private ppText: Text;
   private lostText: Text;
   private lastCombo = 0;
+  /** last values written to the text nodes; formatting only reruns when they change */
+  private lastAccuracy = -1;
+  private lastPp = -1;
   private comboPopAt = 0;
   private comboRoot = new Container();
 
@@ -91,8 +94,15 @@ export class HudLayer {
       this.comboText!.text = combo > 0 ? `${combo}x` : '';
     }
 
-    this.accText.text = `${(accuracy * 100).toFixed(1)}%`;
-    this.ppText.text = pp > 0 ? `${Math.round(pp)}pp` : '';
+    if (accuracy !== this.lastAccuracy) {
+      this.lastAccuracy = accuracy;
+      this.accText.text = `${(accuracy * 100).toFixed(1)}%`;
+    }
+    const roundedPp = Math.round(pp);
+    if (roundedPp !== this.lastPp) {
+      this.lastPp = roundedPp;
+      this.ppText.text = roundedPp > 0 ? `${roundedPp}pp` : '';
+    }
     if (combo > this.lastCombo) this.comboPopAt = nowMs;
     this.lastCombo = combo;
     const pop = Math.max(0, 1 - (nowMs - this.comboPopAt) / 150);

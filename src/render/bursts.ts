@@ -53,11 +53,13 @@ export class BurstLayer {
   render(timeMs: number): void {
     const g = this.ringGfx;
     g.clear();
-    this.bursts = this.bursts.filter((b) => {
+    // compact in place: keep live bursts at the front, drop finished ones
+    let kept = 0;
+    for (const b of this.bursts) {
       const t = (timeMs - b.startMs) / BURST_MS;
       if (t >= 1) {
         b.node?.destroy();
-        return false;
+        continue;
       }
       if (b.node) {
         b.node.alpha = 1 - t;
@@ -71,7 +73,8 @@ export class BurstLayer {
           alpha: (1 - t) * 0.7,
         });
       }
-      return true;
-    });
+      this.bursts[kept++] = b;
+    }
+    this.bursts.length = kept;
   }
 }

@@ -22,6 +22,9 @@ interface Group {
 export class SkinnedObjectLayer {
   readonly container = new Container();
   private groups = new Map<number, Group>();
+  /** per-frame scratch, reused to avoid allocating in the render loop */
+  private seen = new Set<number>();
+  private ball = { x: 0, y: 0 };
 
   private skin: Skin;
 
@@ -91,7 +94,7 @@ export class SkinnedObjectLayer {
     if (group.ball) group.ball.visible = active;
     if (group.follow) group.follow.visible = active;
     if (active) {
-      const pos = sliderBallPos(obj, timeMs);
+      const pos = sliderBallPos(obj, timeMs, this.ball);
       group.ball?.position.set(pos.x, pos.y);
       group.follow?.position.set(pos.x, pos.y);
     }
@@ -117,7 +120,8 @@ export class SkinnedObjectLayer {
 
   render(view: RenderView): void {
     const r = circleRadius(view.cs);
-    const seen = new Set<number>();
+    const seen = this.seen;
+    seen.clear();
 
     for (const { obj, index } of view.objects) {
       if (obj.kind === 'spinner') continue;

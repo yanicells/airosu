@@ -11,7 +11,10 @@ export class CursorLayer {
   private gfx = new Graphics();
   private cursorSprite: Sprite | null = null;
   private trailSprites: Sprite[] = [];
-  private trail: Vec2[] = [];
+  /** ring buffer of recent positions; `trailAt(0)` is the oldest */
+  private trail: Vec2[] = Array.from({ length: TRAIL_LEN }, () => ({ x: 0, y: 0 }));
+  private trailStart = 0;
+  private trailCount = 0;
   private lost = false;
 
   constructor(skin: Skin | null) {
@@ -33,15 +36,23 @@ export class CursorLayer {
     }
   }
 
+  private trailAt(i: number): Vec2 {
+    return this.trail[(this.trailStart + i) % TRAIL_LEN];
+  }
+
   render(cursor: Vec2 | null): void {
     if (cursor) {
       this.lost = false;
-      this.trail.push({ ...cursor });
-      if (this.trail.length > TRAIL_LEN) this.trail.shift();
+      // overwrite the oldest slot once full
+      const slot = this.trail[(this.trailStart + this.trailCount) % TRAIL_LEN];
+      slot.x = cursor.x;
+      slot.y = cursor.y;
+      if (this.trailCount < TRAIL_LEN) this.trailCount++;
+      else this.trailStart = (this.trailStart + 1) % TRAIL_LEN;
     } else {
       this.lost = true;
     }
-    const last = this.trail[this.trail.length - 1];
+    const last = this.trailCount ? this.trailAt(this.trailCount - 1) : undefined;
 
     if (this.cursorSprite) {
       this.renderSkinned(last);
@@ -59,12 +70,12 @@ export class CursorLayer {
     }
     for (let i = 0; i < this.trailSprites.length; i++) {
       const s = this.trailSprites[i];
-      const p = this.trail[i];
-      const isTip = i === this.trail.length - 1;
-      s.visible = !!p && !isTip;
-      if (p && !isTip) {
+      // every recorded point except the tip, which the cursor sprite covers
+      s.visible = i < this.trailCount - 1;
+      if (s.visible) {
+        const p = this.trailAt(i);
         s.position.set(p.x, p.y);
-        const a = ((i + 1) / this.trail.length) * 0.5;
+        const a = ((i + 1) / this.trailCount) * 0.5;
         s.alpha = this.lost ? a * 0.3 : a;
       }
     }
@@ -74,9 +85,9 @@ export class CursorLayer {
     const g = this.gfx;
     g.clear();
     if (!last) return;
-    for (let i = 0; i < this.trail.length - 1; i++) {
-      const p = this.trail[i];
-      const a = ((i + 1) / this.trail.length) * 0.4;
+    for (let i = 0; i < this.trailCount - 1; i++) {
+      const p = this.trailAt(i);
+      const a = ((i + 1) / this.trailCount) * 0.4;
       g.circle(p.x, p.y, 6).fill({ color: 0xffdd66, alpha: this.lost ? a * 0.3 : a });
     }
     g.circle(last.x, last.y, 12).fill({ color: 0xffdd66, alpha: this.lost ? 0.35 : 1 });
