@@ -345,6 +345,22 @@ test('retries from results after visiting settings without losing the camera', a
   await expect(page.getByText(/Hand tracking is unavailable/)).toBeHidden();
 });
 
+test('keeps an unsaved aim area across a settings round trip from calibration', async ({ page }) => {
+  await openStandaloneMap(page);
+  const size = page.locator('.aim-area-info span');
+  const before = await size.textContent();
+  await page.getByRole('button', { name: /^Resize .* corner$/ }).first().press('Shift+ArrowLeft');
+  await expect(size).not.toHaveText(before ?? '');
+  const edited = await size.textContent();
+
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Your aim area' })).toBeHidden();
+  await page.getByRole('button', { name: 'Close settings' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Your aim area' })).toBeVisible();
+  await expect(size).toHaveText(edited ?? '');
+});
+
 test('lists an imported .osz once after it is saved to the library', async ({ page }) => {
   await page.getByRole('button', { name: 'Open main menu' }).click();
   await page.getByRole('button', { name: 'play', exact: true }).click();

@@ -12,10 +12,14 @@ const ResultsScreen = lazy(() => import('./results').then((m) => ({ default: m.R
 const SettingsScreen = lazy(() => import('./settings').then((m) => ({ default: m.SettingsScreen })));
 
 export function App() {
-  const { screen, setScreen } = useAppState();
+  const { screen, settingsReturn, setScreen } = useAppState();
   // Gameplay needs a live camera. It is gone after a detour through the web routes, so play
   // (including Retry from results) goes back through calibration instead.
   const cameraMissing = screen === 'play' && !peekCvSession();
+  // Settings opened from calibration keeps calibration mounted (hidden) so an unsaved aim
+  // area and the current step survive the round trip.
+  const calibrationMounted =
+    screen === 'calibrate' || (screen === 'settings' && settingsReturn === 'calibrate');
 
   useEffect(() => {
     // Settings may return to calibrate/results, so only leaving the game flow stops the camera.
@@ -29,7 +33,14 @@ export function App() {
       {screen === 'home' && <HomeScreen />}
       <Suspense fallback={<div className="screen-center">Loading…</div>}>
         {screen === 'songs' && <MapLoadScreen />}
-        {screen === 'calibrate' && <CalibrationScreen />}
+        {calibrationMounted && (
+          <div
+            hidden={screen !== 'calibrate'}
+            style={screen === 'calibrate' ? { display: 'contents' } : undefined}
+          >
+            <CalibrationScreen />
+          </div>
+        )}
         {screen === 'play' && !cameraMissing && <PlayScreen />}
         {screen === 'results' && <ResultsScreen />}
         {screen === 'settings' && <SettingsScreen />}
