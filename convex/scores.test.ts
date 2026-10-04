@@ -92,9 +92,9 @@ describe('scores.submit', () => {
     const history = await authed.query(api.scores.personalHistory, { mapId });
     expect(history?.best?.playId).toBe(args.playId);
     expect(history?.recent).toHaveLength(1);
-    expect(await authed.action(api.mapsNode.findRegistered, { osuText: 'osu file format v14' })).toBe(mapId);
-    expect(await authed.action(api.mapsNode.findRegistered, { osuText: 'unknown map' })).toBeNull();
-    expect(await t.action(api.mapsNode.findRegistered, { osuText: 'osu file format v14' })).toBeNull();
+    const md5 = (text: string) => createHash('md5').update(text).digest('hex');
+    expect(await t.query(api.maps.idByMd5, { md5: md5('osu file format v14') })).toBe(mapId);
+    expect(await t.query(api.maps.idByMd5, { md5: md5('unknown map') })).toBeNull();
     expect(await t.query(api.scores.personalHistory, { mapId })).toBeNull();
     const otherId = await t.run((ctx) => ctx.db.insert('users', { osuId: 99, name: 'other' }));
     const other = t.withIdentity({ subject: `${otherId}|other-session` });
