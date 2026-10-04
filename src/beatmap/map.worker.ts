@@ -10,7 +10,12 @@ self.onmessage = ({ data }: MessageEvent<MapRequest & { id: number }>) => {
     let result: MapResponse['result'];
     if (data.type === 'background') result = oszBackground(data.bytes);
     else if (data.type === 'pp') result = preparePp(data.text);
-    else if (data.type === 'osu') result = loadFromOsu(data.text, new ArrayBuffer(0));
+    else if (data.type === 'osu') {
+      // a loose .osu replaces the selected set; release its extracted files
+      archive = undefined;
+      key = undefined;
+      result = loadFromOsu(data.text, new ArrayBuffer(0));
+    }
     else {
       if (key !== data.key || !archive) {
         if (!data.bytes) throw new Error('Reopen the map to load its difficulties');
