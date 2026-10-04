@@ -6,6 +6,7 @@ import migrationComponent from '@convex-dev/migrations/test';
 import { api, internal } from './_generated/api';
 import schema from './schema';
 import { PP_VERSION } from '../src/game/ppFormula';
+import { syncBoards, userRanks } from './leaderboard';
 
 const modules = import.meta.glob('./**/*.ts');
 
@@ -254,6 +255,32 @@ describe('leaderboard.page', () => {
         'offset must be a non-negative safe integer',
       );
     }
+  });
+
+  it('gives tied players the same ranks as the rankings page', async () => {
+    const t = makeTest();
+    const ranks = await t.run(async (ctx) => {
+      const users = [];
+      for (const osuId of [21, 22]) {
+        const id = await ctx.db.insert('users', {
+          osuId,
+          name: `tied${osuId}`,
+          countryCode: 'PH',
+          totalPp: 100,
+        });
+        const user = (await ctx.db.get(id))!;
+        await syncBoards(ctx, null, user);
+        users.push(user);
+      }
+      return Promise.all(users.map(async (u) => ({ osuId: u.osuId, ...(await userRanks(ctx, u)) })));
+    });
+    const page = await t.query(api.leaderboard.page, { offset: 0 });
+    for (const row of page.rows) {
+      const own = ranks.find((r) => r.osuId === row.osuId)!;
+      expect(own.globalRank).toBe(row.rank);
+      expect(own.countryRank).toBe(row.rank);
+    }
+    expect(ranks.map((r) => r.globalRank).sort()).toEqual([1, 2]);
   });
 });
 
