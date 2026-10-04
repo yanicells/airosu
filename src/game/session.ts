@@ -31,7 +31,9 @@ export function sliderBallPos(s: SliderObj, timeMs: number): Vec2 {
   if (s.path.length < 2) return s.pos;
   const duration = s.endTime - s.time;
   const spans = Math.max(s.spans, 1);
-  let progress = Math.min(Math.max((timeMs - s.time) / duration, 0), 1) * spans;
+  // zero-length sliders jump straight to their end instead of dividing by zero
+  const raw = duration > 0 ? (timeMs - s.time) / duration : timeMs >= s.time ? 1 : 0;
+  let progress = Math.min(Math.max(raw, 0), 1) * spans;
   const span = Math.min(Math.floor(progress), spans - 1);
   progress -= span;
   if (span % 2 === 1) progress = 1 - progress; // odd spans travel backwards

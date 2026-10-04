@@ -128,6 +128,13 @@ describe('sliderBallPos', () => {
     expect(p.y).toBeCloseTo(0);
   });
 
+  it('zero-duration sliders sit at their start before and their end after', () => {
+    const instant = { ...slider(1), endTime: 1000 };
+    expect(sliderBallPos(instant, 900)).toEqual({ x: 0, y: 0 });
+    expect(sliderBallPos(instant, 1000)).toEqual({ x: 100, y: 0 });
+    expect(sliderBallPos({ ...instant, spans: 2 }, 1000)).toEqual({ x: 0, y: 0 });
+  });
+
   it('two spans: turning point at midpoint time', () => {
     expect(sliderBallPos(slider(2), 1500).x).toBeCloseTo(100);
     expect(sliderBallPos(slider(2), 1750).x).toBeCloseTo(50);

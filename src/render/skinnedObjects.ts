@@ -98,7 +98,11 @@ export class SkinnedObjectLayer {
     if (group.reverse) {
       const spans = Math.max(obj.spans, 1);
       const duration = (obj.endTime - obj.time) / spans;
-      const span = active ? Math.min(Math.floor((timeMs - obj.time) / duration), spans - 1) : 0;
+      const span = !active
+        ? 0
+        : duration > 0
+          ? Math.min(Math.floor((timeMs - obj.time) / duration), spans - 1)
+          : spans - 1;
       const remaining = spans - 1 - span;
       group.reverse.visible = remaining > 0 && obj.path.length >= 2;
       if (group.reverse.visible) {
