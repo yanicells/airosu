@@ -97,6 +97,16 @@ describe('GameSession lifecycle', () => {
     const s = new GameSession(twoCircles(), relax);
     expect(s.preemptMs()).toBe(1200);
   });
+
+  it('leads in so the first object gets its full approach plus a beat of air', () => {
+    // AR5 preempt 1200 + 500 ms margin, first circle at 1000 ms
+    expect(new GameSession(twoCircles(), relax).leadInMs()).toBe(700);
+    const late = makeMap([
+      { kind: 'circle', comboIndex: 0, comboNumber: 1, time: 5000, pos: { x: 0, y: 0 } },
+    ]);
+    expect(new GameSession(late, relax).leadInMs()).toBe(0);
+    expect(new GameSession(makeMap([]), relax).leadInMs()).toBe(0);
+  });
 });
 
 describe('sliderBallPos', () => {

@@ -18,6 +18,9 @@ export interface SessionState {
   finished: boolean;
 }
 
+/** extra quiet time before the first object starts fading in */
+const LEAD_IN_MARGIN_MS = 500;
+
 /** osu! follow circle is 2.4× the hit circle */
 const FOLLOW_SCALE = 2.4;
 
@@ -95,6 +98,12 @@ export class GameSession {
   preemptMs(): number {
     const ar = this.map.meta.ar;
     return ar < 5 ? 1200 + (600 * (5 - ar)) / 5 : 1200 - (750 * (ar - 5)) / 5;
+  }
+
+  /** Silence before the song so an early first object still appears at the start of its approach. */
+  leadInMs(): number {
+    const first = this.map.objects[0];
+    return first ? Math.max(0, this.preemptMs() + LEAD_IN_MARGIN_MS - first.time) : 0;
   }
 
   get state(): SessionState {

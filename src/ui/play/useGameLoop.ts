@@ -219,7 +219,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         await new Promise((r) => setTimeout(r, 700));
         if (disposed || failed) return;
       }
-      clock.start();
+      clock.start(session.leadInMs());
       const next = clock.running && !document.hidden ? 'playing' : 'paused';
       if (next === 'paused') clock.pause();
       phaseRef.current = next;

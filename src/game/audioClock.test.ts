@@ -61,3 +61,53 @@ it('reports audio interruptions and waits for resume before reporting a running 
   expect(clock.running).toBe(false);
   await expect(clock.resume()).rejects.toThrow('Audio has stopped');
 });
+
+function fakeContext(latency: { outputLatency?: number; baseLatency?: number }) {
+  const source = { connect: vi.fn(), start: vi.fn(), stop: vi.fn() };
+  const ctx = { currentTime: 10 };
+  vi.stubGlobal('AudioContext', class {
+    get currentTime() { return ctx.currentTime; }
+    outputLatency = latency.outputLatency;
+    baseLatency = latency.baseLatency;
+    state = 'running';
+    close = vi.fn().mockResolvedValue(undefined);
+    decodeAudioData = vi.fn().mockResolvedValue({});
+    createGain = () => ({ gain: { value: 1 }, connect: vi.fn() });
+    createBufferSource = () => source;
+  });
+  return { source, ctx };
+}
+
+it('runs behind the context clock by the output latency', async () => {
+  const { ctx } = fakeContext({ outputLatency: 0.1, baseLatency: 0.01 });
+  const clock = await AudioClock.create(new ArrayBuffer(0), 1);
+  clock.start();
+  ctx.currentTime = 11;
+  expect(clock.nowMs(20)).toBeCloseTo(1000 - 100 + 20);
+});
+
+it('falls back to base latency and ignores missing or absurd values', async () => {
+  const cases: [Parameters<typeof fakeContext>[0], number][] = [
+    [{ outputLatency: 0, baseLatency: 0.02 }, 20],
+    [{}, 0],
+    [{ outputLatency: Number.NaN }, 0],
+    [{ outputLatency: 5 }, 500],
+  ];
+  for (const [latency, expected] of cases) {
+    const { ctx } = fakeContext(latency);
+    const clock = await AudioClock.create(new ArrayBuffer(0), 1);
+    clock.start();
+    ctx.currentTime = 11;
+    expect(clock.nowMs(0)).toBeCloseTo(1000 - expected);
+  }
+});
+
+it('schedules audio after a lead-in and counts up from negative time', async () => {
+  const { source, ctx } = fakeContext({});
+  const clock = await AudioClock.create(new ArrayBuffer(0), 1);
+  clock.start(1500);
+  expect(source.start).toHaveBeenCalledWith(11.5);
+  expect(clock.nowMs(0)).toBeCloseTo(-1500);
+  ctx.currentTime = 12;
+  expect(clock.nowMs(0)).toBeCloseTo(500);
+});
