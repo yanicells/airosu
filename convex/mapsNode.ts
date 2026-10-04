@@ -5,7 +5,12 @@ import { action, internalAction } from './_generated/server';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { getAuthUserId } from '@convex-dev/auth/server';
-import { ATTRIBUTES_VERSION, computeMapAttributes } from '../src/beatmap/attributes';
+import {
+  ATTRIBUTES_VERSION,
+  computeMapAttributes,
+  type MapAttributes,
+} from '../src/beatmap/attributes';
+import { MapLimitError } from '../src/beatmap/limits';
 
 /** Registers a difficulty by its .osu text. Idempotent by md5. Returns mapId. */
 export const registerMap = action({
@@ -74,7 +79,14 @@ export const refreshAttributes = internalAction({
     for (const map of batch.page) {
       const blob = await ctx.storage.get(map.osuFileId);
       if (!blob) continue;
-      const a = computeMapAttributes(await blob.text());
+      let a: MapAttributes;
+      try {
+        a = computeMapAttributes(await blob.text());
+      } catch (error) {
+        // a stored map that now fails validation must not stall the whole refresh
+        if (error instanceof MapLimitError) continue;
+        throw error;
+      }
       await ctx.runMutation(internal.maps.patchAttributes, {
         mapId: map._id,
         attributesVersion: a.attributesVersion,

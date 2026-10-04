@@ -3,6 +3,7 @@ import { BeatmapDecoder } from 'osu-parsers';
 import { StandardRuleset } from 'osu-standard-stable';
 import { toMapDifficulty, type MapDifficulty } from '../game/ppFormula';
 import { toInternal } from './adapter';
+import { assertBeatmapWithinLimits, assertOsuTextWithinLimits } from './limits';
 
 const decoder = new BeatmapDecoder();
 const ruleset = new StandardRuleset();
@@ -33,9 +34,14 @@ export interface MapAttributes {
   beatmapSetId?: number;
 }
 
-/** Authoritative map attributes computed server-side at registration. */
+/**
+ * Authoritative map attributes computed server-side at registration.
+ * Throws MapLimitError for maps too large or malformed to convert safely.
+ */
 export function computeMapAttributes(osuText: string): MapAttributes {
+  assertOsuTextWithinLimits(osuText);
   const parsed = decoder.decodeFromString(osuText, { parseStoryboard: false });
+  assertBeatmapWithinLimits(parsed);
   const internal = toInternal(parsed, osuText, new ArrayBuffer(0));
   const beatmap = ruleset.applyToBeatmap(parsed);
   const attributes = ruleset.createDifficultyCalculator(beatmap).calculate();
