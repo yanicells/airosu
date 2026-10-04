@@ -23,9 +23,11 @@ export function ResultsScreen() {
   );
   const bgUrl = useObjectUrl(map?.background);
   const stripRef = useRef<HTMLDivElement>(null);
+  // The server's pp is authoritative; the local estimate shows until the submission lands.
+  const pp = submission.result?.pp ?? lastResult?.pp ?? 0;
   const { before, after } = placeCurrent(
     board ?? [],
-    lastResult?.pp ?? 0,
+    pp,
     submission.result?.isBest ? me?.osuId : undefined,
   );
 
@@ -63,7 +65,7 @@ export function ResultsScreen() {
           <ScoreCard key={row.scoreId} row={row} rank={index + 1} />
         ))}
         <ResultCard
-          result={lastResult}
+          result={{ ...lastResult, pp }}
           map={map}
           stars={stars}
           player={{ name: me?.name ?? 'Guest', image: me?.image }}
