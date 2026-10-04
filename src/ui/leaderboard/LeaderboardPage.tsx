@@ -13,7 +13,11 @@ const PAGE = 50;
 export function LeaderboardPage() {
   const [countryCode, setCountryCode] = useState<string>();
   const [offset, setOffset] = useState(0);
-  const page = useQuery(api.leaderboard.page, { countryCode, offset });
+  const live = useQuery(api.leaderboard.page, { countryCode, offset });
+  // Keep showing the previous page (dimmed) while a new scope or offset loads.
+  const [page, setPage] = useState(live);
+  if (live !== undefined && live !== page) setPage(live);
+  const stale = live === undefined && page !== undefined;
   const countries = useQuery(api.leaderboard.countries);
   const countryOptions = useMemo(
     () => [
@@ -44,13 +48,13 @@ export function LeaderboardPage() {
           />
         </div>
       </nav>
-      <section className="overlay-section">
+      <section className="overlay-section" aria-busy={live === undefined}>
         {page === undefined && <p className="overlay-empty">Loading…</p>}
         {page && page.rows.length === 0 && (
           <p className="overlay-empty">No scores yet — go set one!</p>
         )}
         {page && page.rows.length > 0 && (
-          <table className="board">
+          <table className={`board${stale ? ' is-stale' : ''}`}>
             <thead>
               <tr>
                 <th></th>
