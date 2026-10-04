@@ -1,5 +1,6 @@
 /**
  * Splits a pp-ordered map leaderboard around the play being shown, like lazer's results strip.
+ * The board breaks pp ties newest-first, so the just-finished play goes above equal-pp rows.
  * `replacedOsuId` removes the player's own entry when this play is now their best (it *is* that entry).
  */
 export function placeCurrent<T extends { pp: number; osuId?: number }>(
@@ -9,7 +10,7 @@ export function placeCurrent<T extends { pp: number; osuId?: number }>(
 ): { before: T[]; after: T[] } {
   const others = rows.filter((row) => replacedOsuId === undefined || row.osuId !== replacedOsuId);
   return {
-    before: others.filter((row) => row.pp >= currentPp),
-    after: others.filter((row) => row.pp < currentPp),
+    before: others.filter((row) => row.pp > currentPp),
+    after: others.filter((row) => row.pp <= currentPp),
   };
 }
