@@ -73,7 +73,9 @@ export interface AppState {
   settingsReturn: Screen;
   setScreen(screen: Screen): void;
   setMap(map: LoadedBeatmap | undefined): void;
-  setMapset(mapset: Mapset | undefined): void;
+  setMapset(
+    mapset: Mapset | undefined | ((current: Mapset | undefined) => Mapset | undefined),
+  ): void;
   setSettings(settings: Settings): void;
   setCalibration(box: CalibrationBox): void;
   setLastResult(result: LastResult): void;

@@ -55,6 +55,7 @@ export function createHandCursorSource(): CursorSource {
   let running = false;
   let lastVideoTime = -1;
   let lastTrackedAt = -Infinity;
+  let lastFrameMs = -Infinity;
   let lastSample: CursorSample = { playfield: null, camera: null, tMs: 0 };
   const listeners = new Set<(s: CursorSample) => void>();
 
@@ -90,26 +91,32 @@ export function createHandCursorSource(): CursorSource {
       const schedule = () => {
         frameId = videoFrames ? video.requestVideoFrameCallback(loop) : requestAnimationFrame(loop);
       };
-      const loop = async (now: number) => {
+      const loop = async (now: number, metadata?: VideoFrameCallbackMetadata) => {
         if (current !== generation || !running) return;
         schedule();
         resume();
         if (busy || video.paused || video.readyState < 2) return;
         if (!videoFrames && video.currentTime === lastVideoTime) return;
+        // Time the frame by when the camera captured it, not when the callback ran, so
+        // callback jitter doesn't distort the filter's velocity estimate.
+        const frameMs = metadata?.captureTime ?? (metadata ? metadata.mediaTime * 1000 : now);
+        // the tracker needs strictly increasing timestamps
+        if (frameMs <= lastFrameMs) return;
+        lastFrameMs = frameMs;
         lastVideoTime = video.currentTime;
         busy = true;
         try {
-          const result = await started.detect(video, now);
+          const result = await started.detect(video, frameMs);
           if (current !== generation) return;
           if (!result.landmarks) {
             emit({ playfield: null, camera: null, tMs: now });
             return;
           }
-          if (now - lastTrackedAt > LOST_RESET_MS) filter.reset();
-          lastTrackedAt = now;
+          if (frameMs - lastTrackedAt > LOST_RESET_MS) filter.reset();
+          lastTrackedAt = frameMs;
           const raw = cursorPoint(result.landmarks, cursorAnchor);
           const mapped = mapToPlayfield(raw, box, sensitivity, mirror);
-          const smoothed = smoothing === 0 ? mapped : filter.filter(mapped, now / 1000);
+          const smoothed = smoothing === 0 ? mapped : filter.filter(mapped, frameMs / 1000);
           emit({ playfield: smoothed, camera: raw, tMs: now });
         } catch (error) {
           if (current !== generation) return;
@@ -164,6 +171,7 @@ export function createHandCursorSource(): CursorSource {
       cancelFrame();
       lastVideoTime = -1;
       lastTrackedAt = -Infinity;
+      lastFrameMs = -Infinity;
       lastSample = { playfield: null, camera: null, tMs: 0 };
       tracker?.close();
       tracker = null;

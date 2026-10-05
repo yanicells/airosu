@@ -5,7 +5,7 @@ import { defaultSettings } from '../ui/appState';
 
 vi.mock('./handTracker', () => ({ createHandTracker: vi.fn() }));
 const tracker = { detect: vi.fn(), close: vi.fn(), usingCpuFallback: false };
-let frame: (now: number) => void;
+let frame: (now: number, metadata?: Partial<VideoFrameCallbackMetadata>) => void;
 const video = {
   paused: false,
   readyState: 2,
@@ -46,6 +46,20 @@ it('runs on camera frames and drops frames while inference is busy', async () =>
   expect(tracker.detect).toHaveBeenCalledTimes(2);
   source.stop();
   expect(video.cancelVideoFrameCallback).toHaveBeenCalled();
+});
+
+it('times detection by when the camera captured the frame', async () => {
+  const source = createHandCursorSource();
+  await source.start(video as unknown as HTMLVideoElement);
+  frame(100, { captureTime: 80, mediaTime: 5 });
+  await Promise.resolve();
+  frame(200, { mediaTime: 5.1 });
+  await Promise.resolve();
+  frame(6000);
+  await Promise.resolve();
+  frame(7000, { mediaTime: 6 }); // not newer than the last frame: skipped
+  expect(tracker.detect.mock.calls.map((call) => call[1])).toEqual([80, 5100, 6000]);
+  source.stop();
 });
 
 it('closes a tracker that finishes starting after stop', async () => {

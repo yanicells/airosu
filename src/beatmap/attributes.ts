@@ -3,12 +3,13 @@ import { BeatmapDecoder } from 'osu-parsers';
 import { StandardRuleset } from 'osu-standard-stable';
 import { toMapDifficulty, type MapDifficulty } from '../game/ppFormula';
 import { toInternal } from './adapter';
+import { assertBeatmapWithinLimits, assertOsuTextWithinLimits } from './limits';
 
 const decoder = new BeatmapDecoder();
 const ruleset = new StandardRuleset();
 
 /** Bump when parser/ruleset upgrades can change stored map attributes. */
-export const ATTRIBUTES_VERSION = 2;
+export const ATTRIBUTES_VERSION = 3;
 
 export interface MapAttributes {
   title: string;
@@ -24,6 +25,7 @@ export interface MapAttributes {
   starRating: number;
   maxCombo: number;
   objectCount: number;
+  /** judgements in a completed play: one per object since PP v3 (was +1 per slider) */
   judgmentCount: number;
   ssPp: number;
   /** serialized lazer difficulty attributes; feeds the pp formula server-side */
@@ -33,21 +35,22 @@ export interface MapAttributes {
   beatmapSetId?: number;
 }
 
-/** Authoritative map attributes computed server-side at registration. */
+/**
+ * Authoritative map attributes computed server-side at registration.
+ * Throws MapLimitError for maps too large or malformed to convert safely.
+ */
 export function computeMapAttributes(osuText: string): MapAttributes {
+  assertOsuTextWithinLimits(osuText);
   const parsed = decoder.decodeFromString(osuText, { parseStoryboard: false });
+  assertBeatmapWithinLimits(parsed);
   const internal = toInternal(parsed, osuText, new ArrayBuffer(0));
   const beatmap = ruleset.applyToBeatmap(parsed);
   const attributes = ruleset.createDifficultyCalculator(beatmap).calculate();
-  const judgmentCount = internal.objects.reduce(
-    (count, object) => count + (object.kind === 'slider' ? 2 : 1),
-    0,
-  );
+  const judgmentCount = internal.objects.length;
 
   const perfect = new ScoreInfo();
   perfect.ruleset = ruleset;
   perfect.maxCombo = attributes.maxCombo;
-  // Match PpCounter.final(): airosu gives sliders a head + final judgment.
   perfect.count300 = judgmentCount;
   const ssPp = ruleset
     .createPerformanceCalculator(attributes, perfect)

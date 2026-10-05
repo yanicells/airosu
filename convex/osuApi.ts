@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { action, internalAction, internalMutation, internalQuery } from './_generated/server';
+import { action, internalAction, internalMutation } from './_generated/server';
 import { internal } from './_generated/api';
 
 /** App-level token, `public` scope. Fetched fresh per action — usage is rare. */
@@ -51,13 +51,16 @@ export const enrichMap = internalAction({
   },
 });
 
+const STATS_FRESH_MS = 24 * 60 * 60 * 1000;
+/** Lease length per attempt; a failed attempt blocks retries for this long. */
+const STATS_RETRY_MS = 15 * 60 * 1000;
+
 /** Public throttled sync of a player's real osu! stats (1/24h per user). */
 export const syncOsuStats = action({
   args: { osuId: v.number() },
   handler: async (ctx, { osuId }): Promise<void> => {
-    const user = await ctx.runQuery(internal.osuApi.userByOsuId, { osuId });
-    if (!user) return;
-    if (user.osuStatsSyncedAt && Date.now() - user.osuStatsSyncedAt < 24 * 60 * 60 * 1000) return;
+    const userId = await ctx.runMutation(internal.osuApi.reserveOsuStatsSync, { osuId });
+    if (!userId) return;
     try {
       const token = await osuToken();
       const res = await fetch(`https://osu.ppy.sh/api/v2/users/${osuId}/osu`, {
@@ -66,7 +69,7 @@ export const syncOsuStats = action({
       if (!res.ok) throw new Error(`users ${res.status}`);
       const u = await res.json();
       await ctx.runMutation(internal.osuApi.patchOsuStats, {
-        userId: user._id,
+        userId,
         osuPp: u.statistics?.pp ?? 0,
         osuGlobalRank: u.statistics?.global_rank ?? undefined,
       });
@@ -76,10 +79,24 @@ export const syncOsuStats = action({
   },
 });
 
-export const userByOsuId = internalQuery({
+/**
+ * Claims the right to fetch a user's osu! stats. Mutations serialize, so concurrent callers
+ * for a stale user get one lease; a failed fetch leaves the lease to act as a cooldown.
+ */
+export const reserveOsuStatsSync = internalMutation({
   args: { osuId: v.number() },
-  handler: (ctx, { osuId }) =>
-    ctx.db.query('users').withIndex('by_osuId', (q) => q.eq('osuId', osuId)).unique(),
+  handler: async (ctx, { osuId }) => {
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_osuId', (q) => q.eq('osuId', osuId))
+      .unique();
+    if (!user) return null;
+    const now = Date.now();
+    if (user.osuStatsSyncedAt && now - user.osuStatsSyncedAt < STATS_FRESH_MS) return null;
+    if (user.osuStatsAttemptAt && now - user.osuStatsAttemptAt < STATS_RETRY_MS) return null;
+    await ctx.db.patch(user._id, { osuStatsAttemptAt: now });
+    return user._id;
+  },
 });
 
 export const patchOsuStats = internalMutation({

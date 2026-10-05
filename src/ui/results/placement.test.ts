@@ -15,8 +15,10 @@ describe('placeCurrent', () => {
     expect(after.map((row) => row.osuId)).toEqual([3, 4]);
   });
 
-  it('ranks the current play below existing plays with equal pp', () => {
-    expect(placeCurrent(rows, 200).before.map((row) => row.osuId)).toEqual([1, 2]);
+  it('ranks the current play above existing plays with equal pp, like the board (newer first)', () => {
+    const { before, after } = placeCurrent(rows, 200);
+    expect(before.map((row) => row.osuId)).toEqual([1]);
+    expect(after.map((row) => row.osuId)).toEqual([2, 3, 4]);
   });
 
   it("drops the player's own board entry when this play replaced it", () => {

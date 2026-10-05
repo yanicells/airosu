@@ -71,6 +71,11 @@ export async function createStage(
     },
     destroy() {
       app.renderer.off('resize', layout);
+      // Pixi 8.19's renderer destroy leaves an 'unload' listener and a _gpuData slot on every
+      // texture source it uploaded. Skin sources outlive this app, so unload them first to drop
+      // both; the next play's renderer re-uploads on demand.
+      const textures = app.renderer.texture;
+      if ('managedTextures' in textures) for (const source of textures.managedTextures) source?.unload();
       app.destroy({ removeView: true }, { children: true });
     },
   };

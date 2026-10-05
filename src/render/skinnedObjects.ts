@@ -22,6 +22,9 @@ interface Group {
 export class SkinnedObjectLayer {
   readonly container = new Container();
   private groups = new Map<number, Group>();
+  /** per-frame scratch, reused to avoid allocating in the render loop */
+  private seen = new Set<number>();
+  private ball = { x: 0, y: 0 };
 
   private skin: Skin;
 
@@ -65,7 +68,7 @@ export class SkinnedObjectLayer {
       root.addChild(group.approach);
     }
     if (obj.kind === 'slider') {
-      if (reverseArrow && obj.repeats > 1) {
+      if (reverseArrow && obj.spans > 1) {
         group.reverse = makeSprite(reverseArrow);
         group.reverse.scale.set(circleSpriteScale(reverseArrow, r));
         root.addChild(group.reverse);
@@ -91,14 +94,18 @@ export class SkinnedObjectLayer {
     if (group.ball) group.ball.visible = active;
     if (group.follow) group.follow.visible = active;
     if (active) {
-      const pos = sliderBallPos(obj, timeMs);
+      const pos = sliderBallPos(obj, timeMs, this.ball);
       group.ball?.position.set(pos.x, pos.y);
       group.follow?.position.set(pos.x, pos.y);
     }
     if (group.reverse) {
-      const spans = Math.max(obj.repeats, 1);
+      const spans = Math.max(obj.spans, 1);
       const duration = (obj.endTime - obj.time) / spans;
-      const span = active ? Math.min(Math.floor((timeMs - obj.time) / duration), spans - 1) : 0;
+      const span = !active
+        ? 0
+        : duration > 0
+          ? Math.min(Math.floor((timeMs - obj.time) / duration), spans - 1)
+          : spans - 1;
       const remaining = spans - 1 - span;
       group.reverse.visible = remaining > 0 && obj.path.length >= 2;
       if (group.reverse.visible) {
@@ -113,7 +120,8 @@ export class SkinnedObjectLayer {
 
   render(view: RenderView): void {
     const r = circleRadius(view.cs);
-    const seen = new Set<number>();
+    const seen = this.seen;
+    seen.clear();
 
     for (const { obj, index } of view.objects) {
       if (obj.kind === 'spinner') continue;

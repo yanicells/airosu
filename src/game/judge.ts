@@ -36,3 +36,24 @@ export function inRadius(cursor: Vec2, center: Vec2, cs: number, forgiveness: nu
   const dy = cursor.y - center.y;
   return dx * dx + dy * dy <= r * r;
 }
+
+/** Follow ratio treated as "every follow part hit": per-frame webcam sampling never reads a clean 100%. */
+const FULL_FOLLOW = 0.9;
+
+/**
+ * One judgement for a whole slider, after osu!stable: the slider is split into
+ * parts and judged by how many were hit — all → 300, at least half → 100,
+ * any → 50, none → miss. airosu doesn't place ticks, so the parts are the
+ * head (hit or not) plus `spans + 1` follow parts (every repeat and the tail,
+ * plus one tick's worth for the body), credited by the sampled follow ratio
+ * with FULL_FOLLOW counting as all of them. A missed head therefore always caps
+ * the slider at 100, and a dropped follow after a hit head is worth a 50.
+ */
+export function sliderJudgment(headHit: boolean, followRatio: number, spans: number): Judgment {
+  const followParts = Math.max(spans, 1) + 1;
+  const followed = Math.min(followRatio / FULL_FOLLOW, 1);
+  if (headHit && followed === 1) return 300;
+  const hit = (headHit ? 1 : 0) + followed * followParts;
+  if (hit >= (1 + followParts) / 2) return 100;
+  return hit > 0 ? 50 : 0;
+}

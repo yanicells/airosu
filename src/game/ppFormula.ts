@@ -14,7 +14,7 @@
 import { ScoreInfo } from 'osu-classes';
 import { StandardRuleset, type StandardDifficultyAttributes } from 'osu-standard-stable';
 
-export const PP_VERSION = 2;
+export const PP_VERSION = 3;
 
 /** Flat hand-tracking adjustment applied on top of lazer's play pp. */
 export const AIROSU_PP_MULTIPLIER = 2.25;
@@ -69,6 +69,14 @@ export function toMapDifficulty(a: StandardDifficultyAttributes): MapDifficulty 
   };
 }
 
+/**
+ * Longest combo airosu can award on the map: one per object plus each slider
+ * head. (Hit stats count one judgement per object; the head is combo-only.)
+ */
+export function airosuMaxCombo(d: MapDifficulty): number {
+  return d.hitCircleCount + 2 * d.sliderCount + d.spinnerCount;
+}
+
 export function judgedCount(s: HitStats): number {
   return s.count300 + s.count100 + s.count50 + s.countMiss;
 }
@@ -84,14 +92,16 @@ export function lazerPp(difficulty: MapDifficulty, s: HitStats): number {
   const judged = judgedCount(s);
   if (judged === 0) return 0;
 
-  // airosu combo counts judgments (slider = head + final); lazer's max combo
-  // also counts slider ticks. Map the player's per-judgment combo ratio onto
-  // lazer's scale so a genuine FC is a lazer FC.
-  const comboRatio = Math.min(1, s.maxCombo / judged);
+  // airosu combo counts each slider's head + end; lazer's max combo also counts
+  // slider ticks. Map the player's share of airosu's max combo onto lazer's
+  // scale so a genuine FC is a lazer FC.
+  const comboTotal = airosuMaxCombo(difficulty);
+  const comboRatio = comboTotal > 0 ? Math.min(1, s.maxCombo / comboTotal) : 1;
 
   const score = new ScoreInfo();
   score.ruleset = ruleset;
   score.maxCombo = Math.round(difficulty.maxCombo * comboRatio);
+  // One judgement per object, as osu!stable's calculator expects.
   score.count300 = s.count300;
   score.count100 = s.count100;
   score.count50 = s.count50;

@@ -36,8 +36,9 @@ export function SetPanel({
     <div className={`set-panel${selected ? ' is-selected' : ''}${busy ? ' is-busy' : ''}`}>
       <button
         className="set-panel__face"
-        onClick={onPick}
-        disabled={disabled}
+        // aria-disabled rather than disabled: a disabled button drops keyboard focus mid-load
+        onClick={disabled ? undefined : onPick}
+        aria-disabled={disabled || undefined}
         aria-pressed={selected}
         style={background ? ({ '--set-bg': `url("${background}")` } as CSSProperties) : undefined}
       >

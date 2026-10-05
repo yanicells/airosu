@@ -15,7 +15,12 @@ import type { Settings } from '../appState';
 export type CalibrationStep = 'loading' | 'error' | 'intro' | 'corner1' | 'corner2' | 'test';
 const SAMPLE_MS = 2000;
 
-export function useCalibrationFlow(settings: Settings, initialBox?: CalibrationBox) {
+/** Drives the calibration steps. `paused` (e.g. Settings open on top) cancels an in-progress corner capture. */
+export function useCalibrationFlow(
+  settings: Settings,
+  initialBox?: CalibrationBox,
+  paused = false,
+) {
   const [step, setStep] = useState<CalibrationStep>('loading');
   const [error, setError] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
@@ -90,6 +95,16 @@ export function useCalibrationFlow(settings: Settings, initialBox?: CalibrationB
       }),
     [session, box, step, settings.sensitivity, settings.mirror],
   );
+
+  // A capture can't run while the screen is hidden; drop back to that corner's start so the
+  // player re-arms it on return instead of finding a stale failure or a capture made blind.
+  useEffect(() => {
+    if (!paused || !collecting.current) return;
+    clearInterval(timer.current);
+    collecting.current = false;
+    setCountdown(0);
+    setStep((s) => (s === 'corner1' ? 'intro' : s));
+  }, [paused]);
 
   const collect = useCallback((corner: 'corner1' | 'corner2') => {
     clearInterval(timer.current);

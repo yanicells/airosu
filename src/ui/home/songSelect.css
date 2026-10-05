@@ -322,15 +322,6 @@
   color: #222;
   font-weight: 800;
 }
-.ranking-retry {
-  border: 0;
-  border-radius: 6px;
-  padding: 4px 12px;
-  background: var(--lz-mint);
-  color: #10302a;
-  font-weight: 700;
-  cursor: pointer;
-}
 
 /* ── search + carousel ────────────────────────────────── */
 .song-right {
@@ -431,7 +422,7 @@
     filter: brightness(1.35);
   }
 }
-.set-panel__face:disabled {
+.set-panel__face[aria-disabled='true'] {
   cursor: progress;
 }
 .set-panel__chevron {

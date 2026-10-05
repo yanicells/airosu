@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { expect, test, type Page } from '@playwright/test';
+import { strToU8, zipSync } from 'fflate';
 
 const BASE_ORIGIN = 'http://127.0.0.1:4173';
 
@@ -39,6 +40,12 @@ SliderTickRate: 1
 128,96,15000,1,0
 384,288,20000,1,0
 `;
+
+// One early circle so a play reaches results within a few seconds.
+const SHORT_MAP = OSU_MAP.replace(
+  '256,192,10000,1,0\n128,96,15000,1,0\n384,288,20000,1,0',
+  '256,192,1000,1,0',
+);
 
 const REPLACEMENT_MAP = OSU_MAP
   .replaceAll('Browser Smoke', 'Replacement Map')
@@ -193,10 +200,10 @@ async function uploadMap(page: Page, name: string, text: string): Promise<void> 
   });
 }
 
-async function openStandaloneMap(page: Page, start = true): Promise<void> {
+async function openStandaloneMap(page: Page, start = true, map = OSU_MAP): Promise<void> {
   await page.getByRole('button', { name: 'Open main menu' }).click();
   await page.getByRole('button', { name: 'play', exact: true }).click();
-  await uploadMap(page, 'browser-smoke.osu', OSU_MAP);
+  await uploadMap(page, 'browser-smoke.osu', map);
   await expect(page.getByRole('heading', { name: 'Browser Smoke' })).toBeVisible();
   await page.locator('input[type="file"][accept="audio/*"]').setInputFiles({
     name: 'song.wav',
@@ -320,4 +327,50 @@ test('surfaces a terminal hand-tracking error during gameplay', async ({ page })
   });
   await expect(page.getByText('Synthetic tracking failure')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Quit', exact: true })).toBeVisible();
+});
+
+test('retries from results after visiting settings without losing the camera', async ({ page }) => {
+  await openStandaloneMap(page, true, SHORT_MAP);
+  await enterGameplay(page);
+  const retry = page.getByRole('button', { name: 'Retry' });
+  await expect(retry).toBeVisible({ timeout: 15_000 });
+
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(retry).toBeHidden();
+  await page.getByRole('button', { name: 'Close settings' }).click();
+  await retry.click();
+
+  await expect(page.locator('canvas')).toBeVisible();
+  await expect(page.locator('.count-pop')).toBeVisible();
+  await expect(page.getByText(/Hand tracking is unavailable/)).toBeHidden();
+});
+
+test('keeps an unsaved aim area across a settings round trip from calibration', async ({ page }) => {
+  await openStandaloneMap(page);
+  const size = page.locator('.aim-area-info span');
+  const before = await size.textContent();
+  await page.getByRole('button', { name: /^Resize .* corner$/ }).first().press('Shift+ArrowLeft');
+  await expect(size).not.toHaveText(before ?? '');
+  const edited = await size.textContent();
+
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Your aim area' })).toBeHidden();
+  await page.getByRole('button', { name: 'Close settings' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Your aim area' })).toBeVisible();
+  await expect(size).toHaveText(edited ?? '');
+});
+
+test('lists an imported .osz once after it is saved to the library', async ({ page }) => {
+  await page.getByRole('button', { name: 'Open main menu' }).click();
+  await page.getByRole('button', { name: 'play', exact: true }).click();
+  await page.locator('input[type="file"][accept=".osz,.osu"]').setInputFiles({
+    name: 'browser-smoke.osz',
+    mimeType: 'application/octet-stream',
+    buffer: Buffer.from(zipSync({ 'map.osu': strToU8(OSU_MAP), 'song.wav': wavBytes(1000) })),
+  });
+  await expect(page.getByRole('heading', { name: 'Browser Smoke' })).toBeVisible();
+  // the library entry (titled by file name) replaces the temporary panel (titled by metadata)
+  await expect(page.locator('.set-panel', { hasText: /browser[- ]smoke/i })).toHaveCount(1);
+  await expect(page.locator('.set-panel.is-selected')).toHaveText(/browser-smoke/);
 });

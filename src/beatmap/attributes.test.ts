@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { OszArchive, listDifficulties } from './load';
 import { computeMapAttributes } from './attributes';
 import { PpCounter, preparePp } from '../game/pp';
-import { playPp } from '../game/ppFormula';
+import { airosuMaxCombo, playPp } from '../game/ppFormula';
 
 const osz = new Uint8Array(
   readFileSync('game-assets/test-maps/444335 HO-KAGO TEA TIME - Kira Kira Days.osz'),
@@ -15,13 +15,11 @@ describe('computeMapAttributes', () => {
     const a = computeMapAttributes(easy.osuText);
     expect(a.title.length).toBeGreaterThan(0);
     expect(a.objectCount).toBeGreaterThan(0);
-    expect(a.judgmentCount).toBeGreaterThanOrEqual(a.objectCount);
-    expect(a.judgmentCount).toBe(
-      new OszArchive(osz).load(easy.difficultyName).objects.reduce(
-        (count, object) => count + (object.kind === 'slider' ? 2 : 1),
-        0,
-      ),
-    );
+    expect(a.objectCount).toBe(new OszArchive(osz).load(easy.difficultyName).objects.length);
+    expect(a.judgmentCount).toBe(a.objectCount);
+    // server validation derives object counts from the difficulty attributes
+    const d = a.difficulty;
+    expect(d.hitCircleCount + d.sliderCount + d.spinnerCount).toBe(a.objectCount);
     expect(a.maxCombo).toBeGreaterThanOrEqual(a.objectCount);
     expect(a.starRating).toBeGreaterThan(0);
     expect(a.starRating).toBeLessThan(3);
@@ -32,7 +30,7 @@ describe('computeMapAttributes', () => {
       count100: 0,
       count50: 0,
       countMiss: 0,
-      maxCombo: a.judgmentCount,
+      maxCombo: airosuMaxCombo(a.difficulty),
     };
     expect(playPp(a.difficulty, ss)).toBeCloseTo(new PpCounter(preparePp(easy.osuText)).final(ss), 6);
   });

@@ -153,23 +153,27 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
           playSound(skin.sounds.combobreak, settings.volume);
       };
 
+      // One view (and its object wrappers) is reused every frame to keep the loop allocation-light.
+      const view: RenderView = {
+        timeMs: 0,
+        objects: [],
+        cursor: null,
+        score: 0,
+        combo: 0,
+        accuracy: 1,
+        pp: 0,
+        preemptMs: preempt,
+        cs: map.meta.cs,
+        recentHits: [],
+      };
+
       const loop = () => {
         if (disposed || failed) return;
         rafId = requestAnimationFrame(loop);
         if (phaseRef.current === 'countdown') {
           // cursor-only frames so the player can find their hand pre-start
-          stage.render({
-            timeMs: 0,
-            objects: [],
-            cursor: cursorRef.current,
-            score: 0,
-            combo: 0,
-            accuracy: 1,
-            pp: 0,
-            preemptMs: preempt,
-            cs: map.meta.cs,
-            recentHits: [],
-          });
+          view.cursor = cursorRef.current;
+          stage.render(view);
           return;
         }
         if (phaseRef.current !== 'playing') return;
@@ -189,21 +193,23 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         if (events.length && ppRef.current) {
           livePp = ppRef.current.currentAt(t, toHitStats(state.score.counts, state.score.maxCombo));
         }
-        const view: RenderView = {
-          timeMs: t,
-          objects: state.activeObjects.map((i) => ({
-            obj: map.objects[i],
-            index: i,
-          })),
-          cursor,
-          score: state.score.score,
-          combo: state.score.combo,
-          accuracy: state.score.accuracy,
-          pp: livePp,
-          preemptMs: preempt,
-          cs: map.meta.cs,
-          recentHits: events,
-        };
+        const { activeObjects } = state;
+        for (let k = 0; k < activeObjects.length; k++) {
+          const index = activeObjects[k];
+          const slot = view.objects[k];
+          if (slot) {
+            slot.obj = map.objects[index];
+            slot.index = index;
+          } else view.objects.push({ obj: map.objects[index], index });
+        }
+        view.objects.length = activeObjects.length;
+        view.timeMs = t;
+        view.cursor = cursor;
+        view.score = state.score.score;
+        view.combo = state.score.combo;
+        view.accuracy = state.score.accuracy;
+        view.pp = livePp;
+        view.recentHits = events;
         stage.render(view);
         if (state.finished) {
           phaseRef.current = 'done';
@@ -219,7 +225,7 @@ export function useGameLoop(stageHostRef: RefObject<HTMLDivElement | null>) {
         await new Promise((r) => setTimeout(r, 700));
         if (disposed || failed) return;
       }
-      clock.start();
+      clock.start(session.leadInMs());
       const next = clock.running && !document.hidden ? 'playing' : 'paused';
       if (next === 'paused') clock.pause();
       phaseRef.current = next;

@@ -41,7 +41,7 @@ export function toInternal(
         time: obj.startTime,
         pos: { x: obj.startPosition.x, y: obj.startPosition.y },
         endTime: obj.endTime,
-        repeats: obj.repeats,
+        spans: obj.spans,
         path: sliderPath(obj),
         comboIndex,
         comboNumber,

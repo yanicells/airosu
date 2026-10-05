@@ -25,15 +25,6 @@ export function SongRanking({ osuText, scope }: { osuText: string; scope: Rankin
 
   if (!scores.isAuthenticated && !scores.loading)
     return <Notice>Sign in with osu! to see rankings for this beatmap.</Notice>;
-  if (scores.error)
-    return (
-      <Notice>
-        {scores.error}{' '}
-        <button className="ranking-retry" onClick={scores.retry}>
-          Retry
-        </button>
-      </Notice>
-    );
   if (scores.loading || (scope === 'global' && scores.mapId && board === undefined))
     return (
       <p className="ranking-notice" role="status">

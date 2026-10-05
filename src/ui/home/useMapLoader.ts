@@ -5,7 +5,7 @@ import type { StarterMap } from '../../beatmap/starterMaps';
 import { useAppState } from '../appState';
 
 export function useMapLoader(
-  save: (bytes: Uint8Array, label: string, difficultyCount: number) => Promise<void>,
+  save: (bytes: Uint8Array, label: string, difficultyCount: number) => Promise<string | undefined>,
 ) {
   const { mapset, setMap, setMapset } = useAppState();
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +70,15 @@ export function useMapLoader(
         }
         const label = file.name.replace(/\.osz$/i, '');
         const count = await loadArchive(bytes, label, id);
-        if (count !== undefined) void save(bytes, label, count);
+        if (count === undefined) return;
+        // Saving runs in the background. Once stored, point the open set at its library entry
+        // so the carousel lists it once, unless the player has moved on to another set.
+        void save(bytes, label, count).then((libraryId) => {
+          if (!libraryId) return;
+          setMapset((current) =>
+            current?.bytes === bytes ? { ...current, sourceUrl: `library:${libraryId}` } : current,
+          );
+        });
       }),
     [run, loadArchive, setMap, setMapset, save],
   );
@@ -91,7 +99,8 @@ export function useMapLoader(
         const loaded = await loadMapDifficulty(mapset.bytes, name);
         if (id !== latest.current) return;
         setMap(loaded);
-        setMapset({ ...mapset, pickedName: name });
+        // functional so a library id that landed meanwhile isn't overwritten
+        setMapset((current) => current && { ...current, pickedName: name });
       });
     },
     [mapset, busy, run, setMap, setMapset],

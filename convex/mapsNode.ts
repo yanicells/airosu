@@ -5,7 +5,12 @@ import { action, internalAction } from './_generated/server';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import { getAuthUserId } from '@convex-dev/auth/server';
-import { ATTRIBUTES_VERSION, computeMapAttributes } from '../src/beatmap/attributes';
+import {
+  ATTRIBUTES_VERSION,
+  computeMapAttributes,
+  type MapAttributes,
+} from '../src/beatmap/attributes';
+import { MapLimitError } from '../src/beatmap/limits';
 
 /** Registers a difficulty by its .osu text. Idempotent by md5. Returns mapId. */
 export const registerMap = action({
@@ -74,7 +79,14 @@ export const refreshAttributes = internalAction({
     for (const map of batch.page) {
       const blob = await ctx.storage.get(map.osuFileId);
       if (!blob) continue;
-      const a = computeMapAttributes(await blob.text());
+      let a: MapAttributes;
+      try {
+        a = computeMapAttributes(await blob.text());
+      } catch (error) {
+        // a stored map that now fails validation must not stall the whole refresh
+        if (error instanceof MapLimitError) continue;
+        throw error;
+      }
       await ctx.runMutation(internal.maps.patchAttributes, {
         mapId: map._id,
         attributesVersion: a.attributesVersion,
@@ -105,18 +117,5 @@ export const refreshAttributes = internalAction({
       });
     }
     return { updated, isDone: batch.isDone, continueCursor: batch.continueCursor };
-  },
-});
-
-/** Read-only lookup: browsing a song must not register it or upload a stored file. */
-export const findRegistered = action({
-  args: { osuText: v.string() },
-  handler: async (ctx, { osuText }): Promise<Id<'maps'> | null> => {
-    if (!(await getAuthUserId(ctx))) return null;
-    if (new TextEncoder().encode(osuText).byteLength > 1_000_000) {
-      throw new Error('.osu file is too large');
-    }
-    const md5 = createHash('md5').update(osuText, 'utf8').digest('hex');
-    return (await ctx.runQuery(internal.maps.byMd5, { md5 }))?._id ?? null;
   },
 });

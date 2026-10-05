@@ -9,6 +9,14 @@ export const byMd5 = internalQuery({
     ctx.db.query('maps').withIndex('by_md5', (q) => q.eq('md5', md5)).unique(),
 });
 
+/** Registered map id for a difficulty's .osu md5, or null. Reactive, unlike registering. */
+export const idByMd5 = query({
+  args: { md5: v.string() },
+  handler: async (ctx, { md5 }) =>
+    (await ctx.db.query('maps').withIndex('by_md5', (q) => q.eq('md5', md5)).unique())?._id ??
+    null,
+});
+
 export const getInternal = internalQuery({
   args: { mapId: v.id('maps') },
   handler: (ctx, { mapId }) => ctx.db.get(mapId),

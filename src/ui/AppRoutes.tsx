@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import { App } from './App';
+import { AppStateProvider } from './AppStateProvider';
+import { ResumePendingSubmission } from '../online/ResumePendingSubmission';
 
 // Web routes load on demand so the game's entry chunk stays small.
 const LeaderboardPage = lazy(() => import('./leaderboard').then((m) => ({ default: m.LeaderboardPage })));
@@ -8,12 +10,15 @@ const ProfilePage = lazy(() => import('./profile').then((m) => ({ default: m.Pro
 
 export function AppRoutes() {
   return (
-    <Suspense fallback={<div className="screen-center">Loading…</div>}>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/leaderboard" element={<LeaderboardPage />} />
-        <Route path="/u/:osuId" element={<ProfilePage />} />
-      </Routes>
-    </Suspense>
+    <AppStateProvider>
+      <ResumePendingSubmission />
+      <Suspense fallback={<div className="screen-center">Loading…</div>}>
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/u/:osuId" element={<ProfilePage />} />
+        </Routes>
+      </Suspense>
+    </AppStateProvider>
   );
 }

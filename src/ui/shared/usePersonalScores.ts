@@ -1,30 +1,18 @@
-import { useEffect, useState } from 'react';
-import { useAction, useConvexAuth, useQuery } from 'convex/react';
+import { useMemo } from 'react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
+import { md5Hex } from '../../online/md5';
 
+/** The signed-in player's history on a difficulty; follows the map as soon as it gets registered. */
 export function usePersonalScores(osuText?: string, registeredMapId?: Id<'maps'>) {
   const { isAuthenticated, isLoading } = useConvexAuth();
-  const findRegistered = useAction(api.mapsNode.findRegistered);
-  const [lookup, setLookup] = useState<{ text: string; id: Id<'maps'> | null; error?: string }>();
-  const [retry, setRetry] = useState(0);
-  useEffect(() => {
-    if (!isAuthenticated || !osuText || registeredMapId) return;
-    let active = true;
-    setLookup(undefined);
-    findRegistered({ osuText })
-      .then((id) => {
-        if (active) setLookup({ text: osuText, id });
-      })
-      .catch(() => {
-        if (active) setLookup({ text: osuText, id: null, error: 'Could not load your scores.' });
-      });
-    return () => {
-      active = false;
-    };
-  }, [isAuthenticated, osuText, registeredMapId, findRegistered, retry]);
-  const current = lookup?.text === osuText ? lookup : undefined;
-  const mapId = registeredMapId ?? current?.id;
+  const md5 = useMemo(() => (osuText ? md5Hex(osuText) : undefined), [osuText]);
+  const lookedUp = useQuery(
+    api.maps.idByMd5,
+    isAuthenticated && md5 && !registeredMapId ? { md5 } : 'skip',
+  );
+  const mapId = registeredMapId ?? lookedUp ?? undefined;
   const history = useQuery(
     api.scores.personalHistory,
     isAuthenticated && mapId ? { mapId } : 'skip',
@@ -35,9 +23,7 @@ export function usePersonalScores(osuText?: string, registeredMapId?: Id<'maps'>
     isAuthenticated,
     loading:
       isLoading ||
-      (isAuthenticated && !!osuText && !current && !registeredMapId) ||
+      (isAuthenticated && !!md5 && !registeredMapId && lookedUp === undefined) ||
       (!!mapId && isAuthenticated && history === undefined),
-    error: current?.error,
-    retry: () => setRetry((value) => value + 1),
   };
 }

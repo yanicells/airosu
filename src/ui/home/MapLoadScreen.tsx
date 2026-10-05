@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { starterMaps } from '../../beatmap/starterMaps';
 import { useAppState } from '../appState';
 import { useObjectUrl } from '../useObjectUrl';
@@ -20,6 +20,11 @@ export function MapLoadScreen() {
   const [search, setSearch] = useState('');
   const bgUrl = useObjectUrl(mapset?.preview.background ?? map?.background);
   const total = starterMaps.length + library.entries.length;
+  const hasMap = map !== undefined;
+  // warm the calibration chunk once a map is picked, so Play doesn't wait on it
+  useEffect(() => {
+    if (hasMap) void import('../calibrate');
+  }, [hasMap]);
   return (
     <div
       className="lazer-shell song-select"

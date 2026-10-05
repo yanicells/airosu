@@ -51,15 +51,36 @@ console.log(`verified ${manifest.maps.length} starter maps (${total} bytes)`);
 
 // Check emitted archives too: a new public/ asset or broad import glob must not
 // bypass the source manifest. Vite hashes filenames, so compare file contents.
+// Audio is checked the same way, loose or inside any other bundled archive.
+const AUDIO = /\.(mp3|ogg|wav|flac|m4a)$/i;
+const approvedAudio = new Map([
+  // Bundled skin hitsounds (game-assets/skins/Aristia(Edit)+trail.osk).
+  // The repo owner approved shipping this skin's audio (2026-10-05).
+  ['bc02d4e3ec94922f331e1c4da10efb3c9de2b13ae278d203e73b40178d9b8df2', 'skin normal-hitnormal.wav'],
+  ['d2c78fd56564bf8a107ea0988df13a7a75520192471f5bff1fa05bd9f20e6590', 'skin combobreak.wav'],
+]);
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const checkAudio = (bytes, label) => {
+  if (!approvedAudio.has(sha256(bytes))) fail(`unapproved production audio: ${label}`);
+};
+
 if (process.argv.includes('--dist')) {
   const dist = join(root, 'dist');
   const approved = new Set(manifest.maps.map((entry) => entry.sha256));
   const files = await readdir(dist, { recursive: true });
   for (const file of files.filter((name) => /\.osz$/i.test(name))) {
     const bytes = await readFile(join(dist, file));
-    const hash = createHash('sha256').update(bytes).digest('hex');
     if (manifest.temporaryTestPack) fail(`test pack leaked into production: ${file}`);
-    if (!approved.has(hash)) fail(`unapproved production archive: ${file}`);
+    if (!approved.has(sha256(bytes))) fail(`unapproved production archive: ${file}`);
   }
-  console.log('verified production archives');
+  for (const file of files.filter((name) => AUDIO.test(name))) {
+    checkAudio(await readFile(join(dist, file)), file);
+  }
+  for (const file of files.filter((name) => /\.(osk|zip)$/i.test(name))) {
+    const entries = unzipSync(await readFile(join(dist, file)), {
+      filter: (entry) => AUDIO.test(entry.name),
+    });
+    for (const [name, bytes] of Object.entries(entries)) checkAudio(bytes, `${file}/${name}`);
+  }
+  console.log('verified production archives and audio');
 }

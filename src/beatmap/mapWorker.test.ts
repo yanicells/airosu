@@ -40,3 +40,17 @@ it('sends archive bytes once per selection and resends after worker failure', as
   restarted.reply({ rawOsu: 'test' });
   await expect(retry).resolves.toEqual({ rawOsu: 'test' });
 });
+
+it('releases the archive when a standalone .osu is opened and resends it later', async () => {
+  const { openMapArchive, loadMapDifficulty, loadStandaloneMap } = await import('./mapWorker');
+  const bytes = new Uint8Array([1, 2]);
+  const opened = openMapArchive(bytes);
+  const worker = FakeWorker.instances[0];
+  worker.reply({ preview: {}, map: {} });
+  await opened;
+  const standalone = loadStandaloneMap('osu file format v14');
+  worker.reply({ rawOsu: 'osu' });
+  await standalone;
+  void loadMapDifficulty(bytes, 'Hard');
+  expect(worker.postMessage.mock.lastCall![0].bytes).toBe(bytes);
+});

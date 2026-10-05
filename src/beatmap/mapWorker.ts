@@ -69,7 +69,11 @@ export const openMapArchive = (bytes: Uint8Array) =>
   request<OpenMapResult>(archiveRequest(bytes, 'open'));
 export const loadMapDifficulty = (bytes: Uint8Array, name: string) =>
   request<LoadedBeatmap>(archiveRequest(bytes, 'load', name));
-export const loadStandaloneMap = (text: string) => request<LoadedBeatmap>({ type: 'osu', text });
+/** Opening a loose .osu replaces the selection; the worker drops its archive, so resend later. */
+export function loadStandaloneMap(text: string): Promise<LoadedBeatmap> {
+  currentKey = undefined;
+  return request<LoadedBeatmap>({ type: 'osu', text });
+}
 export const loadMapBackground = (bytes: Uint8Array) =>
   request<Blob | undefined>({ type: 'background', bytes });
 

@@ -410,6 +410,10 @@
   border-spacing: 0 5px;
   font-variant-numeric: tabular-nums;
 }
+.board.is-stale {
+  opacity: 0.5;
+  transition: opacity 150ms ease;
+}
 .board th {
   padding: 0 16px 4px;
   font-size: 12px;

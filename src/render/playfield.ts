@@ -18,6 +18,9 @@ export class PlayfieldLayer {
   private skinned: SkinnedObjectLayer | null;
   private bursts: BurstLayer;
   private comboColors: number[];
+  /** per-frame scratch, reused to avoid allocating in the render loop */
+  private visibleBodies = new Set<number>();
+  private ball = { x: 0, y: 0 };
 
   private skin: Skin | null;
 
@@ -38,7 +41,8 @@ export class PlayfieldLayer {
 
   render(view: RenderView): void {
     const r = circleRadius(view.cs);
-    const visibleBodies = new Set<number>();
+    const visibleBodies = this.visibleBodies;
+    visibleBodies.clear();
     this.circles.clear();
 
     // Retain slider paths; only alpha, slider balls, and spinners change per frame.
@@ -144,7 +148,7 @@ export class PlayfieldLayer {
     if (obj.path.length < 2) return;
     // Procedural slider ball only when the skin does not provide one.
     if (!this.skin?.sliderBall && timeMs >= obj.time && timeMs <= obj.endTime) {
-      const ball = sliderBallPos(obj, timeMs);
+      const ball = sliderBallPos(obj, timeMs, this.ball);
       g.circle(ball.x, ball.y, r * 0.8).fill({ color: 0xffffff, alpha: 0.9 });
       g.circle(ball.x, ball.y, r * 2.4).stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
     }

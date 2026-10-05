@@ -1,11 +1,13 @@
 import { createHash } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { convexTest } from 'convex-test';
 import aggregate from '@convex-dev/aggregate/test';
 import migrationComponent from '@convex-dev/migrations/test';
-import { api, internal } from './_generated/api';
+import { api, components, internal } from './_generated/api';
 import schema from './schema';
 import { PP_VERSION } from '../src/game/ppFormula';
+import { maxScore } from '../src/game/score';
+import { syncBoards, userRanks } from './leaderboard';
 
 const modules = import.meta.glob('./**/*.ts');
 
@@ -31,7 +33,7 @@ const mapAttributes = {
   starRating: 3,
   maxCombo: 120,
   objectCount: 80,
-  judgmentCount: 100,
+  judgmentCount: 80,
   ssPp: 100,
   difficulty: {
     starRating: 3,
@@ -48,8 +50,10 @@ const mapAttributes = {
     spinnerCount: 0,
     maxCombo: 120,
   },
-  attributesVersion: 2,
+  attributesVersion: 3,
 };
+/** a full clean play on mapAttributes: 80 objects, combo 100 (each slider's head + end) */
+const fullCombo = { count300: 80, count100: 0, count50: 0, countMiss: 0, maxCombo: 100 };
 
 describe('scores.submit', () => {
   it('stores the same playId only once', async () => {
@@ -68,12 +72,8 @@ describe('scores.submit', () => {
     const args = {
       playId: '11111111-1111-4111-8111-111111111111',
       mapId,
-      count300: 100,
-      count100: 0,
-      count50: 0,
-      countMiss: 0,
-      maxCombo: 100,
-      score: 123_456,
+      ...fullCombo,
+      score: 50_000,
       inputMode: 'relax' as const,
       forgiveness: 1.5,
       cursorAnchor: 'palm' as const,
@@ -91,14 +91,47 @@ describe('scores.submit', () => {
     const history = await authed.query(api.scores.personalHistory, { mapId });
     expect(history?.best?.playId).toBe(args.playId);
     expect(history?.recent).toHaveLength(1);
-    expect(await authed.action(api.mapsNode.findRegistered, { osuText: 'osu file format v14' })).toBe(mapId);
-    expect(await authed.action(api.mapsNode.findRegistered, { osuText: 'unknown map' })).toBeNull();
-    expect(await t.action(api.mapsNode.findRegistered, { osuText: 'osu file format v14' })).toBeNull();
+    const md5 = (text: string) => createHash('md5').update(text).digest('hex');
+    expect(await t.query(api.maps.idByMd5, { md5: md5('osu file format v14') })).toBe(mapId);
+    expect(await t.query(api.maps.idByMd5, { md5: md5('unknown map') })).toBeNull();
     expect(await t.query(api.scores.personalHistory, { mapId })).toBeNull();
     const otherId = await t.run((ctx) => ctx.db.insert('users', { osuId: 99, name: 'other' }));
     const other = t.withIdentity({ subject: `${otherId}|other-session` });
     expect((await other.query(api.scores.personalHistory, { mapId }))?.recent).toEqual([]);
 
+  });
+
+  it('rejects a raw score above what the judgments and combo allow', async () => {
+    const t = makeTest();
+    const { userId, mapId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert('users', { osuId: 9, name: 'p3' });
+      const osuFileId = await ctx.storage.store(new Blob(['osu file format v14']));
+      const mapId = await ctx.db.insert('maps', { md5: 'c'.repeat(32), ...mapAttributes, osuFileId });
+      return { userId, mapId };
+    });
+    const authed = t.withIdentity({ subject: `${userId}|test-session` });
+    const bound = maxScore(fullCombo, mapAttributes.difficulty.sliderCount);
+    const play = {
+      mapId,
+      ...fullCombo,
+      inputMode: 'relax' as const,
+      forgiveness: 1.5,
+      cursorAnchor: 'palm' as const,
+    };
+    await expect(
+      authed.mutation(api.scores.submit, {
+        ...play,
+        playId: '44444444-4444-4444-8444-444444444444',
+        score: bound + 1,
+      }),
+    ).rejects.toThrow(/exceeds/);
+    await expect(
+      authed.mutation(api.scores.submit, {
+        ...play,
+        playId: '55555555-5555-4555-8555-555555555555',
+        score: bound,
+      }),
+    ).resolves.toMatchObject({ isBest: true });
   });
 
   it('marks a better replay as best and flips the old flag', async () => {
@@ -125,18 +158,15 @@ describe('scores.submit', () => {
     const weak = await authed.mutation(api.scores.submit, {
       ...base,
       playId: '22222222-2222-4222-8222-222222222222',
-      count300: 60,
-      count100: 30,
+      count300: 50,
+      count100: 20,
       countMiss: 10,
       maxCombo: 40,
     });
     const strong = await authed.mutation(api.scores.submit, {
       ...base,
       playId: '33333333-3333-4333-8333-333333333333',
-      count300: 100,
-      count100: 0,
-      countMiss: 0,
-      maxCombo: 100,
+      ...fullCombo,
     });
     expect(weak.isBest).toBe(true);
     expect(strong.isBest).toBe(true);
@@ -175,6 +205,7 @@ describe('migrations.recalcScores', () => {
         userId,
         mapId,
         playId: '44444444-4444-4444-8444-444444444444',
+        // PP v2-era stats (a judgement per slider head): recalculated as-is, never rejected
         count300: 100,
         count100: 0,
         count50: 0,
@@ -210,6 +241,53 @@ describe('migrations.recalcScores', () => {
   });
 });
 
+describe('migrations.runPpRework', () => {
+  it('replays every phase under a PP_VERSION-keyed name', async () => {
+    vi.useFakeTimers();
+    try {
+      const t = makeTest();
+      const { userId, scoreId } = await t.run(async (ctx) => {
+        const userId = await ctx.db.insert('users', { name: 'player', ppVersion: PP_VERSION - 1 });
+        const osuFileId = await ctx.storage.store(new Blob(['map']));
+        const mapId = await ctx.db.insert('maps', { md5: 'd'.repeat(32), ...mapAttributes, osuFileId });
+        const scoreId = await ctx.db.insert('scores', {
+          userId,
+          mapId,
+          playId: '66666666-6666-4666-8666-666666666666',
+          ...fullCombo,
+          score: 1000,
+          accuracy: 1,
+          grade: 'SS',
+          pp: 1,
+          ppVersion: PP_VERSION - 1,
+          isBest: false,
+          inputMode: 'relax',
+          forgiveness: 1.5,
+          cursorAnchor: 'palm',
+        });
+        return { userId, scoreId };
+      });
+      await t.mutation(internal.migrations.runPpRework, {});
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
+      const state = await t.run(async (ctx) => ({
+        score: await ctx.db.get(scoreId),
+        user: await ctx.db.get(userId),
+        status: await ctx.runQuery(components.migrations.lib.getStatus, {
+          names: ['recalcScores', 'recalcBestFlags', 'recalcUsers'].map(
+            (phase) => `migrations:${phase}@pp${PP_VERSION}`,
+          ),
+        }),
+      }));
+      expect(state.score).toMatchObject({ ppVersion: PP_VERSION, isBest: true });
+      expect(state.score!.pp).toBeGreaterThan(1);
+      expect(state.user).toMatchObject({ ppVersion: PP_VERSION, totalPp: state.score!.pp });
+      expect(state.status.map((s) => s.state)).toEqual(['success', 'success', 'success']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('leaderboard.page', () => {
   it('rejects invalid offsets', async () => {
     const t = makeTest();
@@ -218,6 +296,32 @@ describe('leaderboard.page', () => {
         'offset must be a non-negative safe integer',
       );
     }
+  });
+
+  it('gives tied players the same ranks as the rankings page', async () => {
+    const t = makeTest();
+    const ranks = await t.run(async (ctx) => {
+      const users = [];
+      for (const osuId of [21, 22]) {
+        const id = await ctx.db.insert('users', {
+          osuId,
+          name: `tied${osuId}`,
+          countryCode: 'PH',
+          totalPp: 100,
+        });
+        const user = (await ctx.db.get(id))!;
+        await syncBoards(ctx, null, user);
+        users.push(user);
+      }
+      return Promise.all(users.map(async (u) => ({ osuId: u.osuId, ...(await userRanks(ctx, u)) })));
+    });
+    const page = await t.query(api.leaderboard.page, { offset: 0 });
+    for (const row of page.rows) {
+      const own = ranks.find((r) => r.osuId === row.osuId)!;
+      expect(own.globalRank).toBe(row.rank);
+      expect(own.countryRank).toBe(row.rank);
+    }
+    expect(ranks.map((r) => r.globalRank).sort()).toEqual([1, 2]);
   });
 });
 
@@ -248,5 +352,24 @@ describe('migrations.backfillBoards', () => {
       total: 1,
       rows: [{ osuId: 10 }],
     });
+  });
+});
+
+describe('osuApi.syncOsuStats', () => {
+  it('lets one concurrent caller fetch and cools down after a failure', async () => {
+    const t = makeTest();
+    await t.run((ctx) => ctx.db.insert('users', { osuId: 31, name: 'stale' }));
+    const fetchMock = vi.fn(async () => new Response('nope', { status: 500 }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      await Promise.all([
+        t.action(api.osuApi.syncOsuStats, { osuId: 31 }),
+        t.action(api.osuApi.syncOsuStats, { osuId: 31 }),
+      ]);
+      await t.action(api.osuApi.syncOsuStats, { osuId: 31 });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(1); // one token request, then the cooldown holds
   });
 });

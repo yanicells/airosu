@@ -54,9 +54,10 @@ export async function userRanks(
   user: Doc<'users'>,
 ): Promise<{ globalRank: number | null; countryRank: number | null }> {
   if ((user.totalPp ?? 0) <= 0) return { globalRank: null, countryRank: null };
-  const globalRank = 1 + (await globalBoard.indexOfDoc(ctx, user));
+  // Break pp ties by id, the same order page() walks, so profile and rankings agree.
+  const globalRank = 1 + (await globalBoard.indexOfDoc(ctx, user, { id: user._id }));
   const countryRank = user.countryCode
-    ? 1 + (await countryBoard.indexOfDoc(ctx, user))
+    ? 1 + (await countryBoard.indexOfDoc(ctx, user, { id: user._id }))
     : null;
   return { globalRank, countryRank };
 }

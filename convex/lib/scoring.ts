@@ -1,6 +1,7 @@
 import {
   PP_VERSION,
   accuracyOf,
+  airosuMaxCombo,
   judgedCount,
   playPp,
   type HitStats,
@@ -8,12 +9,19 @@ import {
 } from '../../src/game/ppFormula';
 import { grade, type Grade } from '../../src/game/grade';
 
-/** null when valid, else a human-readable rejection reason */
-export function validateSubmission(map: { judgmentCount: number }, s: HitStats): string | null {
+/**
+ * null when valid, else a human-readable rejection reason. Bounds come from the
+ * map's stored difficulty attributes, never the client: a completed play judges
+ * every object once, and each miss costs at least one of airosu's combo steps.
+ */
+export function validateSubmission(difficulty: MapDifficulty, s: HitStats): string | null {
   const counts = [s.count300, s.count100, s.count50, s.countMiss, s.maxCombo];
   if (counts.some((c) => !Number.isInteger(c) || c < 0)) return 'invalid counts';
-  if (judgedCount(s) !== map.judgmentCount) return 'judgment counts do not match the map';
-  if (s.maxCombo > map.judgmentCount - s.countMiss) return 'combo exceeds successful judgments';
+  const objects = difficulty.hitCircleCount + difficulty.sliderCount + difficulty.spinnerCount;
+  if (judgedCount(s) !== objects) return 'judgment counts do not match the map';
+  if (s.maxCombo > airosuMaxCombo(difficulty) - s.countMiss) {
+    return 'combo exceeds successful judgments';
+  }
   return null;
 }
 
