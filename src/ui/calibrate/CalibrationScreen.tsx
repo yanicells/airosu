@@ -14,11 +14,11 @@ import './calibration.css';
 
 /** Aim-area calibration, laid out like lazer's settings: controls on the left, camera on the right. */
 export function CalibrationScreen() {
-  const { map, settings, calibration, setScreen } = useAppState();
+  const { screen, map, settings, calibration, setScreen } = useAppState();
   useEffect(() => {
     if (map) void prepareMapPerformance(map).catch(() => {});
   }, [map]);
-  const flow = useCalibrationFlow(settings, calibration);
+  const flow = useCalibrationFlow(settings, calibration, screen !== 'calibrate');
   const { step, session, box } = flow;
   useEffect(() => {
     session?.cursor.setSettings(settings);
