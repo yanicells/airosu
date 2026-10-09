@@ -4,7 +4,6 @@ Webcam hand-tracking rhythm game that plays osu! beatmaps. Web app: Vite + TS + 
 
 **Working rules:**
 
-- Use `/caveman ultra` for all your chat output. Code, docs, commit messages, PR descriptions stay normal prose.
 - Commit yourself after every green test cycle. Conventional commits (`feat:`, `fix:`, `test:`, `chore:`, `ci:`, `docs:`).
 - Stacked PRs: one branch + PR per milestone, each based on the previous branch (`m1-scaffold` → `m2-beatmap` → …). Open the PR when the milestone is done, then branch the next milestone from it.
 - TDD for all pure logic (`src/game/`, pure parts of `src/cv/`, `src/beatmap/` adapters). Manual verification via `pnpm run dev` for render/UI tasks.
