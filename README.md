@@ -62,10 +62,7 @@ clock/judging/scoring/pp), `src/render/` (PixiJS stage), `src/ui/` (React shell 
 react-router pages). Map extraction, difficulty preparation, and supported hand
 tracking run in workers; camera frames stay on-device. The Convex backend (`convex/`) handles osu!-only auth, map
 registration (`.osu` text only), server-validated score submission with
-authoritative pp, aggregate-backed leaderboards, and profiles. See
-`docs/superpowers/specs/2026-07-04-airosu-design.md` and
-`docs/superpowers/specs/2026-07-08-airosu-online-design.md`;
-pp recalculation procedure: `docs/pp-rework-runbook.md`.
+authoritative pp, aggregate-backed leaderboards, and profiles. pp recalculation procedure: `docs/pp-rework-runbook.md`.
 
 ## Privacy and data storage
 
